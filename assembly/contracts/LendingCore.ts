@@ -80,11 +80,11 @@ class Reserve implements Serializable {
     public name: string = '',
     public symbol: string = '',
     public decimals: u64 = 0,
+    public mTokenAddress: Address = new Address(),
     public interestCalcAddress: Address = new Address(),
     public baseLTV: u64 = 0,
     public LiquidationThreshold: u64 = 0,
     public LiquidationBonus: u64 = 0,
-
   ) { }
 
   public serialize(): StaticArray<u8> {
@@ -93,6 +93,7 @@ class Reserve implements Serializable {
     args.add(this.name);
     args.add(this.symbol);
     args.add(this.decimals);
+    args.add(this.mTokenAddress);
     args.add(this.interestCalcAddress);
     args.add(this.baseLTV);
     args.add(this.LiquidationThreshold);
@@ -100,7 +101,7 @@ class Reserve implements Serializable {
     return args.serialize();
   }
 
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
+  public deserialize(data: StaticArray<u8>, offset: i32): Result<i32> {
     const args = new Args(data, offset);
 
     const addr = args.nextString();
@@ -126,6 +127,12 @@ class Reserve implements Serializable {
       return new Result(0, "Can't deserialize the decimals");
     }
     this.decimals = decimals.unwrap();
+
+    const mTokenAddress = args.nextString();
+    if (mTokenAddress.isErr()) {
+      return new Result(0, "Can't deserialize the mTokenAddress");
+    }
+    this.mTokenAddress = new Address(mTokenAddress.unwrap());
 
     const interestCalcAddress = args.nextString();
     if (interestCalcAddress.isErr()) {
@@ -199,7 +206,7 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   Storage.set(stringToBytes(storageKey), reserve.serialize());
 }
 
-export function getReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+export function getReserve(binaryArgs: StaticArray<u8>): Reserve {
   // convert the binary input to Args
   const args = new Args(binaryArgs);
 
@@ -214,7 +221,9 @@ export function getReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   assert(reserveExists, 'Reserve does not exist');
 
   // get the serialized reserve info
-  return Storage.get(stringToBytes(storageKey));
+  const data = Storage.get(stringToBytes(storageKey));
+  
+  return new Args(data).nextSerializable<Reserve>().unwrap();
 }
 
 export function deleteReserve(binaryArgs: StaticArray<u8>): void {

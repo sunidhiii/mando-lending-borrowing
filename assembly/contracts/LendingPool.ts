@@ -2,6 +2,8 @@
 import { call, Address, Context, generateEvent, Storage } from '@massalabs/massa-as-sdk';
 import { Args, stringToBytes } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
+import { ILendingCore } from '../interfaces/ILendingCore';
+import { getReserve } from './LendingCore';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
@@ -43,10 +45,14 @@ export function constructor(providerAddress: StaticArray<u8>): StaticArray<u8> {
  * @param _ - not used
  * @returns the emitted event serialized in bytes
  */
-export function deposit(_: StaticArray<u8>): StaticArray<u8> {
-    const message = "I'm an event!";
-    generateEvent(message);
-    return stringToBytes(message);
+export function deposit(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+    const args = new Args(binaryArgs);
+    const reserveData = args.nextString().expect('No reserve address provided');
+    const core = new ILendingCore(new Address(Storage.get('CORE_ADDRESS')));
+
+    const mToken = (core.getReserve(stringToBytes(reserveData)).mTokenAddress);
+
+    return []
 }
 
 export function borrow(_: StaticArray<u8>): StaticArray<u8> {
