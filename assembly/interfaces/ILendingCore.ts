@@ -118,4 +118,9 @@ export class ILendingCore {
         call(this._origin, "deleteReserve", arg, 0);
     }
 
+    transferToReserve(_reserve: Address, _amount: u64): void {
+        const args = new Args().add(_reserve).add(_amount);
+        call(this._origin, "transferToReserve", args, 0);
+    }
+
 }

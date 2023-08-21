@@ -1,12 +1,14 @@
-import { generateEvent, Context, callerHasWriteAccess, Storage, Address } from '@massalabs/massa-as-sdk';
+import { generateEvent, Context, createSC, Storage, Address, transferCoins } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
 import { onlyOwner } from '../helpers/ownership';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
+import { IERC20 } from '../interfaces/IERC20';
 
 const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
 
 export const ORIGNATION_FEE = 0.0025 * 10 ** 9;
+export const MAS = 'EeeEeeEeeeeEeeeeeEeeeeeeEeeeeeeEEeeeeeeEeeeEeeeeeeEee';
 
 enum InterestRateMode {NONE, STABLE, VARIABLE}
 
@@ -193,7 +195,10 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const args: Args = new Args(binaryArgs);
 
   // safely unwrap the request data
-  const reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
+  let reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
+  let reserve_contract_code = args.nextFixedSizeArray<u8>().unwrap();
+
+  reserve.addr = createSC(reserve_contract_code);
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserve.addr}`;
@@ -204,6 +209,9 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
 
   // save reserve to storage
   Storage.set(stringToBytes(storageKey), reserve.serialize());
+
+  addReserveToList(reserve.addr);
+
 }
 
 export function getReserve(binaryArgs: StaticArray<u8>): Reserve {
@@ -245,4 +253,76 @@ export function deleteReserve(binaryArgs: StaticArray<u8>): void {
 
   // delete the serialized reserve info
   return Storage.del(stringToBytes(storageKey));
+}
+
+function addReserveToList(reserve: Address) {
+  const storageKey = `${RESERVE_KEY}_${reserve}`;
+  
+  if(!Storage.has(storageKey)) {
+    let reserveArr = Storage.get('ALL_RESERVES');
+    var array_data:string[] = reserveArr.split(',');
+
+    array_data.push(reserve.toString());
+    Storage.set('ALL_RESERVES', array_data.toString());
+  }
+
+}
+
+export function viewAllReserves(): string[] {
+  
+    let reserveArr = Storage.get('ALL_RESERVES');
+    var array_data:string[] = reserveArr.split(',');
+
+    return array_data;
+}
+
+export function transferToReserve(binaryArgs: StaticArray<u8>): void {
+
+  const args = new Args(binaryArgs);
+
+  const reserve = args.nextString().unwrap();
+  const amount = args.nextU64().unwrap();
+
+  if(reserve == MAS) {
+    assert(Context.transferredCoins() >= amount, "Not enough sent coins");
+    transferCoins(Context.callee(), amount);
+  } else {
+    assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
+    new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
+  }
+
+}
+
+export function transferToUser(binaryArgs: StaticArray<u8>): void {
+
+  const args = new Args(binaryArgs);
+
+  const reserve = args.nextString().unwrap();
+  const amount = args.nextU64().unwrap();
+
+  if(reserve == MAS) {
+    assert(Context.transferredCoins() >= amount, "Not enough sent coins");
+    transferCoins(Context.callee(), amount);
+  } else {
+    assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
+    new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
+  }
+
+}
+
+export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
+
+  const args = new Args(binaryArgs);
+
+  const reserve = args.nextString().unwrap();
+  const amount = args.nextU64().unwrap();
+
+  if(reserve == MAS) {
+    assert(Context.transferredCoins() >= amount, "Not enough sent coins");
+    transferCoins(Context.callee(), amount);
+  } else {
+    assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
+    new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
+  }
+
 }

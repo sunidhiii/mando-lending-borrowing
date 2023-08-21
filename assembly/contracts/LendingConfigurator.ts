@@ -53,12 +53,12 @@ export function addReserve(binaryArgs: StaticArray<u8>): void {
 
 }
 
-export function viewReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-  // convert the binary input to Args
-  const reserve = getReserve(binaryArgs);
+// export function viewReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+//   // convert the binary input to Args
+//   const reserve = getReserve(binaryArgs);
 
-  return reserve;
-}
+//   return reserve;
+// }
 
 export function removeReserve(binaryArgs: StaticArray<u8>): void {
   
