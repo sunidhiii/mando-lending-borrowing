@@ -45,7 +45,7 @@ const __dirname = path.dirname(path.dirname(__filename));
       {
         data: readFileSync(path.join(__dirname, 'build', 'LendingAddressprovider.wasm')), // smart contract bytecode
         coins: fromMAS(0.1), // coins for deployment
-        args: new Args().addString('AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY'), // arguments for deployment
+        // args: new Args().addString('AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY'), // arguments for deployment
         protoPaths: [], // proto files for deployment
       } as ISCData,
       // Additional smart contracts can be added here for deployment
@@ -54,5 +54,29 @@ const __dirname = path.dirname(path.dirname(__filename));
     4_200_000_000n, // max gas for deployment
     true, // if true, waits for the first event before returning
   );
-  process.exit(0); // terminate the process after deployment(s)
-})();
+  })();
+  
+
+//   {
+//     const LendingAddressprovider: ISCData = {
+//         data: readFileSync(path.join(__dirname, "build", "LendingAddressprovider.wasm")),
+//         coins: fromMAS(0.1), // coins for deployment
+//     };
+//     const simple_bot: ISCData = {
+//         data: readFileSync(path.join(__dirname, "build", "bot.wasm")),
+//         coins: BigInt(3) * fromMAS(0.1),
+//         args: new Args().addString('AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY'), // arguments for deployment   
+//     };
+//     const bot: ISCData = {
+//         data: readFileSync(path.join(__dirname, "build", "bot_rsi.wasm")),
+//         coins: BigInt(3) * fromMAS(0.1),
+//     };
+//     const commands: ISCData = {
+//         data: readFileSync(path.join(__dirname, "build", "commands.wasm")),
+//         coins: BigInt(3) * fromMAS(0.1),
+//     };
+//     /// In the brackets you can specify the SCs you want to deploy
+//     await deploySC(publicApi, deployerAccount, [LendingAddressprovider, commands], BigInt(0), BigInt(4_200_000_000), true);
+//   }
+// })();
+process.exit(0); // terminate the process after deployment(s)

@@ -1,81 +1,89 @@
-import { generateEvent, Context, createSC, Storage, Address, transferCoins } from '@massalabs/massa-as-sdk';
+import { generateEvent, Context, createSC, Storage, Address, transferCoins, balance } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
-import { onlyOwner } from '../helpers/ownership';
-import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
+import { setOwner, onlyOwner } from '../helpers/ownership';
+// import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { IERC20 } from '../interfaces/IERC20';
 
-const ONE_UNIT = 10 ** 9;
+// const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
+const USER_KEY = 'RESERVE_KEY';
 
 export const ORIGNATION_FEE = 0.0025 * 10 ** 9;
 export const MAS = 'EeeEeeEeeeeEeeeeeEeeeeeeEeeeeeeEEeeeeeeEeeeEeeeeeeEee';
 
-enum InterestRateMode {NONE, STABLE, VARIABLE}
+// enum InterestRateMode { NONE, STABLE, VARIABLE }
 
 class UserReserve implements Serializable {
-    constructor(
-      public principalBorrowBalance: u64 = 0,
-      public lastVariableBorrowCumulativeIndex: u64 = 0,
-      public originationFee: u64 = 0,
-      public stableBorrowRate: u64 = 0,
-      public lastUpdateTimestamp: u64 = 0,
-      public useAsCollateral: bool = false,
-    ) { }
-  
-    public serialize(): StaticArray<u8> {
-      const args = new Args();
-      args.add(this.principalBorrowBalance);
-      args.add(this.lastVariableBorrowCumulativeIndex);
-      args.add(this.originationFee);
-      args.add(this.stableBorrowRate);
-      args.add(this.lastUpdateTimestamp);
-      args.add(this.useAsCollateral);
-      return args.serialize();
-    }
-  
-    public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-      const args = new Args(data, offset);
-  
-      const principalBorrowBalance = args.nextU64();
-      if (principalBorrowBalance.isErr()) {
-        return new Result(0, "Can't deserialize the principalBorrowBalance");
-      }
-      this.principalBorrowBalance = u64(principalBorrowBalance.unwrap());
-  
-      const lastVariableBorrowCumulativeIndex = args.nextU64();
-      if (lastVariableBorrowCumulativeIndex.isErr()) {
-        return new Result(0, "Can't deserialize the lastVariableBorrowCumulativeIndex");
-      }
-      this.lastVariableBorrowCumulativeIndex = lastVariableBorrowCumulativeIndex.unwrap();
-  
-      const originationFee = args.nextU64();
-      if (originationFee.isErr()) {
-        return new Result(0, "Can't deserialize the originationFee");
-      }
-      this.originationFee = originationFee.unwrap();
-  
-      const stableBorrowRate = args.nextU64();
-      if (stableBorrowRate.isErr()) {
-        return new Result(0, "Can't deserialize the stableBorrowRate");
-      }
-      this.stableBorrowRate = stableBorrowRate.unwrap();
-  
-      const lastUpdateTimestamp = args.nextU64();
-      if (lastUpdateTimestamp.isErr()) {
-        return new Result(0, "Can't deserialize the lastUpdateTimestamp");
-      }
-      this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
-  
-      const useAsCollateral = args.nextBool();
-      if (useAsCollateral.isErr()) {
-        return new Result(0, "Can't deserialize the useAsCollateral");
-      }
-      this.useAsCollateral = useAsCollateral.unwrap();
-  
-      return new Result(args.offset);
-    }
-}
+  constructor(
+    public addr: Address = new Address(),
+    public principalBorrowBalance: u64 = 0,
+    public lastVariableBorrowCumulativeIndex: u64 = 0,
+    public originationFee: u64 = 0,
+    public stableBorrowRate: u64 = 0,
+    public lastUpdateTimestamp: u64 = 0,
+    public useAsCollateral: bool = false,
+  ) { }
 
+  public serialize(): StaticArray<u8> {
+    const args = new Args();
+    args.add(this.addr);
+    args.add(this.principalBorrowBalance);
+    args.add(this.lastVariableBorrowCumulativeIndex);
+    args.add(this.originationFee);
+    args.add(this.stableBorrowRate);
+    args.add(this.lastUpdateTimestamp);
+    args.add(this.useAsCollateral);
+    return args.serialize();
+  }
+
+  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
+    const args = new Args(data, offset);
+
+    const addr = args.nextString();
+    if (addr.isErr()) {
+      return new Result(0, "Can't deserialize the addr");
+    }
+    this.addr = new Address(addr.unwrap());
+
+    const principalBorrowBalance = args.nextU64();
+    if (principalBorrowBalance.isErr()) {
+      return new Result(0, "Can't deserialize the principalBorrowBalance");
+    }
+    this.principalBorrowBalance = u64(principalBorrowBalance.unwrap());
+
+    const lastVariableBorrowCumulativeIndex = args.nextU64();
+    if (lastVariableBorrowCumulativeIndex.isErr()) {
+      return new Result(0, "Can't deserialize the lastVariableBorrowCumulativeIndex");
+    }
+    this.lastVariableBorrowCumulativeIndex = lastVariableBorrowCumulativeIndex.unwrap();
+
+    const originationFee = args.nextU64();
+    if (originationFee.isErr()) {
+      return new Result(0, "Can't deserialize the originationFee");
+    }
+    this.originationFee = originationFee.unwrap();
+
+    const stableBorrowRate = args.nextU64();
+    if (stableBorrowRate.isErr()) {
+      return new Result(0, "Can't deserialize the stableBorrowRate");
+    }
+    this.stableBorrowRate = stableBorrowRate.unwrap();
+
+    const lastUpdateTimestamp = args.nextU64();
+    if (lastUpdateTimestamp.isErr()) {
+      return new Result(0, "Can't deserialize the lastUpdateTimestamp");
+    }
+    this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
+
+    const useAsCollateral = args.nextBool();
+    if (useAsCollateral.isErr()) {
+      return new Result(0, "Can't deserialize the useAsCollateral");
+    }
+    this.useAsCollateral = useAsCollateral.unwrap();
+
+    return new Result(args.offset);
+  }
+}
 class Reserve implements Serializable {
   constructor(
     public addr: Address = new Address(),
@@ -169,26 +177,28 @@ class Reserve implements Serializable {
  *
  * @param providerAddress - Arguments serialized with Args
  */
-export function constructor(providerAddress: StaticArray<u8>): StaticArray<u8> {
+export function constructor(_: StaticArray<u8>): StaticArray<u8> {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
   if (!Context.isDeployingContract()) {
     return [];
   }
 
-  const args = new Args(providerAddress);
-  const provider = new ILendingAddressProvider(new Address(args.nextString().expect('Provider Address argument is missing or invalid')))
+  setOwner(new Args().add(Context.caller()).serialize());
 
-  Storage.set(
-      'PROVIDER_ADDR',
-      args.nextString().unwrap(),
-  );
-  generateEvent(`Constructor called with provider address ${provider}`);
+  // const args = new Args(providerAddress);
+  // const provider = new ILendingAddressProvider(new Address(args.nextString().expect('Provider Address argument is missing or invalid')))
+
+  // Storage.set(
+  //   'PROVIDER_ADDR',
+  //   args.nextString().unwrap(),
+  // );
+  // generateEvent(`Constructor called with provider address ${provider}`);
   return [];
 }
 
 export function initReserve(binaryArgs: StaticArray<u8>): void {
-  
+
   onlyOwner();
 
   // convert the binary input to Args
@@ -196,9 +206,9 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
 
   // safely unwrap the request data
   let reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
-  let reserve_contract_code = args.nextFixedSizeArray<u8>().unwrap();
+  let mToken_contract_code = args.nextString().unwrap();
 
-  reserve.addr = createSC(reserve_contract_code);
+  reserve.mTokenAddress = createSC(stringToBytes(mToken_contract_code));
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserve.addr}`;
@@ -230,14 +240,14 @@ export function getReserve(binaryArgs: StaticArray<u8>): Reserve {
 
   // get the serialized reserve info
   const data = Storage.get(stringToBytes(storageKey));
-  
+
   return new Args(data).nextSerializable<Reserve>().unwrap();
 }
 
 export function deleteReserve(binaryArgs: StaticArray<u8>): void {
-  
+
   onlyOwner();
-  
+
   // convert the binary input to Args
   const args = new Args(binaryArgs);
 
@@ -255,12 +265,71 @@ export function deleteReserve(binaryArgs: StaticArray<u8>): void {
   return Storage.del(stringToBytes(storageKey));
 }
 
-function addReserveToList(reserve: Address) {
+export function initUser(binaryArgs: StaticArray<u8>): void {
+
+  // onlyOwner();
+
+  // convert the binary input to Args
+  const args: Args = new Args(binaryArgs);
+
+  // safely unwrap the request data
+  let userReserve: UserReserve = args.nextSerializable<UserReserve>().unwrap();
+  const reserveAddr = args.nextString().unwrap();
+
+  // assemble the storage key
+  const storageKey = `${USER_KEY}_${userReserve.addr}_${reserveAddr}`;
+
+  // check reserve does not already exist
+  const userExists = Storage.has(storageKey);
+  assert(!userExists, 'User already exists');
+
+  // save reserve to storage
+  Storage.set(stringToBytes(storageKey), userReserve.serialize());
+
+  // addReserveToList(reserve.addr);
+
+}
+
+export function getUser(binaryArgs: StaticArray<u8>): UserReserve {
+  const args = new Args(binaryArgs);
+
+  const userAddr = args.nextString().unwrap();
+  const reserveAddr = args.nextString().unwrap();
+
+  const storageKey = `${USER_KEY}_${userAddr}_${reserveAddr}`;
+
+  // check reserve must already exist
+  const userExists = Storage.has(storageKey);
+  assert(userExists, 'User does not exist');
+
+  // get the serialized reserve info
+  const data = Storage.get(stringToBytes(storageKey));
+
+  return new Args(data).nextSerializable<UserReserve>().unwrap();
+}
+
+export function userExists(binaryArgs: StaticArray<u8>): bool {
+  const args = new Args(binaryArgs);
+
+  // safely unwrap the request data
+  const user = args.nextString().unwrap();
+  const reserve = args.nextString().unwrap();
+
+  const storageKey = `${USER_KEY}_${user}_${reserve}`;
+
+  // check reserve must already exist
+  if (Storage.has(storageKey)) {
+    return true
+  } else { return false; }
+
+}
+
+function addReserveToList(reserve: Address): void {
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  
-  if(!Storage.has(storageKey)) {
+
+  if (!Storage.has(storageKey)) {
     let reserveArr = Storage.get('ALL_RESERVES');
-    var array_data:string[] = reserveArr.split(',');
+    var array_data: string[] = reserveArr.split(',');
 
     array_data.push(reserve.toString());
     Storage.set('ALL_RESERVES', array_data.toString());
@@ -269,11 +338,11 @@ function addReserveToList(reserve: Address) {
 }
 
 export function viewAllReserves(): string[] {
-  
-    let reserveArr = Storage.get('ALL_RESERVES');
-    var array_data:string[] = reserveArr.split(',');
 
-    return array_data;
+  let reserveArr = Storage.get('ALL_RESERVES');
+  var array_data: string[] = reserveArr.split(',');
+
+  return array_data;
 }
 
 export function transferToReserve(binaryArgs: StaticArray<u8>): void {
@@ -281,14 +350,15 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
   const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
-  if(reserve == MAS) {
+  if (reserve == MAS) {
     assert(Context.transferredCoins() >= amount, "Not enough sent coins");
     transferCoins(Context.callee(), amount);
   } else {
     assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
-    new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
+    new IERC20(new Address(reserve.toString())).transferFrom(new Address(user), Context.callee(), amount);
   }
 
 }
@@ -298,14 +368,13 @@ export function transferToUser(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
   const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
-  if(reserve == MAS) {
-    assert(Context.transferredCoins() >= amount, "Not enough sent coins");
-    transferCoins(Context.callee(), amount);
+  if (reserve == MAS) {
+    transferCoins(new Address(user), amount);
   } else {
-    assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
-    new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
+    new IERC20(new Address(reserve.toString())).transfer(new Address(user), amount);
   }
 
 }
@@ -317,7 +386,7 @@ export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
   const reserve = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
-  if(reserve == MAS) {
+  if (reserve == MAS) {
     assert(Context.transferredCoins() >= amount, "Not enough sent coins");
     transferCoins(Context.callee(), amount);
   } else {
@@ -325,4 +394,40 @@ export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
     new IERC20(new Address(reserve.toString())).transfer(Context.callee(), amount);
   }
 
+}
+
+export function getReserveAvailableLiquidity(binaryArgs: StaticArray<u8>): u64 {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+  
+  let bal: u64 = 0;
+
+  if (reserve.toString() == MAS) {
+    bal = u64(balance());
+  } else {
+    bal = u64(new IERC20(new Address(reserve.toString())).balanceOf(Context.callee()));
+  }
+
+  return u64(bal);
+}
+
+export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): u64 {
+
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
+
+  // const reserveData: Reserve = getReserve(stringToBytes(reserve));
+  // const userData: UserReserve = getUser(new Args().add(user).add(reserve).serialize());
+
+  const underlyingBalance: u64 = getUserUnderlyingAssetBalance(new Address(reserve), new Address(user));
+
+  return underlyingBalance;
+  
+}
+
+function getUserUnderlyingAssetBalance(reserve: Address, user: Address): u64 {
+  const args = new Args().add(reserve).serialize();
+  const mToken = new IERC20(getReserve(args).mTokenAddress);
+  return u64(mToken.balanceOf(user));
 }
