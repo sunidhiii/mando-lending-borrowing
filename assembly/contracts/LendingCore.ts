@@ -177,11 +177,11 @@ class Reserve implements Serializable {
  *
  * @param providerAddress - Arguments serialized with Args
  */
-export function constructor(_: StaticArray<u8>): StaticArray<u8> {
+export function constructor(args: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
   if (!Context.isDeployingContract()) {
-    return [];
+    return;
   }
 
   // const args = new Args(providerAddress);
@@ -191,8 +191,11 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
   //   'PROVIDER_ADDR',
   //   args.nextString().unwrap(),
   // );
+
+  let mToken_contract_code = new Args(args).nextFixedSizeArray<u8>().unwrap();
+  Storage.set(stringToBytes('mToken_contract_code'), StaticArray.fromArray(mToken_contract_code));
+
   // generateEvent(`Constructor called with provider address ${provider}`);
-  return [];
 }
 
 export function initReserve(binaryArgs: StaticArray<u8>): void {
@@ -205,8 +208,11 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   // safely unwrap the request data
   let reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
 
-  let mToken_contract_code = args.nextFixedSizeArray<u8>().unwrap();
-  reserve.mTokenAddress = createSC(fixedSizeArrayToBytes(mToken_contract_code));
+  let mToken_contract_code = Storage.get(stringToBytes('mToken_contract_code'));
+  let mToken_addr = createSC(mToken_contract_code);
+  call(mToken_addr, 'constructor', args.add(Context.caller().toString()), 10 * ONE_UNIT);
+  
+  reserve.mTokenAddress = mToken_addr;
   call(reserve.mTokenAddress, 'constructor', new Args().add('name').add('symbol').add(9).add(1000000*ONE_UNIT).add(Context.caller().toString()), 10 * ONE_UNIT);
   
   // let mToken_contract_code = args.nextUint8Array().unwrap();

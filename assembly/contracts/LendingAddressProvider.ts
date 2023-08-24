@@ -1,6 +1,6 @@
 import { Args, stringToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
-// import { caller, isDeployingContract } from '@massalabs/massa-as-sdk/assembly/std/context';
+import { caller, isDeployingContract } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { setOwner, onlyOwner } from '../helpers/ownership';
 
 /**
@@ -11,17 +11,23 @@ import { setOwner, onlyOwner } from '../helpers/ownership';
  * @returns none
  *
  */
-export function constructor(_: StaticArray<u8>): void {
+export function constructor(binaryArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
   assert(callerHasWriteAccess());
 
   // if (!isDeployingContract()) {
-  //   return [];
+  //   return;
   // }
 
   setOwner(new Args().add(Context.caller()).serialize());
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
 
+  Storage.set(
+    'coreAddress',
+    args.nextString().unwrap(),
+  );
+  
 }
 
 /**
@@ -43,8 +49,8 @@ export function setCore(coreAddress: StaticArray<u8>): void {
 
   // Then we create our key/value pair and store it.
   Storage.set(
-    stringToBytes('coreAddress'),
-    coreAddress,
+    'coreAddress',
+    new Args(coreAddress).nextString().unwrap(),
   );
 
   // Here we generate an event that indicates the changes that are made.
@@ -58,10 +64,10 @@ export function setCore(coreAddress: StaticArray<u8>): void {
  * @returns The serialized address found.
  *
  */
-export function getCore(): StaticArray<u8> {
+export function getCore(): string {
 
   // We check if the entry exists.
-  const address = Storage.get(stringToBytes('coreAddress'));
+  const address = Storage.get('coreAddress');
   return address;
 
 }

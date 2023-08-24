@@ -44,8 +44,8 @@ const __dirname = path.dirname(path.dirname(__filename));
     [
       {
         data: readFileSync(path.join(__dirname, 'build', 'LendingAddressProvider.wasm')), // smart contract bytecode
-        coins: fromMAS(0.1), // coins for deployment
-        args: new Args().addString('Token').addString("Symbol").addU8(9).addU256(BigInt(1)), // arguments for deployment
+        coins: fromMAS(0.1), // coins for deployment 63000000
+        args: new Args().addString('abcd'), // arguments for deployment
         // protoPaths: [], // proto files for deployment
       } as ISCData,
       // Additional smart contracts can be added here for deployment

@@ -2,7 +2,8 @@
 import {
     ClientFactory,
     WalletClient,
-    DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr } from "@massalabs/massa-web3";
+    DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType
+} from "@massalabs/massa-web3";
 import { readFileSync } from 'fs';
 import path from 'path';
 
@@ -13,16 +14,27 @@ const baseAccount = {
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
-let CONTRACT_ADDRESS = 'AS1GmRjJciniFFCo4ikexRFTwRfobZVJ3tLuXbocWYnJTUAAmi66';
+// let CONTRACT_ADDRESS = 'AS1GmRjJciniFFCo4ikexRFTwRfobZVJ3tLuXbocWYnJTUAAmi66';
+let CONTRACT_ADDRESS = 'AS12SHcxwF4U4Wk4YvxPQGEETWe5kdL5X87xNKvburLiihv12aSdq';
 let TOKEN_ADDRESS = '';
+
+const publicApi = "https://buildnet.massa.net/api/v2:33035";
 
 async function createClient() {
     const account = await WalletClient.getAccountFromSecretKey(
         baseAccount.secretKey
     );
 
+    // const client = await ClientFactory.createCustomClient(
+    //     [
+    //       { url: publicApi, type: ProviderType.PUBLIC } as IProvider,
+    //     ],
+    //     false,
+    //     account,
+    // );
+
     const client = await ClientFactory.createDefaultClient(
-        DefaultProviderUrls.TESTNET,
+        DefaultProviderUrls.BUILDNET,
         false,
         account
     );
@@ -66,49 +78,49 @@ async function addReserveData() {
     }
 }
 
-async function viewReserveData() {
+// async function viewReserveData() {
 
-    const client = await createClient();
+//     const client = await createClient();
 
-    try {
-        let args = new Args();
-        if (client) {
-            await client
-                .smartContracts()
-                .readSmartContract({
-                    maxGas: BigInt(1000000),
-                    targetAddress: CONTRACT_ADDRESS,
-                    targetFunction: "viewAllReserves",
-                    parameter: args.serialize(),
-                })
-                .then((res) => {
-                    console.log("OpId: ", res);
-                });
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
+//     try {
+//         let args = new Args();
+//         if (client) {
+//             await client
+//                 .smartContracts()
+//                 .readSmartContract({
+//                     maxGas: BigInt(1000000),
+//                     targetAddress: CONTRACT_ADDRESS,
+//                     targetFunction: "viewAllReserves",
+//                     parameter: args.serialize(),
+//                 })
+//                 .then((res) => {
+//                     console.log("OpId: ", res);
+//                 });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
 
-async function getBalance(account: string) {
-    const client = await createClient();
-    try {
-        if (client) {
-            await client
-                .smartContracts()
-                .readSmartContract({
-                    maxGas: BigInt(1000000),
-                    targetAddress: TOKEN_ADDRESS,
-                    targetFunction: "balanceOf",
-                    parameter: new Args().addString(account).serialize(),
-                }).then((res) => {
-                    console.log("OpId: ", res);
-                });
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
+// async function getBalance(account: string) {
+//     const client = await createClient();
+//     try {
+//         if (client) {
+//             await client
+//                 .smartContracts()
+//                 .readSmartContract({
+//                     maxGas: BigInt(1000000),
+//                     targetAddress: TOKEN_ADDRESS,
+//                     targetFunction: "balanceOf",
+//                     parameter: new Args().addString(account).serialize(),
+//                 }).then((res) => {
+//                     console.log("OpId: ", res);
+//                 });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
 
 async function readContractData() {
 
@@ -132,6 +144,56 @@ async function readContractData() {
     }
 }
 
-async () => {
+async function setCoreAddress() {
 
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: CONTRACT_ADDRESS,
+                    functionName: "setCore",
+                    parameter: new Args()
+                        .addString('AS1GmRjJciniFFCo4ikexRFTwRfobZVJ3tLuXbocWYnJTUAAmi66')
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
 }
+
+async function getCoreAddress() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.001),
+                    targetAddress: CONTRACT_ADDRESS,
+                    targetFunction: "getCore",
+                    parameter: new Args().serialize(),
+                })
+                .then((res) => {
+                    console.log("OpId: ", bytesToStr(res.returnValue));
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// setCoreAddress();
+getCoreAddress();
+// createClient();

@@ -1,6 +1,6 @@
 
 import { call, Address, Context, Storage } from '@massalabs/massa-as-sdk';
-import { Args, Serializable } from '@massalabs/as-types';
+import { Args, Result, Serializable } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { IERC20 } from '../interfaces/IERC20';
