@@ -1,4 +1,4 @@
-import { Args, Result, Serializable, byteToBool, bytesToU64, stringToBytes } from "@massalabs/as-types";
+import { Args, Result, Serializable, byteToBool, bytesToFixedSizeArray, bytesToU64, stringToBytes } from "@massalabs/as-types";
 import { Address, Context, call } from "@massalabs/massa-as-sdk";
 // import { UserReserve, Reserve } from '../contracts/LendingCore';
 
@@ -215,9 +215,12 @@ export class ILendingCore {
   }
 
   viewAllReserves(): string[] {
-    let reserves = call(this._origin, "viewAllReserves", new Args(), 0);
-    let reservesData: string[] = reserves.toString().split(',');
-    return reservesData;
+    // let reserves = call(this._origin, "viewAllReserves", new Args(), 0);
+    // let reservesData: string[] = reserves.toString().split(',');
+    // let reservesData = new Args(reserves).nextStringArray().unwrap();
+    // return reservesData;
+
+    return bytesToFixedSizeArray<string>(call(this._origin, "viewAllReserves", new Args(), 0));
   }
 
   getReserveAvailableLiquidity(reserve: Address): u64 {

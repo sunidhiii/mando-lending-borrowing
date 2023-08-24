@@ -1,10 +1,7 @@
-import { Args } from '@massalabs/as-types';
+import { Args, stringToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 // import { caller, isDeployingContract } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { setOwner, onlyOwner } from '../helpers/ownership';
-
-// const OWNER_ADDR = 'OWNER_ADDR';
-
 
 /**
  * This function is the constructor, it is always called once on contract deployment.
@@ -25,21 +22,7 @@ export function constructor(_: StaticArray<u8>): void {
 
   setOwner(new Args().add(Context.caller()).serialize());
 
-  // Storage.set(
-  //   'OWNER_ADDR',
-  //   Context.caller().toString(),
-  // );
 }
-
-/**
- * @returns true if the caller is the creator of the SC
- */
-// function _onlyOwner(): bool {
-//   if (!Storage.has(OWNER_ADDR)) {
-//     return false;
-//   }
-//   return Context.caller().toString() == Storage.get(OWNER_ADDR);
-// }
 
 /**
  * This functions changes the core address.
@@ -56,13 +39,12 @@ export function setCore(coreAddress: StaticArray<u8>): void {
   // We use 'next[Type]()' to retrieve the next argument in the serialized arguments.
   // We use 'expect()' to check if the argument exists, if not we abort the execution.
 
-  // assert(_onlyOwner(), 'The caller is not the owner of the contract');
   onlyOwner();
 
   // Then we create our key/value pair and store it.
   Storage.set(
-    'coreAddress',
-    args.nextString().expect('Argument address is missing or invalid'),
+    stringToBytes('coreAddress'),
+    coreAddress,
   );
 
   // Here we generate an event that indicates the changes that are made.
@@ -76,11 +58,11 @@ export function setCore(coreAddress: StaticArray<u8>): void {
  * @returns The serialized address found.
  *
  */
-export function getCore(): Address {
+export function getCore(): StaticArray<u8> {
 
   // We check if the entry exists.
-  const address = Storage.get('coreAddress');
-  return new Address(address);
+  const address = Storage.get(stringToBytes('coreAddress'));
+  return address;
 
 }
 
@@ -88,7 +70,6 @@ export function setLendingPool(poolAddress: StaticArray<u8>): void {
 
   const args = new Args(poolAddress);  // First we deserialize our arguments.
 
-  // assert(_onlyOwner(), 'The caller is not the owner of the contract');
   onlyOwner();
 
   Storage.set(
@@ -114,7 +95,6 @@ export function setConfigurator(configuratorAddress: StaticArray<u8>): void {
 
   const args = new Args(configuratorAddress);  // First we deserialize our arguments.
 
-  // assert(_onlyOwner(), 'The caller is not the owner of the contract');
   onlyOwner();
 
   Storage.set(
@@ -139,7 +119,6 @@ export function setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
 
   const args = new Args(feeProviderAddress);  // First we deserialize our arguments.
 
-  // assert(_onlyOwner(), 'The caller is not the owner of the contract');
   onlyOwner();
 
   Storage.set(

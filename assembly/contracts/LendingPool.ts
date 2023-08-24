@@ -1,6 +1,6 @@
-// The entry file of your WebAssembly module.
-import { call, Address, Context, generateEvent, Storage } from '@massalabs/massa-as-sdk';
-import { Args, stringToBytes, Serializable } from '@massalabs/as-types';
+
+import { call, Address, Context, Storage } from '@massalabs/massa-as-sdk';
+import { Args, Serializable } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { IERC20 } from '../interfaces/IERC20';
@@ -135,7 +135,6 @@ export function deposit(binaryArgs: StaticArray<u8>): StaticArray<u8> {
         const userReserve: UserReserve = new UserReserve(Context.caller(), 0, 0, 0, 0, 0, false);
         // core.initUser(userReserve, new Address(reserve));
         call(new Address(Storage.get('CORE_ADDRESS')), "initReserve", new Args().add(userReserve).add(reserve), 0);
-
     }
 
     mToken.mint(Context.caller(), amount);

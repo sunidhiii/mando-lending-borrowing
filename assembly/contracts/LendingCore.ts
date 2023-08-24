@@ -1,10 +1,10 @@
-import { generateEvent, Context, createSC, Storage, Address, transferCoins, balance } from '@massalabs/massa-as-sdk';
-import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
-import { setOwner, onlyOwner } from '../helpers/ownership';
+import { call, Context, createSC, Storage, Address, transferCoins, balance } from '@massalabs/massa-as-sdk';
+import { Args, Result, Serializable, fixedSizeArrayToBytes, stringToBytes } from '@massalabs/as-types';
+import { onlyOwner } from '../helpers/ownership';
 // import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { IERC20 } from '../interfaces/IERC20';
 
-// const ONE_UNIT = 10 ** 9;
+const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
 const USER_KEY = 'RESERVE_KEY';
 
@@ -184,8 +184,6 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
     return [];
   }
 
-  setOwner(new Args().add(Context.caller()).serialize());
-
   // const args = new Args(providerAddress);
   // const provider = new ILendingAddressProvider(new Address(args.nextString().expect('Provider Address argument is missing or invalid')))
 
@@ -206,9 +204,13 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
 
   // safely unwrap the request data
   let reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
-  let mToken_contract_code = args.nextString().unwrap();
 
-  reserve.mTokenAddress = createSC(stringToBytes(mToken_contract_code));
+  let mToken_contract_code = args.nextFixedSizeArray<u8>().unwrap();
+  reserve.mTokenAddress = createSC(fixedSizeArrayToBytes(mToken_contract_code));
+  call(reserve.mTokenAddress, 'constructor', new Args().add('name').add('symbol').add(9).add(1000000*ONE_UNIT).add(Context.caller().toString()), 10 * ONE_UNIT);
+  
+  // let mToken_contract_code = args.nextUint8Array().unwrap();
+  // reserve.mTokenAddress = createSC(new Args().add(mToken_contract_code).serialize());
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserve.addr}`;
@@ -325,24 +327,31 @@ export function userExists(binaryArgs: StaticArray<u8>): bool {
 }
 
 function addReserveToList(reserve: Address): void {
+  
+  if (!Storage.has(stringToBytes('ALL_RESERVES'))) {
+    Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>([]).serialize());
+  }
+  
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-
   if (!Storage.has(storageKey)) {
-    let reserveArr = Storage.get('ALL_RESERVES');
-    var array_data: string[] = reserveArr.split(',');
-
-    array_data.push(reserve.toString());
-    Storage.set('ALL_RESERVES', array_data.toString());
+    // let reserveArr = Storage.get('ALL_RESERVES');
+    // var array_data: string[] = reserveArr.split(',');
+    // array_data.push(reserve.toString());
+    // Storage.set('ALL_RESERVES', array_data.toString());
+    
+    let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
+    reserveArr.push(reserve.toString());
+    Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>(reserveArr).serialize());
   }
 
 }
 
 export function viewAllReserves(): string[] {
+  // let reserveArr = Storage.get('ALL_RESERVES');
+  // var array_data: string[] = reserveArr.split(',');
 
-  let reserveArr = Storage.get('ALL_RESERVES');
-  var array_data: string[] = reserveArr.split(',');
-
-  return array_data;
+  let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
+  return reserveArr;
 }
 
 export function transferToReserve(binaryArgs: StaticArray<u8>): void {

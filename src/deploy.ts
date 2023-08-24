@@ -3,7 +3,11 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deploySC, WalletClient, ISCData } from '@massalabs/massa-sc-deployer';
+<<<<<<< HEAD
 import { Args, fromMAS } from '@massalabs/massa-web3';
+=======
+import { Args, MassaUnits, fromMAS } from '@massalabs/massa-web3';
+>>>>>>> 7ae42ff (Test scripts)
 
 // Load .env file content into process.env
 dotenv.config();
@@ -43,10 +47,10 @@ const __dirname = path.dirname(path.dirname(__filename));
     deployerAccount, // account deploying the smart contract(s)
     [
       {
-        data: readFileSync(path.join(__dirname, 'build', 'LendingAddressprovider.wasm')), // smart contract bytecode
+        data: readFileSync(path.join(__dirname, 'build', 'LendingAddressProvider.wasm')), // smart contract bytecode
         coins: fromMAS(0.1), // coins for deployment
-        // args: new Args().addString('AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY'), // arguments for deployment
-        protoPaths: [], // proto files for deployment
+        args: new Args().addString('Token').addString("Symbol").addU8(9).addU256(BigInt(1)), // arguments for deployment
+        // protoPaths: [], // proto files for deployment
       } as ISCData,
       // Additional smart contracts can be added here for deployment
     ],
@@ -54,8 +58,10 @@ const __dirname = path.dirname(path.dirname(__filename));
     4_200_000_000n, // max gas for deployment
     true, // if true, waits for the first event before returning
   );
-  })();
-  
+  process.exit(0); // terminate the process after deployment(s)
+
+})();
+
 
 //   {
 //     const LendingAddressprovider: ISCData = {
@@ -79,4 +85,3 @@ const __dirname = path.dirname(path.dirname(__filename));
 //     await deploySC(publicApi, deployerAccount, [LendingAddressprovider, commands], BigInt(0), BigInt(4_200_000_000), true);
 //   }
 // })();
-process.exit(0); // terminate the process after deployment(s)

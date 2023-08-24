@@ -2,7 +2,7 @@ import { Args } from '@massalabs/as-types';
 import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
-import { setOwner, onlyOwner } from '../helpers/ownership';
+import { onlyOwner } from '../helpers/ownership';
 
 // const OWNER_ADDR = 'OWNER_ADDR';
 
@@ -20,8 +20,6 @@ export function constructor(providerAddress: StaticArray<u8>): StaticArray<u8> {
   if (!Context.isDeployingContract()) {
     return [];
   }
-
-  setOwner(new Args().add(Context.caller()).serialize());
 
   const args = new Args(providerAddress);
   const provider = new ILendingAddressProvider(new Address(args.nextString().expect('Provider Address argument is missing or invalid')))
