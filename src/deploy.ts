@@ -3,11 +3,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deploySC, WalletClient, ISCData } from '@massalabs/massa-sc-deployer';
-<<<<<<< HEAD
-import { Args, fromMAS } from '@massalabs/massa-web3';
-=======
 import { Args, MassaUnits, fromMAS } from '@massalabs/massa-web3';
->>>>>>> 7ae42ff (Test scripts)
 
 // Load .env file content into process.env
 dotenv.config();
