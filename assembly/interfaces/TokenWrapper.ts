@@ -1,5 +1,6 @@
-import { bytesToString, NoArg, bytesToU64, Args } from "@massalabs/as-types";
+import { bytesToString, NoArg, Args, bytesToU256 } from "@massalabs/as-types";
 import { Address, call } from "@massalabs/massa-as-sdk";
+import { u256 } from 'as-bignum/assembly';
 
 /**
  * The Massa's standard token implementation wrapper.
@@ -61,8 +62,8 @@ export class TokenWrapper {
      *
      * @returns number of minted tokens.
      */
-    totalSupply(): u64 {
-        return bytesToU64(call(this._origin, "totalSupply", NoArg, 0));
+    totalSupply(): u256 {
+        return bytesToU256(call(this._origin, "totalSupply", NoArg, 0));
     }
 
     /**
@@ -70,8 +71,8 @@ export class TokenWrapper {
      *
      * @param account -
      */
-    balanceOf(account: Address): u64 {
-        return bytesToU64(call(this._origin, "balanceOf", new Args().add(account), 0));
+    balanceOf(account: Address): u256 {
+        return bytesToU256(call(this._origin, "balanceOf", new Args().add(account), 0));
     }
 
     /**
@@ -80,7 +81,7 @@ export class TokenWrapper {
      * @param toAccount -
      * @param nbTokens -
      */
-    transfer(toAccount: Address, nbTokens: u64): void {
+    transfer(toAccount: Address, nbTokens: u256): void {
         call(this._origin, "transfer", new Args().add(toAccount).add(nbTokens), 0);
     }
 
@@ -90,8 +91,8 @@ export class TokenWrapper {
      * @param ownerAccount -
      * @param spenderAccount -
      */
-    allowance(ownerAccount: Address, spenderAccount: Address): u64 {
-        return bytesToU64(call(this._origin, "allowance", new Args().add(ownerAccount).add(spenderAccount), 0));
+    allowance(ownerAccount: Address, spenderAccount: Address): u256 {
+        return bytesToU256(call(this._origin, "allowance", new Args().add(ownerAccount).add(spenderAccount), 0));
     }
 
     /**
@@ -103,7 +104,7 @@ export class TokenWrapper {
      * @param spenderAccount -
      * @param nbTokens -
      */
-    increaseAllowance(spenderAccount: Address, nbTokens: u64): void {
+    increaseAllowance(spenderAccount: Address, nbTokens: u256): void {
         call(this._origin, "increaseAllowance", new Args().add(spenderAccount).add(nbTokens), 0);
     }
 
@@ -116,7 +117,7 @@ export class TokenWrapper {
      * @param spenderAccount -
      * @param nbTokens -
      */
-    decreaseAllowance(spenderAccount: Address, nbTokens: u64): void {
+    decreaseAllowance(spenderAccount: Address, nbTokens: u256): void {
         call(this._origin, "decreaseAllowance", new Args().add(spenderAccount).add(nbTokens), 0);
     }
 
@@ -133,7 +134,7 @@ export class TokenWrapper {
      * @param recipientAccount -
      * @param nbTokens -
      */
-    transferFrom(ownerAccount: Address, recipientAccount: Address, nbTokens: u64): void {
+    transferFrom(ownerAccount: Address, recipientAccount: Address, nbTokens: u256): void {
         call(this._origin, "transferFrom", new Args().add(ownerAccount).add(recipientAccount).add(nbTokens), 0);
     }
 
@@ -143,7 +144,7 @@ export class TokenWrapper {
      * @param toAccount -
      * @param nbTokens -
      */
-    mint(toAccount: Address, nbTokens: u64): void {
+    mint(toAccount: Address, nbTokens: u256): void {
         call(this._origin, "mint", new Args().add(toAccount).add(nbTokens), 0);
     }
 
@@ -152,7 +153,7 @@ export class TokenWrapper {
      *
      * @param nbTokens -
      */
-    burn(nbTokens: u64): void {
+    burn(nbTokens: u256): void {
         call(this._origin, "burn", new Args().add(nbTokens), 0);
     }
 }

@@ -3,7 +3,7 @@ import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
 import { onlyOwner } from '../helpers/ownership';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
-// import { Reserve } from '../contracts/LendingCore';
+import Reserve from '../helpers/Reserve';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.

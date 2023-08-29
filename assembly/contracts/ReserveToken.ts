@@ -75,9 +75,8 @@ import {
       .expect('Error while initializing totalSupply');
     Storage.set(TOTAL_SUPPLY_KEY, u256ToBytes(totalSupply));
     
-    const user = args.nextString().expect('Error while initializing owner');
-    setOwner(new Args().add(user).serialize());
-    // _setBalance(new Address(user), totalSupply);
+    setOwner(new Args().add(Context.caller().toString()).serialize());
+    _setBalance(Context.caller(), totalSupply);
   }
   
   /**

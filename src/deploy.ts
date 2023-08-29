@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deploySC, WalletClient, ISCData } from '@massalabs/massa-sc-deployer';
-import { Args, MassaUnits, fromMAS } from '@massalabs/massa-web3';
+import { Args, ArrayType, MassaUnits, fromMAS } from '@massalabs/massa-web3';
 
 // Load .env file content into process.env
 dotenv.config();
@@ -42,12 +42,23 @@ const __dirname = path.dirname(path.dirname(__filename));
     publicApi, // JSON RPC URL
     deployerAccount, // account deploying the smart contract(s)
     [
+      // {
+      //   data: readFileSync(path.join(__dirname, 'build', 'ReserveToken.wasm')), // smart contract bytecode
+      //   coins: fromMAS(1), // coins for deployment 63000000
+      //   args: new Args().addString("MyToken").addString("MySymbol").addU8(9).addU256(BigInt(100000)), // arguments for deployment
+      // } as ISCData,
       {
-        data: readFileSync(path.join(__dirname, 'build', 'LendingAddressProvider.wasm')), // smart contract bytecode
-        coins: fromMAS(0.1), // coins for deployment 63000000
-        args: new Args().addString('abcd'), // arguments for deployment
-        // protoPaths: [], // proto files for deployment
+        data: readFileSync(path.join(__dirname, 'build', 'LendingPool.wasm')), // smart contract bytecode
+        coins: fromMAS(1), // coins for deployment 63000000
+        args: new Args().addString('AS1Jucbg6GFKnyrmyzhMWaooZwKcG4743nGGAkvHEQVoDPQbwBeF'), // core smart contract address
+        protoPaths: [], // proto files for deployment
       } as ISCData,
+      // {
+      //   data: readFileSync(path.join(__dirname, 'build', 'LendingCore.wasm')), // smart contract bytecode
+      //   coins: fromMAS(33.9), // coins for deployment 63000000
+      //   args: new Args().addArray([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))], ArrayType.U8), // arguments for deployment
+      //   // protoPaths: [], // proto files for deployment
+      // } as ISCData,
       // Additional smart contracts can be added here for deployment
     ],
     0n, // fees for deployment
