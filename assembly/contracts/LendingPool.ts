@@ -64,14 +64,14 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // const mTokenAddr = new Args(mTokenData).nextSerializable<Reserve>().unwrap();
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
-  
+
   const userReserve = new UserReserve(Context.caller().toString(), new u256(0), new u256(0), new u256(0), new u256(0), new u256(0), true);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
-  
+
   mToken.mint(Context.caller(), amount);
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
-  
+
   generateEvent(`Deposited ${amount} to the pool`);
 }
 
@@ -92,14 +92,93 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 
 }
 
-// export function redeemUnderlying(_: StaticArray<u8>): StaticArray<u8> {
-//     const message = "I'm an event!";
-//     generateEvent(message);
-//     return stringToBytes(message);
-// }
+export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No user address provided');
+  const amount = args.nextU256().expect('No amount provided');
 
-// export function repay(_: StaticArray<u8>): StaticArray<u8> {
-//     const message = "I'm an event!";
-//     generateEvent(message);
-//     return stringToBytes(message);
-// }
+  const core = new ILendingCore(new Address(Storage.get('CORE_ADDR')));
+  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
+
+  assert(availableLiq >= amount, 'Not enough liquidity');
+
+  // update State On Redeem
+  // core.updateStateOnRedeem(Context.caller(), new Address(reserve), amount);
+  core.transferToUser(new Address(reserve), Context.caller(), amount);
+
+}
+
+export function repay(binaryArgs: StaticArray<u8>): void {
+
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No user address provided');
+  const amount = args.nextU64().expect('No amount provided');
+
+  const core = new ILendingCore(new Address(Storage.get('CORE_ADDR')));
+  const availableLiq: u256 = core.getReserveAvailableLiquidity(new Address(reserve));
+
+  const data = new Args(core.getUserBorrowBalances(new Address(reserve), new Address(user)));
+
+  const principalBorrowBalance = data.nextU64().unwrap();
+  const compoundedBorrowBalance = data.nextU64().unwrap();
+  const borrowBalanceIncrease = data.nextU64().unwrap();
+
+  const userOriginationFee = core.getUserReserve(new Address(user), new Address(reserve)).originationFee;
+
+  assert(compoundedBorrowBalance > 0, "The user does not have any borrow pending");
+
+  let paybackAmount = compoundedBorrowBalance + u64.parse(userOriginationFee.toString());
+
+  if (amount < paybackAmount) {
+    paybackAmount = amount;
+  }
+
+  if (paybackAmount <= u64.parse(userOriginationFee.toString())) {
+    // core.updateStateOnRepay(
+    //   _reserve,
+    //   _onBehalfOf,
+    //   0,
+    //   vars.paybackAmount,
+    //   vars.borrowBalanceIncrease,
+    //   false
+    // );
+
+    core.transferFeeToOwner(
+      new Address(reserve),
+      Context.caller(),
+      userOriginationFee)
+  }
+
+  let paybackAmountMinusFees = paybackAmount - u64.parse(userOriginationFee.toString());
+
+  // core.updateStateOnRepay(
+  //   reserve,
+  //   Context.caller(),
+  //   paybackAmountMinusFees,
+  //   userOriginationFee,
+  //   borrowBalanceIncrease,
+  //   compoundedBorrowBalance == paybackAmountMinusFees
+  // );
+
+  // if the user didn't repay the origination fee, transfer the fee to the fee collection address
+  if (u64.parse(userOriginationFee.toString()) > 0) {
+    core.transferFeeToOwner(
+      new Address(reserve),
+      Context.caller(),
+      userOriginationFee)
+  }
+
+  //sending the total msg.value if the transfer is ETH.
+  //the transferToReserve() function will take care of sending the
+  //excess ETH back to the caller
+  core.transferToReserve(
+    new Address(reserve),
+    Context.caller(),
+    new u256(paybackAmountMinusFees)
+  );
+
+
+
+}

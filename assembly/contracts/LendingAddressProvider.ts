@@ -112,7 +112,6 @@ export function setConfigurator(configuratorAddress: StaticArray<u8>): void {
   generateEvent("Changed address of lending pool configuratorAddress to" + args.nextString().unwrap() + "'");
 }
 
-
 export function getConfigurator(): Address {
 
   // We check if the entry exists.
@@ -135,7 +134,6 @@ export function setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
   // Here we generate an event that indicates the changes that are made.
   generateEvent("Changed address of lending pool feeProviderAddress to" + args.nextString().unwrap() + "'");
 }
-
 
 export function getFeeProvider(): Address {
 

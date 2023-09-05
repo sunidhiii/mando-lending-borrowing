@@ -39,8 +39,8 @@ export class ILendingCore {
     call(this._origin, "initUser", arg, 10*ONE_UNIT);
   }
 
-  getUser(_user: Address, _reserve: Address): UserReserve {
-    const result = call(this._origin, "getUser", new Args().add(_user).add(_reserve), 0);
+  getUserReserve(_user: Address, _reserve: Address): UserReserve {
+    const result = call(this._origin, "getUserReserve", new Args().add(_user).add(_reserve), 0);
     const userData = new Args(result).nextSerializable<UserReserve>().unwrap();
     return userData;
   }
@@ -48,6 +48,11 @@ export class ILendingCore {
   transferToReserve(_reserve: Address, _user: Address, _amount: u256): void {
     const args = new Args().add(_reserve).add(_user).add(_amount);
     call(this._origin, "transferToReserve", args, 0);
+  }
+
+  transferFeeToOwner(_reserve: Address, _user: Address, _amount: u256): void {
+    const args = new Args().add(_reserve).add(_user).add(_amount);
+    call(this._origin, "transferFeeToOwner", args, 0);
   }
 
   transferToUser(_reserve: Address, _user: Address, _amount: u256): void {
@@ -68,9 +73,23 @@ export class ILendingCore {
     return bytesToU256(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve), 0));
   }
 
+  getUserBorrowBalances(reserve: Address, user: Address): StaticArray<u64> {
+    return bytesToFixedSizeArray<u64>(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0));
+  }
+
   updateStateOnBorrow(_user: Address, _reserve: Address, _amount: u256): void {
     const args = new Args().add(_user).add(_reserve).add(_amount);
     call(this._origin, "updateStateOnBorrow", args, 0);
+  }
+
+  updateStateOnRepay(_reserve: Address, _user: Address, _amount: u256): void {
+    const args = new Args().add(_reserve).add(_user).add(_amount);
+    call(this._origin, "updateStateOnRepay", args, 0);
+  }
+
+  updateStateOnRedeem(_reserve: Address, _user: Address, _amount: u256): void {
+    const args = new Args().add(_reserve).add(_user).add(_amount);
+    call(this._origin, "updateStateOnRedeem", args, 0);
   }
 
 }

@@ -657,55 +657,55 @@ async function getCoreAddress() {
 }
 
 const main = async () => {
-    // console.log("Initializing a new Reserve in the pool..........................")
-    // await addReserveData();
+    console.log("Initializing a new Reserve in the pool..........................")
+    await addReserveData();
 
-    // console.log("Reserve has been succefully added!")
-    // await viewReserveData();
+    console.log("Reserve has been succefully added!")
+    await viewReserveData();
 
-    // console.log("Depositing in the pool..........................................")
+    console.log("Depositing in the pool..........................................")
 
-    // console.log("Approving Token.....");
-    // await approve();
+    console.log("Approving Token.....");
+    await approve();
 
-    // console.log("Depositing 12 tokens in the Pool.....");
-    // await deposit(RESERVE_ADDRESS, 12);
+    console.log("Depositing 12 tokens in the Pool.....");
+    await deposit(RESERVE_ADDRESS, 12);
 
-    // console.log("View User Data ....!")
-    // await viewUserData();
+    console.log("View User Data ....!")
+    await viewUserData();
 
-    // console.log("user wallet")
-    // await getBalance(baseAccount.address);
+    console.log("user wallet")
+    await getBalance(baseAccount.address);
 
-    // console.log("mToken minted on user wallet")
-    // await getMTokenBalance(baseAccount.address);
+    console.log("mToken minted on user wallet")
+    await getMTokenBalance(baseAccount.address);
 
-    // console.log("Reserve Balance increased after deposit")
-    // await getReserveAvailableLiquiditySupply(RESERVE_ADDRESS)
+    console.log("Reserve Balance increased after deposit")
+    await getReserveAvailableLiquiditySupply(RESERVE_ADDRESS)
 
-    // console.log("Borrowing from the pool...........................................")
+    console.log("Borrowing from the pool...........................................")
 
-    // console.log("Approving mToken for burning.....");
-    // await approveMToken();
+    console.log("Approving mToken for burning.....");
+    await approveMToken();
 
-    // console.log("Borrowing 10 tokens from the pool.....");
-    // await borrow(RESERVE_ADDRESS, 10);
+    console.log("Borrowing 10 tokens from the pool.....");
+    await borrow(RESERVE_ADDRESS, 10);
 
-    // console.log("User Data after borrow .........");
-    // await viewUserData();
+    console.log("User Data after borrow .........");
+    await viewUserData();
 
-    // console.log("User Token Balance after borrow......")
-    // await getBalance(baseAccount.address);
+    console.log("User Token Balance after borrow......")
+    await getBalance(baseAccount.address);
 
-    // console.log("mToken burned from user wallet.....")
-    // await getMTokenBalance(baseAccount.address);
+    console.log("mToken burned from user wallet.....")
+    await getMTokenBalance(baseAccount.address);
 
     console.log("Reserve Balance decreased after borrow")
     await getReserveAvailableLiquiditySupply(RESERVE_ADDRESS)
 
 }
 
-main();
+// main();
 
 // setCoreAddress();
 // getCoreAddress();
