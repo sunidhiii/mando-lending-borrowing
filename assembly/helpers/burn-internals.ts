@@ -39,7 +39,7 @@ export function _burn(addressToBurn: Address, amount: u256): void {
  * @returns true if the total supply has been decreased
  */
 export function _decreaseTotalSupply(amount: u256): void {
-  const oldTotalSupply = bytesToU256(totalSupply([]));
+  const oldTotalSupply = bytesToU256(totalSupply());
   // @ts-ignore
   const newTotalSupply: u256 = oldTotalSupply - amount;
 

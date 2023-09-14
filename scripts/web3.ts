@@ -9,16 +9,18 @@ import path from 'path';
 
 // create a base account for signing transactions
 const baseAccount = {
-    address: "AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8",
-    secretKey: "S1a1rC1Aar9gEe8VwpWtN5MTaxaKXqrj6vGr9a3WDxbRMDC8spM",
+    address: "AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL",
+    secretKey: "S1DzdH332QrnjSaLgnK1iwDHqtf4k58tg6HAnoM5t2j1UhVrVnQ",
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
 // let CONTRACT_ADDRESS = 'AS12SHcxwF4U4Wk4YvxPQGEETWe5kdL5X87xNKvburLiihv12aSdq';
 let TOKEN_ADDRESS = 'AS1VaBK2mFkaPvjAp2uR4TgrdxUHC4N19PvJMsosKeSZWwmHVvL9';
-let RESERVE_ADDRESS = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g';
+// let RESERVE_ADDRESS = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g';
+let RESERVE_ADDRESS = 'AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz';   // Sepolia WETH
 let CORE_ADDRESS = 'AS1Jucbg6GFKnyrmyzhMWaooZwKcG4743nGGAkvHEQVoDPQbwBeF';
-const mToken = 'AS12tbjdcKMyXgwUdUSiQBW1Zh9oD3hiCwzDZiAH7cfZgH9E5w9gJ';
+// const mToken = 'AS12tbjdcKMyXgwUdUSiQBW1Zh9oD3hiCwzDZiAH7cfZgH9E5w9gJ';
+const mToken = 'AS12FarV3yUcRj6LSxLK1Vm7mwdxBJCKvVK2AoFjZNPtuRFcPcCcd';
 const POOL_ADDRESS = 'AS1UdPdsJ1hc46Wajdd3HsAhXpkLbw7iF6roHVq2cTF59bY37bHH';
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
@@ -200,7 +202,7 @@ async function getStatus(opId: string) {
 async function viewUserData() {
 
     const client = await createClient();
-    const keyy = 'USER_KEY_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8_AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g';
+    const keyy = 'USER_KEY_AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL_AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz';
 
     try {
         if (client) {
@@ -233,8 +235,8 @@ async function addReserveData() {
                     parameter: new Args()
                         .addSerializable<Reserve>(new Reserve(
                             RESERVE_ADDRESS,
-                            'MyTestToken',
-                            'MyTestSymbol',
+                            'MyToken',
+                            'MySymbol',
                             BigInt(9),
                             '',
                             'AS13Vg3V5xaomzXfJK87gnkhZAor7yj2HAJgY36WbCnQXfMVdQ1h',
@@ -585,7 +587,7 @@ async function readContractData() {
 
     const client = await createClient();
     // const keyy = strToBytes("USER_KEY");
-    const keyy = "USER_KEY_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8_AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g";
+    const keyy = "ALL_RESERVES";
 
     try {
         let args = new Args();
@@ -597,8 +599,8 @@ async function readContractData() {
                 ]);
             if (res[0].candidate_value) {
                 // let data = bytesToStr(res[0].candidate_value);
-                const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
-                console.log("greetingDecoded", data);
+                // const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
+                console.log("greetingDecoded", bytesToArray((res[0].candidate_value), 0));
             }
         }
     } catch (error) {
@@ -720,10 +722,10 @@ const main = async () => {
 // checkAllowance();
 // approveMToken()
 // approve();
-// deposit();
+// deposit('AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz', 12);
 // borrow(RESERVE_ADDRESS, 10);
 // getReserveAvailableLiquiditySupply();
 // getUserBasicReserveData('AU139TmwoP6w5mgUQrpF9s49VXeFGXmN1SiuX5HEtzcGmuJAoXFa');
-// getBalance('AU139TmwoP6w5mgUQrpF9s49VXeFGXmN1SiuX5HEtzcGmuJAoXFa');
+getBalance('AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL');
 
-// getStatus('O123Qw4RetSwZm19iSgF45zmoVFLE5bWJm94jZ69vi1rJ9kTWmzv');
+// getStatus('O12br6G8gGxjDFHvEQHEgX1bRmu7Vf2St3PwcFypK1MtJkVtuGZm');

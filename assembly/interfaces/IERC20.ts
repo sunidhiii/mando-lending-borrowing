@@ -1,6 +1,6 @@
 import { Args, Result, Serializable } from "@massalabs/as-types";
 import { Address, Context, call } from "@massalabs/massa-as-sdk";
-import { TokenWrapper } from "./TokenWrapper";
+import { TokenWrapper } from "../helpers/TokenWrapper";
 import { u256 } from 'as-bignum/assembly';
 
 export class IERC20 extends TokenWrapper implements Serializable {

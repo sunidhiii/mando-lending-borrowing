@@ -24,7 +24,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);  // First we deserialize our arguments.
 
   Storage.set(
-    'coreAddress',
+    'CORE_ADDR',
     args.nextString().unwrap(),
   );
   
@@ -49,7 +49,7 @@ export function setCore(coreAddress: StaticArray<u8>): void {
 
   // Then we create our key/value pair and store it.
   Storage.set(
-    'coreAddress',
+    'CORE_ADDR',
     new Args(coreAddress).nextString().unwrap(),
   );
 
@@ -67,7 +67,7 @@ export function setCore(coreAddress: StaticArray<u8>): void {
 export function getCore(): string {
 
   // We check if the entry exists.
-  const address = Storage.get('coreAddress');
+  const address = Storage.get('CORE_ADDR');
   return address;
 
 }
@@ -87,7 +87,6 @@ export function setLendingPool(poolAddress: StaticArray<u8>): void {
   generateEvent("Changed address of lending pool to" + args.nextString().unwrap() + "'");
 
 }
-
 
 export function getLendingPool(): Address {
 

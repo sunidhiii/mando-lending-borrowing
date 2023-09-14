@@ -64,7 +64,7 @@ export function _increaseBalance(recipient: Address, amount: u256): void {
  * @param amount - how much you want to increase the total supply
  */
 export function _increaseTotalSupply(amount: u256): void {
-  const oldTotalSupply = bytesToU256(totalSupply([]));
+  const oldTotalSupply = bytesToU256(totalSupply());
   // @ts-ignore
   const newTotalSupply = oldTotalSupply + amount;
 

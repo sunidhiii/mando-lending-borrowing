@@ -92,4 +92,12 @@ export class ILendingCore {
     call(this._origin, "updateStateOnRedeem", args, 0);
   }
 
+  getNormalizedIncome(reserve: string): u256 {
+    return bytesToU256(call(this._origin, "getNormalizedIncome", new Args().add(reserve), 0));
+  }
+
+  getUserBasicReserveData(reserve: string, user: string): StaticArray<u256> {
+    return bytesToFixedSizeArray<u256>(call(this._origin, "getUserBasicReserveData", new Args().add(reserve).add(user), 0));
+  }
+
 }
