@@ -10,18 +10,18 @@ import Reserve from '../helpers/Reserve';
  *
  * @param _args - Arguments serialized with Args
  */
-export function constructor(providerAddress: StaticArray<u8>): void {
+export function constructor(binaryArgs: StaticArray<u8>): void {
   // This line is important. It ensure that this function can't be called in the future.
   // If you remove this check someone could call your constructor function and reset your SC.
   if (!callerHasWriteAccess()) {
     return;
   }
 
-  const args = new Args(providerAddress);
+  const args = new Args(binaryArgs);
   const provider = args.nextString().expect('Provider Address argument is missing or invalid');
 
   Storage.set(
-      'PROVIDER_ADDR',
+      'ADDRESS_PROVIDER_ADDR',
       provider,
   );
 
@@ -43,7 +43,7 @@ export function addReserve(binaryArgs: StaticArray<u8>): void {
   
   onlyOwner();
 
-  const provider = new ILendingAddressProvider(new Address(Storage.get('PROVIDER_ADDR')));
+  const provider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   // const core = new ILendingCore(provider.getCore());
   const core = provider.getCore()
 
@@ -57,7 +57,7 @@ export function addReserve(binaryArgs: StaticArray<u8>): void {
 
 // export function viewReserve(binaryArgs: StaticArray<u8>): Reserve {
 //   // convert the binary input to Args
-//   const provider = new ILendingAddressProvider(new Address(Storage.get('PROVIDER_ADDR')));
+//   const provider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
 //   const core = new ILendingCore(provider.getCore());
   
 //   const args: Args = new Args(binaryArgs);
@@ -71,7 +71,7 @@ export function removeReserve(binaryArgs: StaticArray<u8>): void {
   
   onlyOwner();
 
-  const provider = new ILendingAddressProvider(new Address(Storage.get('PROVIDER_ADDR')));
+  const provider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(provider.getCore());
   
   const args: Args = new Args(binaryArgs);

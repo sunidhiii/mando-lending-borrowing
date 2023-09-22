@@ -28,11 +28,12 @@ export function constructor(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     assert(callerHasWriteAccess());
 
     const args = new Args(binaryArgs);
+    // const provider = args.nextString().unwrap();
 
-    Storage.set(
-        'PROVIDER_ADDR',
-        args.nextString().unwrap(),
-    );
+    // Storage.set(
+    //     'PROVIDER_ADDR',
+    //     provider
+    // );
 
     //   const core = provider.getCore();
     //   // const core = new Args(call(provider, 'getCore', new Args(), 0))
@@ -83,11 +84,11 @@ export function getStableRateSlope2(): StaticArray<u8> {
     return stableRateSlope2;
 }
 
-export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray<u64> {
     {
 
         const args = new Args(binaryArgs);
-        const reserve = new Address(args.nextString().unwrap());
+        // const reserve = new Address(args.nextString().unwrap());
         const availableLiquidity = args.nextU64().unwrap();
         const totalBorrowsStable = args.nextU64().unwrap();
         const totalBorrowsVariable = args.nextU64().unwrap();
@@ -136,9 +137,9 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
 
         return [currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]
 
-    }
+}
 
-    function getOverallBorrowRateInternal(totalBorrowsStable: u64, totalBorrowsVariable: u64, currentVariableBorrowRate: u64, currentAverageStableBorrowRate: u64): u64 {
+function getOverallBorrowRateInternal(totalBorrowsStable: u64, totalBorrowsVariable: u64, currentVariableBorrowRate: u64, currentAverageStableBorrowRate: u64): u64 {
 
         const totalBorrows = totalBorrowsStable + totalBorrowsVariable;
 
@@ -151,5 +152,6 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
         const overallBorrowRate = (weightedVariableRate + weightedStableRate) / totalBorrows;
 
         return overallBorrowRate;
-    }
+}
+
 }

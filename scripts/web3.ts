@@ -67,7 +67,7 @@ class Reserve implements ISerializable<Reserve> {
         public addr: string = "",
         public name: string = "",
         public symbol: string = "",
-        public decimals: bigint = 0n,
+        public decimals: number = 0,
         public mTokenAddress: string = "",
         public interestCalcAddress: string = "",
         public baseLTV: bigint = 0n,
@@ -80,7 +80,7 @@ class Reserve implements ISerializable<Reserve> {
         args.addString(this.addr);
         args.addString(this.name);
         args.addString(this.symbol);
-        args.addU256(BigInt(this.decimals));
+        args.addU8(this.decimals);
         args.addString(this.mTokenAddress);
         args.addString(this.interestCalcAddress);
         args.addU256(BigInt(this.baseLTV));
@@ -95,7 +95,7 @@ class Reserve implements ISerializable<Reserve> {
         this.addr = args.nextString();
         this.name = args.nextString();
         this.symbol = args.nextString();
-        this.decimals = BigInt(args.nextU256().toString());
+        this.decimals = parseInt(args.nextU8().toString());
         this.mTokenAddress = args.nextString();
         this.interestCalcAddress = args.nextString();
         this.baseLTV = BigInt(args.nextU256().toString());
@@ -237,7 +237,7 @@ async function addReserveData() {
                             RESERVE_ADDRESS,
                             'MyToken',
                             'MySymbol',
-                            BigInt(9),
+                            9,
                             '',
                             'AS13Vg3V5xaomzXfJK87gnkhZAor7yj2HAJgY36WbCnQXfMVdQ1h',
                             BigInt(10),
@@ -726,6 +726,6 @@ const main = async () => {
 // borrow(RESERVE_ADDRESS, 10);
 // getReserveAvailableLiquiditySupply();
 // getUserBasicReserveData('AU139TmwoP6w5mgUQrpF9s49VXeFGXmN1SiuX5HEtzcGmuJAoXFa');
-getBalance('AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL');
+// getBalance('AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL');
 
 // getStatus('O12br6G8gGxjDFHvEQHEgX1bRmu7Vf2St3PwcFypK1MtJkVtuGZm');

@@ -12,7 +12,10 @@ import { setOwner } from '../helpers/ownership';
 import { u256 } from 'as-bignum/assembly';
 import { _mint } from '../helpers/mint-internals';
 import { _burn, _decreaseTotalSupply } from '../helpers/burn-internals';
+import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
+import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { ILendingCore } from '../interfaces/ILendingCore';
+import { ILendingPool } from '../interfaces/ILendingPool';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -23,7 +26,7 @@ export const SYMBOL_KEY = stringToBytes('SYMBOL');
 export const TOTAL_SUPPLY_KEY = stringToBytes('TOTAL_SUPPLY');
 export const DECIMALS_KEY = stringToBytes('DECIMALS');
 export const UNDERLYINGASSET_KEY = stringToBytes('UNDERLYINGASSET');
-export const CORE_ADDR_KEY = stringToBytes('COREADDR');
+export const ADDRESS_PROVIDER_KEY = stringToBytes('ADDRPROVIDER');
 
 /**
  * Initialize the ERC20 contract
@@ -87,11 +90,11 @@ export function constructor(stringifyArgs: StaticArray<u8>): void {
     .expect('Error while initializing underlying asset');
   Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
 
-  // core address
-  const core = args.nextString().expect('Error while initializing core address');
+  // data provider address
+  const addressProvider = args.nextString().expect('Error while initializing addressProvider');
   Storage.set(
-    CORE_ADDR_KEY,
-    stringToBytes(core),
+    ADDRESS_PROVIDER_KEY,
+    stringToBytes(addressProvider),
   );
 }
 
@@ -156,11 +159,7 @@ export function decimals(_: StaticArray<u8>): StaticArray<u8> {
 // ====                 BALANCE                    ==== //
 // ==================================================== //
 
-/**
- * Returns the balance of an account.
- *
- * @param binaryArgs - Args object serialized as a string containing an owner's account (Address).
- */
+
 // function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 //   const args = new Args(binaryArgs);
 
@@ -471,22 +470,27 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
 
   assert(amountToRedeem <= currentBalance, "User cannot redeem more than the available balance");
 
+  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
+
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const dataProvider = new ILendingDataProvider(addressProvider.getDataProvider());
+  const isTransferAllowed = dataProvider.balanceDecreaseAllowed(new Address(underLyingAsset), Context.caller(), amountToRedeem)
+
   //check that the user is allowed to redeem the amount
-  assert(isTransferAllowed(Context.caller(), amountToRedeem), "Transfer cannot be allowed.");
+  assert(isTransferAllowed, "Transfer cannot be allowed.");
 
   // burns tokens equivalent to the amount requested
   _burn(Context.caller(), amountToRedeem);
 
-  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
 
   // executes redeem of the underlying asset
+  const pool = new ILendingPool(addressProvider.getLendingPool());
+
   pool.redeemUnderlying(
-    underLyingAsset,
+    new Address(underLyingAsset),
     Context.caller(),
     amountToRedeem,
-  (u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString()))
-  );
-
+    new u256(u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString())));
 }
 
 export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
@@ -544,6 +548,8 @@ function calculateCumulatedBalanceInternal(
   _user: Address,
   _balance: u256
 ): u256 {
+  // const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  // const core = new ILendingCore(addressProvider.getCore());
   // const cumulatedBal = new u256(u64.parse(_balance.toString()) * core.getNormalizedIncome(underlyingAssetAddress)) / userIndexes[_user]);
   const cumulatedBal = new u256(u64.parse(_balance.toString()) * 10 / 10);
   return cumulatedBal;
@@ -590,7 +596,8 @@ export function totalSupply(): StaticArray<u8> {
   }
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
-  const core = new ILendingCore(new Address((bytesToString(Storage.get(CORE_ADDR_KEY)))));
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const core = new ILendingCore(addressProvider.getCore());
   const totalSupply = new u256(parseFloat(currentSupplyPrincipal.toString()) * parseFloat(core.getNormalizedIncome(underLyingAsset).toString()));
   return u256ToBytes(totalSupply);
 }
@@ -610,6 +617,9 @@ function cumulateBalanceInternal(user: Address): Array<u256> {
   _mint(new Args().add(user.toString()).add(balanceIncrease).serialize());
 
   const storageKey = `USER_INDEX_${user}`;
+
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const core = new ILendingCore(addressProvider.getCore());
 
   // Storage.set(stringToBytes(storageKey), core.getNormalizedIncome);
 

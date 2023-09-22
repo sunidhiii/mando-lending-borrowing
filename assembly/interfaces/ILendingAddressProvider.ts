@@ -1,4 +1,4 @@
-import { Args, Result, Serializable, stringToBytes } from "@massalabs/as-types";
+import { Args, Result, Serializable, bytesToString, stringToBytes } from "@massalabs/as-types";
 import { Address, Context, call } from "@massalabs/massa-as-sdk";
 
 export class ILendingAddressProvider {
@@ -20,8 +20,7 @@ export class ILendingAddressProvider {
     }
 
     getCore(): Address {
-        const result = new Args(call(this._origin, "getCore", new Args(), 0));
-        return new Address(result.nextString().unwrap());
+        return new Address(bytesToString(call(this._origin, "getCore", new Args(), 0)));
     }
 
     setLendingPool(poolAddress: StaticArray<u8>): void {
@@ -30,8 +29,7 @@ export class ILendingAddressProvider {
     }
 
     getLendingPool(): Address {
-        const result = new Args(call(this._origin, "getLendingPool", new Args(), 0));
-        return new Address(result.nextString().unwrap());
+        return new Address(bytesToString(call(this._origin, "getLendingPool", new Args(), 0)));
     }
     
     setConfigurator(configuratorAddress: StaticArray<u8>): void {
@@ -40,8 +38,16 @@ export class ILendingAddressProvider {
     }
 
     getConfigurator(): Address {
-        const result = new Args(call(this._origin, "getConfigurator", new Args(), 0));
-        return new Address(result.nextString().unwrap());
+        return new Address(bytesToString(call(this._origin, "getConfigurator", new Args(), 0)));
+    }
+
+    setDataProvider(dataProviderAddress: StaticArray<u8>): void {
+        const arg = new Args(dataProviderAddress);
+        call(this._origin, "setDataProvider", arg, 0);
+    }
+
+    getDataProvider(): Address {
+        return new Address(bytesToString(call(this._origin, "getDataProvider", new Args(), 0)));
     }
 
     setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
@@ -50,8 +56,7 @@ export class ILendingAddressProvider {
     }
 
     getFeeProvider(): Address {
-        const result = new Args(call(this._origin, "getFeeProvider", new Args(), 0));
-        return new Address(result.nextString().unwrap());
+        return new Address(bytesToString(call(this._origin, "getFeeProvider", new Args(), 0)));
     }
 
 }

@@ -6,7 +6,7 @@ export default class Reserve implements Serializable {
       public addr: string = '',
       public name: string = '',
       public symbol: string = '',
-      public decimals: u256 = new u256(0),
+      public decimals: u8,
       public mTokenAddress: string = '',
       public interestCalcAddress: string = '',
       public baseLTV: u256 = new u256(0),
@@ -69,7 +69,7 @@ export default class Reserve implements Serializable {
       }
       this.symbol = symbol.unwrap();
   
-      const decimals = args.nextU256();
+      const decimals = args.nextU8();
       if (decimals.isErr()) {
         return new Result(0, "Can't deserialize the decimals");
       }

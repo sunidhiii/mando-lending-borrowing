@@ -73,22 +73,26 @@ export class ILendingCore {
     return bytesToU256(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve), 0));
   }
 
-  getUserBorrowBalances(reserve: Address, user: Address): StaticArray<u64> {
-    return bytesToFixedSizeArray<u64>(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0));
+  getUserBorrowBalances(reserve: string, user: string): StaticArray<u256> {
+    return bytesToFixedSizeArray<u256>(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0));
+  }
+  
+  updateStateOnDeposit(reserve: string, amount: u256): void {
+    call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(amount), 0);
   }
 
-  updateStateOnBorrow(_user: Address, _reserve: Address, _amount: u256): void {
-    const args = new Args().add(_user).add(_reserve).add(_amount);
+  updateStateOnBorrow(reserve: string, user: string, amount: u256, borrowFee: u64, rateMode: u8): void {
+    const args = new Args().add(reserve).add(user).add(amount).add(borrowFee).add(rateMode);
     call(this._origin, "updateStateOnBorrow", args, 0);
   }
 
-  updateStateOnRepay(_reserve: Address, _user: Address, _amount: u256): void {
-    const args = new Args().add(_reserve).add(_user).add(_amount);
+  updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u256, originationFeeRepaid: u256, balanceIncrease: u256, repaidWholeLoan: bool): void {
+    const args = new Args().add(reserve).add(user).add(paybackAmountMinusFees).add(originationFeeRepaid).add(balanceIncrease).add(repaidWholeLoan);
     call(this._origin, "updateStateOnRepay", args, 0);
   }
 
-  updateStateOnRedeem(_reserve: Address, _user: Address, _amount: u256): void {
-    const args = new Args().add(_reserve).add(_user).add(_amount);
+  updateStateOnRedeem(reserve: string, user: string, amountRedeemed: u256, userRedeemedEverything: bool): void {
+    const args = new Args().add(reserve).add(user).add(amountRedeemed).add(userRedeemedEverything);
     call(this._origin, "updateStateOnRedeem", args, 0);
   }
 

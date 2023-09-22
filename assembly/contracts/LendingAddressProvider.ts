@@ -27,6 +27,26 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     'CORE_ADDR',
     args.nextString().unwrap(),
   );
+
+  Storage.set(
+    'POOL_ADDR',
+    args.nextString().unwrap(),
+  );
+
+  Storage.set(
+    'CONFIGURATOR_ADDR',
+    args.nextString().unwrap(),
+  );
+
+  Storage.set(
+    'DATA_PROVIDER_ADDR',
+    args.nextString().unwrap(),
+  );
+
+  Storage.set(
+    'FEE_PROVIDER_ADDR',
+    args.nextString().unwrap(),
+  );
   
 }
 
@@ -38,19 +58,20 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
  * @returns none
  *
  */
-export function setCore(coreAddress: StaticArray<u8>): void {
+export function setCore(binaryArgs: StaticArray<u8>): void {
 
-  const args = new Args(coreAddress);  // First we deserialize our arguments.
-
+  
   // We use 'next[Type]()' to retrieve the next argument in the serialized arguments.
   // We use 'expect()' to check if the argument exists, if not we abort the execution.
-
+  
   onlyOwner();
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
+  const core = args.nextString().unwrap();
 
   // Then we create our key/value pair and store it.
   Storage.set(
     'CORE_ADDR',
-    new Args(coreAddress).nextString().unwrap(),
+    core,
   );
 
   // Here we generate an event that indicates the changes that are made.
@@ -72,15 +93,16 @@ export function getCore(): string {
 
 }
 
-export function setLendingPool(poolAddress: StaticArray<u8>): void {
-
-  const args = new Args(poolAddress);  // First we deserialize our arguments.
+export function setLendingPool(binaryArgs: StaticArray<u8>): void {
 
   onlyOwner();
 
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
+  const pool = args.nextString().unwrap();
+
   Storage.set(
-    'poolAddress',
-    args.nextString().expect('Argument address is missing or invalid'),
+    'POOL_ADDR',
+    pool,
   );
 
   // Here we generate an event that indicates the changes that are made.
@@ -90,54 +112,79 @@ export function setLendingPool(poolAddress: StaticArray<u8>): void {
 
 export function getLendingPool(): Address {
 
-  // We check if the entry exists.
-  const address = Storage.get('poolAddress');
+  const address = Storage.get('POOL_ADDR');
   return new Address(address);
 
 }
 
-export function setConfigurator(configuratorAddress: StaticArray<u8>): void {
-
-  const args = new Args(configuratorAddress);  // First we deserialize our arguments.
+export function setConfigurator(binaryArgs: StaticArray<u8>): void {
 
   onlyOwner();
 
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
+  const configurator = args.nextString().unwrap();
+
   Storage.set(
-    'configuratorAddress',
-    args.nextString().expect('Argument address is missing or invalid'),
+    'CONFIGURATOR_ADDR',
+    configurator,
   );
 
   // Here we generate an event that indicates the changes that are made.
-  generateEvent("Changed address of lending pool configuratorAddress to" + args.nextString().unwrap() + "'");
+  generateEvent("Changed address of lending pool CONFIGURATOR_ADDR to" + args.nextString().unwrap() + "'");
 }
 
 export function getConfigurator(): Address {
 
   // We check if the entry exists.
-  const address = Storage.get('configuratorAddress');
+  const address = Storage.get('CONFIGURATOR_ADDR');
   return new Address(address);
 
 }
 
-export function setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
-
-  const args = new Args(feeProviderAddress);  // First we deserialize our arguments.
+export function setDataProvider(binaryArgs: StaticArray<u8>): void {
 
   onlyOwner();
 
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
+  const dataProvider = args.nextString().unwrap();
+
   Storage.set(
-    'feeProviderAddress',
-    args.nextString().expect('Argument address is missing or invalid'),
+    'DATA_PROVIDER_ADDR',
+    dataProvider,
   );
 
   // Here we generate an event that indicates the changes that are made.
-  generateEvent("Changed address of lending pool feeProviderAddress to" + args.nextString().unwrap() + "'");
+  generateEvent("Changed address of lending pool DATA_PROVIDER_ADDR to" + args.nextString().unwrap() + "'");
+}
+
+export function getDataProvider(): Address {
+
+  // We check if the entry exists.
+  const address = Storage.get('DATA_PROVIDER_ADDR');
+  return new Address(address);
+
+}
+
+export function setFeeProvider(binaryArgs: StaticArray<u8>): void {
+
+  onlyOwner();
+
+  const args = new Args(binaryArgs);  // First we deserialize our arguments.
+  const feeProvider = args.nextString().unwrap();
+
+  Storage.set(
+    'FEE_PROVIDER_ADDR',
+    feeProvider,
+  );
+
+  // Here we generate an event that indicates the changes that are made.
+  generateEvent("Changed address of lending pool FEE_PROVIDER_ADDR to" + args.nextString().unwrap() + "'");
 }
 
 export function getFeeProvider(): Address {
 
   // We check if the entry exists.
-  const address = Storage.get('feeProviderAddress');
+  const address = Storage.get('FEE_PROVIDER_ADDR');
   return new Address(address);
 
 }
