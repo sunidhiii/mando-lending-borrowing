@@ -148,6 +148,10 @@ export class TokenWrapper {
         call(this._origin, "mint", new Args().add(toAccount).add(nbTokens), 0);
     }
 
+    mintOnDeposit(toAccount: Address, nbTokens: u256): void {
+        call(this._origin, "mintOnDeposit", new Args().add(toAccount.toString()).add(nbTokens), 0);
+    }
+
     /**
      * Burn nbTokens on the caller address
      *

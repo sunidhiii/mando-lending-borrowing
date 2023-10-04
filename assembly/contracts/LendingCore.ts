@@ -416,7 +416,7 @@ export function getUserBorrowBalances(binaryArgs: StaticArray<u8>): StaticArray<
 
   userBorrows[0] = u64.parse(principal.toString());
   userBorrows[1] = u64.parse(compoundBal.toString());
-  const balIncrease = u64.parse(compoundBal.toString()) - u64.parse(principal.toString());
+  const balIncrease = u64.parse(compoundBal.toString()) > u64.parse(principal.toString()) ? u64.parse(compoundBal.toString()) - u64.parse(principal.toString()) : 0;
   userBorrows[2] = balIncrease;
 
   return new Args().add(userBorrows).serialize();
@@ -521,7 +521,7 @@ function updateUserStateOnRepayInternal(reserve: string, user: string, paybackAm
     updatedStableBorrowRate = u256.Zero;
     updatedLastVariableBorrowCumulativeIndex = u256.Zero;
   }
-  const updatedOriginationFee = u256.fromU64(u64.parse(userArgs.originationFee.toString()) - u64.parse(originationFeeRepaid.toString()));
+  const updatedOriginationFee: u256 = u64.parse(userArgs.originationFee.toString()) > u64.parse(originationFeeRepaid.toString()) ? u256.fromU64(u64.parse(userArgs.originationFee.toString()) - u64.parse(originationFeeRepaid.toString())) : u256.Zero;
 
   //solium-disable-next-line
   const updatedLastUpdateTimestamp = u256.fromU64(timestamp());
@@ -695,7 +695,7 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
   const previousTotalBorrowStable = reserveArgs.totalBorrowsStable;
 
   //updating reserve borrows stable
-  const updatedTotalBorrowsStable = u64.parse(reserveArgs.totalBorrowsStable.toString()) - u64.parse(amount.toString());
+  const updatedTotalBorrowsStable =  u64.parse(reserveArgs.totalBorrowsStable.toString()) > u64.parse(amount.toString()) ? u64.parse(reserveArgs.totalBorrowsStable.toString()) - u64.parse(amount.toString()) : 0;
   var updatedCurrentAverageStableBorrowRate: u64 = 0;
   if (updatedTotalBorrowsStable == 0) {
     updatedCurrentAverageStableBorrowRate = 0; //no income if there are no stable rate borrows
@@ -713,7 +713,8 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
   );
 
   if(updatedTotalBorrowsStable > 0) {
-    updatedCurrentAverageStableBorrowRate = (weightedPreviousTotalBorrows - weightedLastBorrow) / updatedTotalBorrowsStable;
+    const weightedFinalBorrow: u64 = weightedPreviousTotalBorrows > weightedLastBorrow ? (weightedPreviousTotalBorrows - weightedLastBorrow) : 0
+    updatedCurrentAverageStableBorrowRate = weightedFinalBorrow / updatedTotalBorrowsStable;
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
@@ -741,7 +742,9 @@ function decreaseTotalBorrowsVariable(reserve: string, amount: u256): void {
     reserveArgs.totalBorrowsVariable >= amount,
     "The amount that is being subtracted from the variable total borrows is incorrect"
   );
-  const updatedTotalBorrowsVariable = u256.fromU64(u64.parse(reserveArgs.totalBorrowsVariable.toString()) - u64.parse(amount.toString()));
+  
+  const updatedTotalStableBorrows = u64.parse(reserveArgs.totalBorrowsVariable.toString()) > u64.parse(amount.toString()) ? u64.parse(reserveArgs.totalBorrowsVariable.toString()) - u64.parse(amount.toString()) : 0;
+  const updatedTotalBorrowsVariable = u256.fromU64(updatedTotalStableBorrows);
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
   const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, updatedTotalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);

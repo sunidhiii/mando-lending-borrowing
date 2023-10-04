@@ -71,10 +71,10 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
 
-  mToken.mint(Context.caller(), amount);
+  mToken.mintOnDeposit(Context.caller(), amount);
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
 
-  generateEvent(`Deposited ${amount} to the pool`);
+  generateEvent(`Deposited ${amount} tokens to the pool`);
 
 }
 
@@ -125,7 +125,7 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 
   core.transferToUser(new Address(reserve), Context.caller(), amount);
 
-  generateEvent(`Borrowed ${amount} amount from the pool`);
+  generateEvent(`Borrowed ${amount} tokens from the pool`);
 
 }
 
@@ -147,7 +147,7 @@ export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
   core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
   core.transferToUser(new Address(reserve), new Address(user), amount);
 
-  generateEvent(`Redeemed ${amount} from the pool`);
+  generateEvent(`Redeemed ${amount} tokens from the pool`);
 
 }
 
@@ -184,7 +184,7 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       userOriginationFee)
   }
 
-  let paybackAmountMinusFees = u256.fromU64(paybackAmount - u64.parse(userOriginationFee.toString()));
+  let paybackAmountMinusFees = paybackAmount > u64.parse(userOriginationFee.toString()) ? u256.fromU64(paybackAmount - u64.parse(userOriginationFee.toString())) : u256.Zero;
 
   core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, u256.fromU64(borrowBalanceIncrease), u256.fromU64(compoundedBorrowBalance) == paybackAmountMinusFees);
 
@@ -205,5 +205,5 @@ export function repay(binaryArgs: StaticArray<u8>): void {
     paybackAmountMinusFees
   );
 
-  generateEvent(`Repayed ${amount} to the pool`);
+  generateEvent(`Repayed ${amount} tokens to the pool`);
 }

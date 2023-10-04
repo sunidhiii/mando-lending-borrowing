@@ -193,14 +193,17 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
 
   const amountToDecreaseETH = (oracle.getPrice(new Address(underlyingAssetAddress)) * u64.parse(amount.toString())) / 10 ** decimals;
 
-  const collateralBalancefterDecrease = collateralBalanceETH - amountToDecreaseETH;
+  const collateralBalancefterDecrease: u64 = collateralBalanceETH > amountToDecreaseETH ? collateralBalanceETH - amountToDecreaseETH : 0;
 
   //if there is a borrow, there can't be 0 collateral
   if (collateralBalancefterDecrease == 0) {
     return boolToByte(false);
   }
 
-  const liquidationThresholdAfterDecrease = ((collateralBalanceETH * currentLiquidationThreshold) - (amountToDecreaseETH * u64.parse(reserveLiquidationThreshold.toString()))) / (collateralBalancefterDecrease);
+  const aData = (collateralBalanceETH * currentLiquidationThreshold);
+  const bData = (amountToDecreaseETH * u64.parse(reserveLiquidationThreshold.toString()));
+  const finalData = aData > bData ? aData - bData : 0;
+  const liquidationThresholdAfterDecrease = finalData / (collateralBalancefterDecrease);
 
   const healthFactorAfterDecrease = calculateHealthFactorFromBalancesInternal(
     collateralBalancefterDecrease,
@@ -255,14 +258,16 @@ export function calculateAvailableBorrowsETHInternal(binaryArgs: StaticArray<u8>
     return u256ToBytes(u256.Zero);
   }
 
-  availableBorrowsETH = u256.fromU64(u64.parse(availableBorrowsETH.toString()) - (u64.parse(borrowBalanceETH.toString()) + u64.parse(totalFeesETH.toString())));
+  const totalBorrow = u64.parse(availableBorrowsETH.toString()) > u64.parse(borrowBalanceETH.toString()) ? u64.parse(availableBorrowsETH.toString()) - u64.parse(borrowBalanceETH.toString()) : 0;
+  availableBorrowsETH = u256.fromU64((totalBorrow + u64.parse(totalFeesETH.toString())));
 
   //calculate fee
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()));
 
   const borrowFee = u64(feeProvider.calculateLoanOriginationFee(availableBorrowsETH));
-  return u256ToBytes(u256.fromU64(u64.parse(availableBorrowsETH.toString()) - borrowFee));
+  const availableBorrows: u256 = u64.parse(availableBorrowsETH.toString()) > borrowFee ? u256.fromU64(u64.parse(availableBorrowsETH.toString()) - borrowFee) : u256.Zero;
+  return u256ToBytes(availableBorrows);
   // return availableBorrowsETH;
 }
 

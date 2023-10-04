@@ -10,7 +10,7 @@ import { Args, u64ToBytes } from '@massalabs/as-types';
 import { currentPeriod } from '@massalabs/massa-as-sdk/assembly/std/context';
 
 const PRICE_KEY = 'PRICE_KEY';
-const INIT_PRICE: u64 = 10000;
+const INIT_PRICE: u64 = 1000000000;
 
 export function constructor(_: StaticArray<u8>): StaticArray<u8> {
   // This line is important. It ensure that this function can't be called in the future.

@@ -485,11 +485,13 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   // executes redeem of the underlying asset
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
 
+  const mTokenBalanceAfterRedeem = u64.parse(currentBalance.toString()) > u64.parse(amountToRedeem.toString()) ? u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString()) : 0;
+
   pool.redeemUnderlying(
     underLyingAsset,
     Context.caller().toString(),
     amountToRedeem,
-    u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString())
+    mTokenBalanceAfterRedeem
   );
 
   generateEvent(`Balance redeemed after mint ${amountToRedeem} incresed to ${balanceIncrease}`)
@@ -500,7 +502,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
 
-  const user = new Address(args.nextString().expect('user argument is missing or invalid'));
+  const user = args.nextString().expect('user argument is missing or invalid');
   const amount =
     args.nextU256().expect('mintOnDeposit amount argument is missing or invalid');
 
@@ -513,7 +515,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
   //mint an equivalent amount of tokens to cover the new deposit
   _mint(new Args().add(user).add(amount).serialize());
 
-  generateEvent(`Balance increased after mint ${balanceIncrease}`)
+  generateEvent(`Balance increased after mint ${balanceIncrease} tokens`)
 
 }
 
@@ -535,7 +537,7 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
   //burns the requested amount of tokens
   _burn(user, amount);
 
-  generateEvent(`Balance decreased after mint from ${currentBalance} to ${balanceIncrease}`)
+  generateEvent(`Balance decreased after mint from ${currentBalance} tokens to ${balanceIncrease} tokens`)
 
 }
 
@@ -610,20 +612,17 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(stringToBytes(storageKey));
 }
 
-function calculateCumulatedBalanceInternal(
-  _user: Address,
-  _balance: u256
-): u256 {
+function calculateCumulatedBalanceInternal(_user: Address, _balance: u256): u256 {
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
-  const userIndex = bytesToString(getUserIndex(new Args().add(_user.toString()).serialize()));
+  const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
  
   let cumulatedBal: u256 = u256.Zero;
-  if (u64.parse(userIndex) > 0) {
-    cumulatedBal = u256.fromU64((u64.parse(_balance.toString()) * u64.parse(normalizedIncome.toString())) / u64.parse(userIndex));
+  if (u64.parse(userIndex.toString()) > 0) {
+    cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * (u64.parse(normalizedIncome.toString()) / u64.parse(userIndex.toString())));
   }
   // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
   return cumulatedBal;
@@ -635,9 +634,11 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   // const user = new Address(args.nextString().unwrap());
 
   const previousPrincipalBal = _balance(user);
-  const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString());
+  const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
 
-  _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
+  if(balanceIncrease > 0) {
+    _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
+  }
 
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -645,7 +646,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const index = core.getNormalizedIncome(underLyingAsset)
   
-  const storageKey = `USER_INDEX_${user}`;
+  const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u256ToBytes(index));
 
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];

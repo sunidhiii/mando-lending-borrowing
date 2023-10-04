@@ -117,7 +117,7 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
         const excessUtilizationRateRatio: u64 = (utilizationRate - OPTIMAL_UTILIZATION_RATE) 
             / EXCESS_UTILIZATION_RATE;
 
-        currentStableBorrowRate = (currentStableBorrowRate - stableRateSlope1 + 
+        currentStableBorrowRate = currentStableBorrowRate + (stableRateSlope1 + 
             stableRateSlope2) * excessUtilizationRateRatio;
 
         currentVariableBorrowRate = (baseVariableBorrowRate + variableRateSlope1 +
