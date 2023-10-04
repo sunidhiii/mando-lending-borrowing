@@ -1,27 +1,36 @@
 // import MessageResponse from "./interfaces/MessageResponse";
 import {
-    ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool
+    ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64
 } from "@massalabs/massa-web3";
 import pollAsyncEvents from './pollAsyncEvent';
 import { base58Decode } from "@massalabs/massa-web3/dist/esm/utils/Xbqcrypto";
 import { readFileSync } from 'fs';
 import path from 'path';
+import { Address } from "@massalabs/massa-web3/dist/esm/utils/keyAndAddresses";
+import { isUint16Array } from "util/types";
 
 // create a base account for signing transactions
+// const baseAccount = {
+//     address: "AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY",
+//     secretKey: "S1EWN2vx8fBXAqfVT48wMHRK2yuH6fF7kK2Usgz9W4KrMFqhjRn",
+//     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
+// };
 const baseAccount = {
-    address: "AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL",
-    secretKey: "S1DzdH332QrnjSaLgnK1iwDHqtf4k58tg6HAnoM5t2j1UhVrVnQ",
+    address: "AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8",
+    secretKey: "S1a1rC1Aar9gEe8VwpWtN5MTaxaKXqrj6vGr9a3WDxbRMDC8spM",
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
-// let CONTRACT_ADDRESS = 'AS12SHcxwF4U4Wk4YvxPQGEETWe5kdL5X87xNKvburLiihv12aSdq';
-let TOKEN_ADDRESS = 'AS1VaBK2mFkaPvjAp2uR4TgrdxUHC4N19PvJMsosKeSZWwmHVvL9';
-// let RESERVE_ADDRESS = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g';
-let RESERVE_ADDRESS = 'AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz';   // Sepolia WETH
-let CORE_ADDRESS = 'AS1Jucbg6GFKnyrmyzhMWaooZwKcG4743nGGAkvHEQVoDPQbwBeF';
-// const mToken = 'AS12tbjdcKMyXgwUdUSiQBW1Zh9oD3hiCwzDZiAH7cfZgH9E5w9gJ';
-const mToken = 'AS12FarV3yUcRj6LSxLK1Vm7mwdxBJCKvVK2AoFjZNPtuRFcPcCcd';
-const POOL_ADDRESS = 'AS1UdPdsJ1hc46Wajdd3HsAhXpkLbw7iF6roHVq2cTF59bY37bHH';
+let FEE_ADDRESS = 'AS12siiezjR5th6NDJAf2dVxCX3c9AdPnL1ZpQXjU2QzkYBjnhNC2';
+// const token address = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g'; // AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz
+let PRICE_ORACLE = 'AS125wZb7wjevMy6yqBJQJG1rpkZKmstp4usG6DrMA8WVTzKWwDEb';
+let ADDRESS_PROVIDER = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
+let DATA_PROVIDER = 'AS1Btm291vXk4wuxFezb8Ek48rJ55qgz86HcXAYKdY2ADa6PYYPT';
+let INTEREST_ADDRESS = 'AS12h9de74HXj8LJMgF4VJ4pWuYoUnVYghqo9boBu5dtDpBUsThtL';
+let CORE_ADDRESS = 'AS1cJGwbKMfb7NJzC8oSdNwQwWpLF4aoRTS6yjFrLk7uAddqdtF3';
+let RESERVE_ADDRESS = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g';   // Sepolia WETH
+const mToken = 'AS1fXK6wVScUQyWzcGkgekCLzd9SzczKJtBMZT1b2RCkkySxokBw';
+const POOL_ADDRESS = 'AS1yFgenirS6FTJEn3XBZPYuw4ACGU5gVAEmCbnSvQ44ss5H8Rwm';
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
 
@@ -70,9 +79,20 @@ class Reserve implements ISerializable<Reserve> {
         public decimals: number = 0,
         public mTokenAddress: string = "",
         public interestCalcAddress: string = "",
-        public baseLTV: bigint = 0n,
-        public LiquidationThreshold: bigint = 0n,
-        public LiquidationBonus: bigint = 0n
+        public baseLTV: bigint = 0n,                                              // 75
+        public LiquidationThreshold: bigint = 0n,                                 // 80
+        public LiquidationBonus: bigint = 0n,                                     // 105
+        public lastUpdateTimestamp: bigint = 0n,
+        public lastUpdateTimelastLiquidityCumulativeIndexstamp: bigint = 0n,
+        public lastLiquidityCumulativeIndex: bigint = 0n,
+        public currentLiquidityRate: bigint = 0n,
+        public totalBorrowsStable: bigint = 0n,
+        public totalBorrowsVariable: bigint = 0n,
+        public currentVariableBorrowRate: bigint = 0n,
+        public currentStableBorrowRate: bigint = 0n,
+        public currentAverageStableBorrowRate: bigint = 0n,
+        public lastVariableBorrowCumulativeIndex: bigint = 0n,
+
     ) { }
 
     serialize(): Uint8Array {
@@ -86,6 +106,16 @@ class Reserve implements ISerializable<Reserve> {
         args.addU256(BigInt(this.baseLTV));
         args.addU256(BigInt(this.LiquidationThreshold));
         args.addU256(BigInt(this.LiquidationBonus));
+        args.addU256(BigInt(this.lastUpdateTimestamp));
+        args.addU256(BigInt(this.lastUpdateTimelastLiquidityCumulativeIndexstamp));
+        args.addU256(BigInt(this.lastLiquidityCumulativeIndex));
+        args.addU256(BigInt(this.currentLiquidityRate));
+        args.addU256(BigInt(this.totalBorrowsStable));
+        args.addU256(BigInt(this.totalBorrowsVariable));
+        args.addU256(BigInt(this.currentVariableBorrowRate));
+        args.addU256(BigInt(this.currentStableBorrowRate));
+        args.addU256(BigInt(this.currentAverageStableBorrowRate));
+        args.addU256(BigInt(this.lastVariableBorrowCumulativeIndex));
         return new Uint8Array(args.serialize());
     }
 
@@ -101,6 +131,16 @@ class Reserve implements ISerializable<Reserve> {
         this.baseLTV = BigInt(args.nextU256().toString());
         this.LiquidationThreshold = BigInt(args.nextU256().toString());
         this.LiquidationBonus = BigInt(args.nextU256().toString());
+        this.lastUpdateTimestamp = BigInt(args.nextU256().toString());
+        this.lastUpdateTimelastLiquidityCumulativeIndexstamp = BigInt(args.nextU256().toString());
+        this.lastLiquidityCumulativeIndex = BigInt(args.nextU256().toString());
+        this.currentLiquidityRate = BigInt(args.nextU256().toString());
+        this.totalBorrowsStable = BigInt(args.nextU256().toString());
+        this.totalBorrowsVariable = BigInt(args.nextU256().toString());
+        this.currentVariableBorrowRate = BigInt(args.nextU256().toString());
+        this.currentStableBorrowRate = BigInt(args.nextU256().toString());
+        this.currentAverageStableBorrowRate = BigInt(args.nextU256().toString());
+        this.lastVariableBorrowCumulativeIndex = BigInt(args.nextU256().toString());
 
         return { instance: this, offset: args.getOffset() };
     }
@@ -126,6 +166,186 @@ async function createClient() {
     );
 
     return client;
+}
+
+async function setPrice() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: PRICE_ORACLE,
+                    functionName: "setPrice",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS)
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getPrice() {
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.1),
+                    targetAddress: PRICE_ORACLE,
+                    targetFunction: "getPrice",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS)
+                        .serialize(),
+                }).then((res) => {
+                    console.log("OpId: ", bytesToU64(res.returnValue));
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getOriginationFee() {
+    const client = await createClient();
+    try {
+        const keyy = 'ORIGNATION_FEE';
+        if (client) {
+            let res = await client
+                .publicApi()
+                .getDatastoreEntries([
+                    { address: FEE_ADDRESS, key: strToBytes(keyy) },
+                ]);
+            if (res[0].candidate_value) {
+                console.log("Reserve data", bytesToStr(res[0].candidate_value));
+                // return data;
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function setLendingPoolAddress() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: ADDRESS_PROVIDER,
+                    functionName: "setLendingPool",
+                    parameter: new Args()
+                        .addString(POOL_ADDRESS)
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function setCoreAddress() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: ADDRESS_PROVIDER,
+                    functionName: "setCore",
+                    parameter: new Args()
+                        .addString(CORE_ADDRESS)
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function setDataProviderAddress() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: ADDRESS_PROVIDER,
+                    functionName: "setDataProvider",
+                    parameter: new Args()
+                        .addString(DATA_PROVIDER)
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function setFeeProviderAddress() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_200_000_000n,
+                    targetAddress: ADDRESS_PROVIDER,
+                    functionName: "setFeeProvider",
+                    parameter: new Args()
+                        .addString(FEE_ADDRESS)
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 async function addUserData() {
@@ -172,32 +392,27 @@ async function getStatus(opId: string) {
     }
 }
 
-// async function viewUserData1() {
+async function viewAllReserves() {
 
-//     const client = await createClient();
-//     try {
-//         if (client) {
-//             await client
-//                 .smartContracts()
-//                 .readSmartContract({
-//                     maxGas: fromMAS(0.01),
-//                     targetAddress: CORE_ADDRESS,
-//                     targetFunction: "getUser",
-//                     parameter: new Args()
-//                         .addString('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8')
-//                         .addString(RESERVE_ADDRESS)
-//                         .serialize()
-//                 })
-//                 .then((res) => {
-//                     // const data = new Args(res.returnValue)
-//                     const data = new UserReserve(res.returnValue.toString()).deserialize(res.returnValue, 0)
-//                     console.log("OpId: ", data);
-//                 });
-//         }
-//     } catch (error) {
-//         console.error(error);
-//     }
-// }
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: CORE_ADDRESS,
+                    targetFunction: "viewAllReserves",
+                    parameter: new Args().serialize(),
+                }).then((res) => {
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.STRING);
+                    console.log("All reserves", reservesData);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 async function viewUserData() {
 
@@ -235,18 +450,28 @@ async function addReserveData() {
                     parameter: new Args()
                         .addSerializable<Reserve>(new Reserve(
                             RESERVE_ADDRESS,
-                            'MyToken',
-                            'MySymbol',
+                            'wETH',
+                            'WETH',
                             9,
                             '',
-                            'AS13Vg3V5xaomzXfJK87gnkhZAor7yj2HAJgY36WbCnQXfMVdQ1h',
-                            BigInt(10),
-                            BigInt(20),
-                            BigInt(70)
+                            INTEREST_ADDRESS,
+                            BigInt(60n),
+                            BigInt(75n),
+                            BigInt(125n),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0),
+                            BigInt(0)
                         ))
                         .serialize(),
                     maxGas: 4_200_000_000n,
-                    coins: fromMAS(50),
+                    coins: fromMAS(60),
                     fee: BigInt(0),
                 })
                 .then((res) => {
@@ -281,6 +506,33 @@ async function viewReserveData() {
                 .then((res) => {
                     // const data1 = res.returnValue;
                     const data = new Reserve(res.returnValue.toString()).deserialize(res.returnValue, 0)
+                    console.log("OpId: ", data);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getUserReserve() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.1),
+                    targetAddress: CORE_ADDRESS,
+                    targetFunction: "getUserReserve",
+                    parameter: new Args()
+                        .addString(baseAccount.address)
+                        .addString(RESERVE_ADDRESS)
+                        .serialize(),
+                })
+                .then((res) => {
+                    // const data1 = res.returnValue;
+                    const data = new UserReserve(res.returnValue.toString()).deserialize(res.returnValue, 0)
                     console.log("OpId: ", data);
                 });
         }
@@ -348,7 +600,7 @@ async function approve() {
                     functionName: "increaseAllowance",
                     parameter: new Args()
                         .addString(CORE_ADDRESS)
-                        .addU256(1000000n)
+                        .addU256(100000000000000n)
                         .serialize(),
                     maxGas: 4_200_000_000n,
                     coins: fromMAS(1),
@@ -380,7 +632,7 @@ async function approveMToken() {
                     targetAddress: mToken,
                     functionName: "increaseAllowance",
                     parameter: new Args()
-                        .addString(CORE_ADDRESS)
+                        .addString(mToken)
                         .addU256(1000000n)
                         .serialize(),
                     maxGas: 4_200_000_000n,
@@ -402,7 +654,37 @@ async function approveMToken() {
     }
 }
 
-async function deposit(reserve: string, amount: number) {
+async function test() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: CORE_ADDRESS,
+                    targetFunction: "getUserBasicReserveData",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS)
+                        .addString(baseAccount.address)
+                        // .addU256(21n)
+                        // .addU64(57n).addU64(0n).addU64(0n).addU64(1n)
+                        // .addU256(57n).addU256(1n).addU256(10n).addU256(10n).addU256(10n)
+                        .serialize(),
+                }).then((res) => {
+                    // let reservesData = bytesToArray(res.returnValue, ArrayType.U256);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    console.log("Contrat balance", reservesData);
+                    // console.log("Contrat balance", byteToBool(res.returnValue));
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deposit() {
 
     const client = await createClient();
     try {
@@ -413,11 +695,41 @@ async function deposit(reserve: string, amount: number) {
                     targetAddress: POOL_ADDRESS,
                     functionName: "deposit",
                     parameter: new Args()
-                        .addString(reserve)
-                        .addU256(BigInt(amount))
+                        .addString(RESERVE_ADDRESS)
+                        .addU256(BigInt(19n))
                         .serialize(),
                     maxGas: 4_200_000_000n,
                     coins: fromMAS(10),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                    // return res;
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function transferToReserve() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    targetAddress: CORE_ADDRESS,
+                    functionName: "transferToReserve",
+                    parameter: new Args()
+                        .addString('AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz')
+                        .addString('AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY')
+                        .addU256(BigInt(12))
+                        .serialize(),
+                    maxGas: 4_200_000_000n,
+                    coins: fromMAS(0),
                     fee: BigInt(0),
                 })
                 .then((res) => {
@@ -444,6 +756,7 @@ async function borrow(reserve: string, amount: number) {
                     parameter: new Args()
                         .addString(reserve)
                         .addU256(BigInt(amount))
+                        .addU8(0)
                         .serialize(),
                     maxGas: 4_200_000_000n,
                     coins: fromMAS(10),
@@ -454,6 +767,55 @@ async function borrow(reserve: string, amount: number) {
                     console.log("OpId: ", res);
                     // return res;
                 });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function redeemUnderlying() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    targetAddress: mToken,
+                    functionName: "redeem",
+                    parameter: new Args()
+                        .addU256(1n)
+                        .serialize(),
+                    maxGas: 4_200_000_000n,
+                    coins: fromMAS(10),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                    // return res;
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getOwner() {
+
+    const client = await createClient();
+    const keyy = 'OWNER';
+    try {
+        if (client) {
+            let res = await client
+                .publicApi()
+                .getDatastoreEntries([
+                    { address: ADDRESS_PROVIDER, key: strToBytes(keyy) },
+                ]);
+            if (res[0].candidate_value) {
+                console.log("Owner data", bytesToStr(res[0].candidate_value));
+                // return data;
+            }
         }
     } catch (error) {
         console.error(error);
@@ -487,7 +849,7 @@ async function getMTokenBalance(account: string) {
             await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.001),
+                    maxGas: fromMAS(1),
                     targetAddress: mToken,
                     targetFunction: "balanceOf",
                     parameter: new Args().addString(account).serialize(),
@@ -543,6 +905,27 @@ async function getReserveAvailableLiquiditySupply(reserve: string) {
     }
 }
 
+async function calculateLoanOriginationFee() {
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: FEE_ADDRESS,
+                    targetFunction: "calculateLoanOriginationFee",
+                    parameter: new Args().addU256(1n).serialize(),
+                }).then((res) => {
+                    console.log("LoanOriginationFee", bytesToU256(res.returnValue));
+                    // return bytesToU256(res.returnValue);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 async function getUserBasicReserveData(account: string) {
     const client = await createClient();
     try {
@@ -550,7 +933,7 @@ async function getUserBasicReserveData(account: string) {
             await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.01),
+                    maxGas: fromMAS(1),
                     targetAddress: CORE_ADDRESS,
                     targetFunction: "getUserBasicReserveData",
                     parameter: new Args().addString(RESERVE_ADDRESS).addString(account).serialize(),
@@ -587,7 +970,32 @@ async function readContractData() {
 
     const client = await createClient();
     // const keyy = strToBytes("USER_KEY");
-    const keyy = "ALL_RESERVES";
+    const keyy = "PRICE_ORACLE";
+
+    try {
+        let args = new Args();
+        if (client) {
+            let res = await client
+                .publicApi()
+                .getDatastoreEntries([
+                    { address: DATA_PROVIDER, key: strToBytes(keyy) },
+                ]);
+            if (res[0].candidate_value) {
+                // let data = bytesToStr(res[0].candidate_value);
+                // const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
+                console.log("greetingDecoded", bytesToStr(res[0].candidate_value));
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function readContractDataPool() {
+
+    const client = await createClient();
+    // const keyy = strToBytes("USER_KEY");
+    const keyy = "USER_KEY_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8_AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g";
 
     try {
         let args = new Args();
@@ -599,8 +1007,8 @@ async function readContractData() {
                 ]);
             if (res[0].candidate_value) {
                 // let data = bytesToStr(res[0].candidate_value);
-                // const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
-                console.log("greetingDecoded", bytesToArray((res[0].candidate_value), 0));
+                const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
+                console.log("greetingDecoded", data);
             }
         }
     } catch (error) {
@@ -608,7 +1016,7 @@ async function readContractData() {
     }
 }
 
-async function setCoreAddress() {
+async function setCore() {
 
     const client = await createClient();
 
@@ -627,6 +1035,7 @@ async function setCoreAddress() {
                     fee: BigInt(0),
                 })
                 .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
                     console.log("OpId: ", res);
                 });
         }
@@ -645,8 +1054,31 @@ async function getCoreAddress() {
                 .smartContracts()
                 .readSmartContract({
                     maxGas: fromMAS(0.001),
-                    targetAddress: CORE_ADDRESS,
+                    targetAddress: ADDRESS_PROVIDER,
                     targetFunction: "getCore",
+                    parameter: new Args().serialize(),
+                })
+                .then((res) => {
+                    console.log("OpId: ", bytesToStr(res.returnValue));
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getVariableRateSlope1() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.001),
+                    targetAddress: INTEREST_ADDRESS,
+                    targetFunction: "getVariableRateSlope1",
                     parameter: new Args().serialize(),
                 })
                 .then((res) => {
@@ -671,7 +1103,7 @@ const main = async () => {
     await approve();
 
     console.log("Depositing 12 tokens in the Pool.....");
-    await deposit(RESERVE_ADDRESS, 12);
+    await deposit();
 
     console.log("View User Data ....!")
     await viewUserData();
@@ -707,25 +1139,71 @@ const main = async () => {
 
 }
 
+async function test1() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+            .smartContracts()
+            .callSmartContract({
+                maxGas: 4_200_000_000n,
+                targetAddress: 'AS1NBfCjMLg53kDzTHrxX2gyopGcCNBH6WT8WLkqb4yeVWwKeNXo',
+                functionName: "testing4",
+                parameter: new Args().serialize(),
+                coins: fromMAS(0.01),
+                fee: BigInt(0),
+            })
+            .then((res) => {
+                const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                console.log("OpId: ", res);
+            });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 // main();
 
-// setCoreAddress();
+// setCore();
 // getCoreAddress();
 // createClient();
 // readContractData();
+// readContractDataPool()
 // addReserveData();
-// viewReserveData()
+// viewReserveData();
 // getName();
 // addUserData();
-// viewUserData1();
+// viewAllReserves();
 // userExists();
 // checkAllowance();
 // approveMToken()
 // approve();
-// deposit('AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz', 12);
-// borrow(RESERVE_ADDRESS, 10);
-// getReserveAvailableLiquiditySupply();
-// getUserBasicReserveData('AU139TmwoP6w5mgUQrpF9s49VXeFGXmN1SiuX5HEtzcGmuJAoXFa');
-// getBalance('AU128AUqaffMz68FmEPw6upvS8M75sti9xYEzgGjHY9JcEpX6D4RL');
+// deposit();
+// test();
+// transferToReserve()
+// borrow(RESERVE_ADDRESS, 11);
+// getReserveAvailableLiquiditySupply(RESERVE_ADDRESS);
+// getUserBasicReserveData(baseAccount.address);
+// getBalance(CORE_ADDRESS);
 
-// getStatus('O12br6G8gGxjDFHvEQHEgX1bRmu7Vf2St3PwcFypK1MtJkVtuGZm');
+// setPrice()
+// getPrice()
+// getOriginationFee()
+// calculateLoanOriginationFee();
+// getOwner()
+// setCoreAddress()
+// setLendingPoolAddress()
+// setFeeProviderAddress()
+// setDataProviderAddress()
+
+// getVariableRateSlope1()
+
+// getUserReserve()
+// redeemUnderlying();
+getMTokenBalance(baseAccount.address);
+
+// getStatus('O12gnmP7rsA1DHZqpiMN2Gf5hrZ52HyeRZgneRgguT6cTJvgou5b');
+
+// test1();

@@ -14,8 +14,8 @@ export class IReserveInterestRateStrategy {
         this._origin = at;
     }
 
-    calculateInterestRates(availableLiquidity: u64, totalBorrowsStable: u64, totalBorrowsVariable: u64, averageStableBorrowRate: u64): StaticArray<u8> {
-        return bytesToFixedSizeArray<u64>(call(this._origin, "calculateInterestRates", new Args(), 0));
+    calculateInterestRates(availableLiquidity: u64, totalBorrowsStable: u64, totalBorrowsVariable: u64, averageStableBorrowRate: u64): Array<u64> {        
+        return new Args(call(this._origin, "calculateInterestRates", new Args().add(availableLiquidity).add(totalBorrowsStable).add(totalBorrowsVariable).add(averageStableBorrowRate), 0)).nextFixedSizeArray<u64>().unwrap();
     }
 
 }

@@ -13,7 +13,6 @@ import {
   import { _mint } from '../helpers/mint-internals';
   import { _burn, _decreaseTotalSupply } from '../helpers/burn-internals';
 
-  
   const TRANSFER_EVENT_NAME = 'TRANSFER';
   const APPROVAL_EVENT_NAME = 'APPROVAL';
   const BURN_EVENT = 'BURN';
@@ -175,7 +174,7 @@ import {
     );
     const amount = args
       .nextU256()
-      .expect('amount argument is missing or invalid');
+      .expect('Token transfer: amount argument is missing or invalid');
   
     _transfer(owner, toAddress, amount);
   
@@ -251,7 +250,7 @@ import {
     );
     const amount = args
       .nextU256()
-      .expect('amount argument is missing or invalid');
+      .expect('Token increaseAllowance: amount argument is missing or invalid');
   
     // @ts-ignore
     let newAllowance = _allowance(owner, spenderAddress) + amount;
@@ -288,7 +287,7 @@ import {
     );
     const amount = args
       .nextU256()
-      .expect('amount argument is missing or invalid');
+      .expect('Token decreaseAllowance: amount argument is missing or invalid');
   
     const current = _allowance(owner, spenderAddress);
   
@@ -336,7 +335,7 @@ import {
     );
     const amount = args
       .nextU256()
-      .expect('amount argument is missing or invalid');
+      .expect('Token transferFrom: amount argument is missing or invalid');
   
     const spenderAllowance = _allowance(owner, spenderAddress);
   
@@ -382,7 +381,7 @@ export function burn(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('Token burn: amount argument is missing or invalid');
 
   _decreaseTotalSupply(amount);
 
@@ -408,7 +407,7 @@ export function burnFrom(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('Token burnFrom: amount argument is missing or invalid');
 
   const spenderAllowance = _allowance(owner, Context.caller());
 

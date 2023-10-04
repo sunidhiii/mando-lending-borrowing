@@ -2,8 +2,6 @@ import { Amount, Args, Result, Serializable, byteToBool, bytesToU256, bytesToU64
 import { Address, Context, call } from "@massalabs/massa-as-sdk";
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
-import { u256 } from 'as-bignum/assembly';
-
 export class IPriceOracle {
 
   _origin: Address;

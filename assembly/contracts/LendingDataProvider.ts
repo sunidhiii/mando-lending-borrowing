@@ -1,4 +1,4 @@
-import { Args, bytesToString } from '@massalabs/as-types';
+import { Args, boolToByte, bytesToFixedSizeArray, bytesToString, fixedSizeArrayToBytes, u256ToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
@@ -9,7 +9,7 @@ import { IPriceOracle } from '../interfaces/IPriceOracle';
 
 // const OWNER_ADDR = 'OWNER_ADDR';
 
-export const HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1 * 10 ** 9;
+export const HEALTH_FACTOR_LIQUIDATION_THRESHOLD: u64 = 1000000000;
 
 /**
  * This function is the constructor, it is always called once on contract deployment.
@@ -40,9 +40,11 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     oracle,
   );
 
+  generateEvent(`Data provider constructor called`)
+
 }
 
-export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArray<u64> {
+export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // onlyOwner();
 
@@ -51,26 +53,26 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
 
   // Then we create our key/value pair and store it.
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const reserves: string[] = core.viewAllReserves();
 
-  var totalLiquidityBalanceETH = 0;
-  var totalCollateralBalanceETH = 0;
-  var currentLtv = 0;
-  var currentLiquidationThreshold = 0;
-  var totalBorrowBalanceETH = 0;
-  var totalFeesETH = 0;
+  var totalLiquidityBalanceETH: u64 = 0;
+  var totalCollateralBalanceETH: u64 = 0;
+  var currentLtv: u64 = 0;
+  var currentLiquidationThreshold: u64 = 0;
+  var totalBorrowBalanceETH: u64 = 0;
+  var totalFeesETH: u64 = 0;
 
   for (let i = 0; i < reserves.length; i++) {
     let currentReserve = reserves[i];
 
-    let userbasicReservedata = core.getUserBasicReserveData(currentReserve, user);
-    let compoundedLiquidityBalance = userbasicReservedata[0];
-    let compoundedBorrowBalance = userbasicReservedata[1];
-    let originationFee = userbasicReservedata[2];
+    let userBasicReservedata = core.getUserBasicReserveData(currentReserve, user);
+    let compoundedLiquidityBalance = userBasicReservedata[0];
+    let compoundedBorrowBalance = userBasicReservedata[1];
+    let originationFee = userBasicReservedata[2];
 
-    if (compoundedLiquidityBalance == new u256(0) && compoundedBorrowBalance == new u256(0)) {
+    if (compoundedLiquidityBalance == 0 && compoundedBorrowBalance == 0) {
       continue;
     }
 
@@ -89,20 +91,20 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
     const reserveUnitPrice = oracle.getPrice(new Address(currentReserve));
 
     //liquidity and collateral balance
-    if (compoundedLiquidityBalance > new u256(0)) {
-      let liquidityBalanceETH = (reserveUnitPrice * parseFloat(compoundedLiquidityBalance.toString())) / tokenUnit;
+    if (compoundedLiquidityBalance > 0) {
+      let liquidityBalanceETH = (reserveUnitPrice * u64.parse(compoundedLiquidityBalance.toString())) / tokenUnit;
       totalLiquidityBalanceETH = totalLiquidityBalanceETH + liquidityBalanceETH;
 
       if (usageAsCollateralEnabled) {
         totalCollateralBalanceETH = totalCollateralBalanceETH + liquidityBalanceETH;
-        currentLtv = currentLtv + (liquidityBalanceETH * parseFloat(reserveBaseLTV.toString()));
-        currentLiquidationThreshold = currentLiquidationThreshold + (liquidityBalanceETH * parseFloat(liquidationThreshold.toString()));
+        currentLtv = currentLtv + (liquidityBalanceETH * u64.parse(reserveBaseLTV.toString()));
+        currentLiquidationThreshold = currentLiquidationThreshold + (liquidityBalanceETH * u64.parse(liquidationThreshold.toString()));
       }
     }
 
-    if (compoundedBorrowBalance > new u256(0)) {
-      totalBorrowBalanceETH = totalBorrowBalanceETH + reserveUnitPrice * (parseFloat(compoundedBorrowBalance.toString()) / (tokenUnit));
-      totalFeesETH = totalFeesETH + ((parseFloat(originationFee.toString()) * reserveUnitPrice) / tokenUnit);
+    if (compoundedBorrowBalance > 0) {
+      totalBorrowBalanceETH = ((totalBorrowBalanceETH + reserveUnitPrice) * u64.parse(compoundedBorrowBalance.toString()) / (tokenUnit));
+      totalFeesETH = (totalFeesETH + (u64.parse(originationFee.toString()) * reserveUnitPrice) / tokenUnit);
     }
   }
 
@@ -112,18 +114,29 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
     : 0;
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
-    new u256(totalCollateralBalanceETH),
-    new u256(totalBorrowBalanceETH),
-    new u256(totalFeesETH),
-    new u256(currentLiquidationThreshold)
+    totalCollateralBalanceETH,
+    totalBorrowBalanceETH,
+    totalFeesETH,
+    currentLiquidationThreshold
   );
 
-  // const healthFactorBelowThreshold = parseFloat(healthFactor.toString()) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+  // const healthFactorBelowThreshold = u64.parse(healthFactor.toString()) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+  let userGlobalData: Array<u64> = new Array(7)
 
-  return [totalLiquidityBalanceETH, totalCollateralBalanceETH, totalBorrowBalanceETH, totalFeesETH, currentLtv, currentLiquidationThreshold, parseFloat(healthFactor.toString())]
+  userGlobalData[0] = totalLiquidityBalanceETH;
+  userGlobalData[1] = totalCollateralBalanceETH;
+  userGlobalData[2] = totalBorrowBalanceETH;
+  userGlobalData[3] = totalFeesETH;
+  userGlobalData[4] = currentLtv;
+  userGlobalData[5] = currentLiquidationThreshold;
+  userGlobalData[6] = healthFactor;
+
+  generateEvent(`User global data: ${reserves}, ${reserves.length} and ${totalBorrowBalanceETH}`);
+
+  return new Args().add(userGlobalData).serialize();
 }
 
-export function calculateUserHealthFactorBelowThresh(binaryArgs: StaticArray<u8>): bool {
+export function calculateUserHealthFactorBelowThresh(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
   const totalCollateralBalanceETH = args.nextU256().unwrap();
@@ -132,18 +145,18 @@ export function calculateUserHealthFactorBelowThresh(binaryArgs: StaticArray<u8>
   const currentLiquidationThreshold = args.nextU256().unwrap();
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
-    totalCollateralBalanceETH,
-    totalBorrowBalanceETH,
-    totalFeesETH,
-    currentLiquidationThreshold
+    u64.parse(totalCollateralBalanceETH.toString()),
+    u64.parse(totalBorrowBalanceETH.toString()),
+    u64.parse(totalFeesETH.toString()),
+    u64.parse(currentLiquidationThreshold.toString())
   );
 
-  const healthFactorBelowThreshold = parseFloat(healthFactor.toString()) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+  const healthFactorBelowThreshold = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
 
-  return healthFactorBelowThreshold;
+  return boolToByte(healthFactorBelowThreshold);
 }
 
-export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): bool {
+export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
 
@@ -152,7 +165,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): bool {
   const amount = args.nextU256().unwrap();
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const reserveData = core.getReserve(new Address(underlyingAssetAddress));
   const decimals = reserveData.decimals;
@@ -160,46 +173,46 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): bool {
   const reserveUsageAsCollateralEnabled = true;
 
   const userData = core.getUserReserve(new Address(user), new Address(underlyingAssetAddress));
-  const usageAsCollateralEnabled = userData.useAsCollateral;
+  const usageAsCollateralEnabled: bool = userData.useAsCollateral;
 
   if (!reserveUsageAsCollateralEnabled || !usageAsCollateralEnabled) {
-    return true; //if reserve is not used as collateral, no reasons to block the transfer
+    return boolToByte(true); //if reserve is not used as collateral, no reasons to block the transfer
   }
 
-  const userGolbalData = calculateUserGlobalData(new Args().add(user).serialize());
+  const userGolbalData: Array<u64> = new Args(calculateUserGlobalData(new Args().add(user).serialize())).nextFixedSizeArray<u64>().unwrap();
   const collateralBalanceETH = userGolbalData[1];
   const borrowBalanceETH = userGolbalData[2];
   const totalFeesETH = userGolbalData[3];
   const currentLiquidationThreshold = userGolbalData[4];
 
   if (borrowBalanceETH == 0) {
-    return true; //no borrows - no reasons to block the transfer
+    return boolToByte(true); //no borrows - no reasons to block the transfer
   }
 
   const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
 
-  const amountToDecreaseETH = (oracle.getPrice(new Address(underlyingAssetAddress)) * u64(amount.toString())) / decimals;
+  const amountToDecreaseETH = (oracle.getPrice(new Address(underlyingAssetAddress)) * u64.parse(amount.toString())) / 10 ** decimals;
 
   const collateralBalancefterDecrease = collateralBalanceETH - amountToDecreaseETH;
 
   //if there is a borrow, there can't be 0 collateral
   if (collateralBalancefterDecrease == 0) {
-    return false;
+    return boolToByte(false);
   }
 
-  const liquidationThresholdAfterDecrease = ((collateralBalanceETH * currentLiquidationThreshold) - (amountToDecreaseETH * parseFloat(reserveLiquidationThreshold.toString()))) / (collateralBalancefterDecrease);
+  const liquidationThresholdAfterDecrease = ((collateralBalanceETH * currentLiquidationThreshold) - (amountToDecreaseETH * u64.parse(reserveLiquidationThreshold.toString()))) / (collateralBalancefterDecrease);
 
   const healthFactorAfterDecrease = calculateHealthFactorFromBalancesInternal(
-    new u256(collateralBalancefterDecrease),
-    new u256(borrowBalanceETH),
-    new u256(totalFeesETH),
-    new u256(liquidationThresholdAfterDecrease)
+    collateralBalancefterDecrease,
+    borrowBalanceETH,
+    totalFeesETH,
+    liquidationThresholdAfterDecrease
   );
 
-  return parseFloat(healthFactorAfterDecrease.toString()) > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+  return boolToByte(healthFactorAfterDecrease > HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
 }
 
-export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): u256 {
+export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
@@ -210,43 +223,55 @@ export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): u25
   const userCurrentLtv = args.nextU256().unwrap();
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const reserveData = core.getReserve(new Address(reserve));
   const reserveDecimals = reserveData.decimals;
 
   const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
 
-  const requestedBorrowAmountETH = oracle.getPrice(new Address(reserve)) * (u64(amount.toString()) + u64(fee.toString())) / (10 ** reserveDecimals); //price is in Mass
+  const requestedBorrowAmountETH = oracle.getPrice(new Address(reserve)) * ((u64.parse(amount.toString()) + u64.parse(fee.toString()))) / (10 ** reserveDecimals); //price is in Mas
 
   //add the current already borrowed amount to the amount requested to calculate the total collateral needed.
-  const collateralNeededInETH = new u256((u64(userCurrentBorrowBalanceTH.toString()) + u64(userCurrentFeesETH.toString()) + (requestedBorrowAmountETH) * 100) / u64(userCurrentLtv.toString())); //LTV is calculated in percentage
-
-  return collateralNeededInETH;
-}
-
-export function calculateAvailableBorrowsETHInternal(collateralBalanceETH: u256, borrowBalanceETH: u256, totalFeesETH: u256, ltv: u256): u256 {
-
-  var availableBorrowsETH = new u256(parseFloat(collateralBalanceETH.toString()) * parseFloat(ltv.toString()) / 100); //ltv is in percentage
-
-  if (availableBorrowsETH < borrowBalanceETH) {
-    return new u256(0);
+  let collateralNeededInETH: u256 = u256.Zero;
+  if (userCurrentLtv > u256.Zero) {
+    collateralNeededInETH = u256.fromU64(((u64.parse(userCurrentBorrowBalanceTH.toString()) + u64.parse(userCurrentFeesETH.toString()) + (requestedBorrowAmountETH)) * 100) / u64.parse(userCurrentLtv.toString())); //LTV is calculated in percentage
   }
 
-  availableBorrowsETH = new u256(parseFloat(availableBorrowsETH.toString()) - (parseFloat(borrowBalanceETH.toString()) + parseFloat(totalFeesETH.toString())));
+  return u256ToBytes(collateralNeededInETH);
+}
+
+export function calculateAvailableBorrowsETHInternal(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+
+  const args = new Args(binaryArgs);
+  const collateralBalanceETH = args.nextU256().unwrap();
+  const borrowBalanceETH = args.nextU256().unwrap();
+  const totalFeesETH = args.nextU256().unwrap();
+  const ltv = args.nextU256().unwrap();
+
+  var availableBorrowsETH = u256.fromU64(u64.parse(collateralBalanceETH.toString()) * u64.parse(ltv.toString()) / 100); //ltv is in percentage
+
+  if (availableBorrowsETH < borrowBalanceETH) {
+    return u256ToBytes(u256.Zero);
+  }
+
+  availableBorrowsETH = u256.fromU64(u64.parse(availableBorrowsETH.toString()) - (u64.parse(borrowBalanceETH.toString()) + u64.parse(totalFeesETH.toString())));
 
   //calculate fee
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const feeProvider = new IFeeProvider(addressProvider.getFeeProvider());
+  const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()));
 
-  const borrowFee = feeProvider.calculateLoanOriginationFee(availableBorrowsETH);
-  return new u256(f64(availableBorrowsETH.toString()) - borrowFee);
+  const borrowFee = u64(feeProvider.calculateLoanOriginationFee(availableBorrowsETH));
+  return u256ToBytes(u256.fromU64(u64.parse(availableBorrowsETH.toString()) - borrowFee));
   // return availableBorrowsETH;
 }
 
-function calculateHealthFactorFromBalancesInternal(collateralBalanceETH: u256, borrowBalanceETH: u256, totalFeesETH: u256, liquidationThreshold: u256): u256 {
-  if (borrowBalanceETH == new u256(0)) return new u256(-1);
+function calculateHealthFactorFromBalancesInternal(collateralBalanceETH: u64, borrowBalanceETH: u64, totalFeesETH: u64, liquidationThreshold: u64): u64 {
+  if (borrowBalanceETH == 0) return 0;
 
-  const res = new u256(((parseFloat(collateralBalanceETH.toString()) * parseFloat(liquidationThreshold.toString())) / 100) / (parseFloat(borrowBalanceETH.toString()) + parseFloat(totalFeesETH.toString())));
+  let res: u64 = 0;
+  if((borrowBalanceETH + totalFeesETH) > 0) {
+    res = ((collateralBalanceETH * liquidationThreshold / 100) / (borrowBalanceETH + totalFeesETH));
+  }
   return res;
 }

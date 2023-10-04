@@ -19,7 +19,10 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
 
   // setPrice([]);
 
+  generateEvent(`Price oracle constructor called.`);
+
   return [];
+
 }
 
 function sendFuturOperation(): void {
@@ -64,15 +67,15 @@ function generateRandomIncrease(base: u64): u64 {
   return base + increase;
 }
 
-export function setPrice(_reserve: StaticArray<u8>): StaticArray<u8> {
-  assert(callerHasWriteAccess(), 'Caller is not allowed');
+export function setPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+  // assert(callerHasWriteAccess(), 'Caller is not allowed');
 
-  const args = new Args(_reserve);
+  const args = new Args(binaryArgs);
   const reserve = args
     .nextString()
     .expect('Reserve argument is missing or invalid');
 
-  const key = PRICE_KEY + reserve.toString();
+  const key = `${PRICE_KEY}_${reserve}`;
 
   let currentPrice: u64;
   if (!Storage.has(key)) {
@@ -87,26 +90,26 @@ export function setPrice(_reserve: StaticArray<u8>): StaticArray<u8> {
   const newPrice = generateRandomIncrease(currentPrice);
 
   Storage.set(key, newPrice.toString());
-  generateEvent(`🎉 Price updated: ${newPrice.toString()}`);
+  generateEvent(`🎉 Price updated for reserve ${reserve}: ${newPrice.toString()}`);
 
   sendFuturOperation();
 
   return u64ToBytes(newPrice);
 }
 
-export function getPrice(_reserve: StaticArray<u8>): StaticArray<u8> {
+export function getPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
-  const args = new Args(_reserve);
+  const args = new Args(binaryArgs);
   const reserve = args
     .nextString()
     .expect('Reserve argument is missing or invalid');
 
-  const key = PRICE_KEY + reserve.toString();
+  const key = `${PRICE_KEY}_${reserve}`;
 
-  assert(!Storage.has(key), 'Price is not set');
+  assert(Storage.has(key), 'Price is not set');
 
   const price = u64.parse(Storage.get(key));
-  generateEvent(`current price is ${price.toString()}`);
+  generateEvent(`current price for reserve ${reserve} is ${price.toString()}`);
 
   return u64ToBytes(price);
 }

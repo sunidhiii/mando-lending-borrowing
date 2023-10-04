@@ -1,18 +1,18 @@
-import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Args, bytesToU64, fixedSizeArrayToBytes, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { onlyOwner } from '../helpers/ownership';
 
-export const ONE_UNIT = 10 ** 9;
-export const OPTIMAL_UTILIZATION_RATE = 0.8 * ONE_UNIT;
-export const EXCESS_UTILIZATION_RATE = 0.2 * ONE_UNIT;
+export const ONE_UNIT: u64 = 10 ** 9;
+export const OPTIMAL_UTILIZATION_RATE: u64 = 800000000;
+export const EXCESS_UTILIZATION_RATE: u64 = 200000000;
 
-export const baseVariableBorrowRateKey = stringToBytes('BASE_VARIABLE_BORROW_RATE');
-export const variableRateSlope1Key = stringToBytes('VARIABLE_SLOPE1');
-export const variableRateSlope2Key = stringToBytes('VARIABLE_SLOPE2');
-export const stableRateSlope1Key = stringToBytes('STABLE_SLOPE1');
-export const stableRateSlope2Key = stringToBytes('STABLE_SLOPE2');
-export const reserveKey = stringToBytes('RSERRVE');
+export const baseVariableBorrowRateKey = stringToBytes('BASE_VARIABLE_BORROW_RATE'); // 0
+export const variableRateSlope1Key = stringToBytes('VARIABLE_SLOPE1');  // 0.08
+export const variableRateSlope2Key = stringToBytes('VARIABLE_SLOPE2');  // 1
+export const stableRateSlope1Key = stringToBytes('STABLE_SLOPE1');      // 0.1
+export const stableRateSlope2Key = stringToBytes('STABLE_SLOPE2');      // 1
+export const reserveKey = stringToBytes('RESERVE');
 
 /**
  * This function is the constructor, it is always called once on contract deployment.
@@ -56,6 +56,8 @@ export function constructor(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     Storage.set(stableRateSlope2Key, u64ToBytes(stableRateSlope2));
     Storage.set(reserveKey, stringToBytes(reserve));
 
+    generateEvent(`Interest Rate Strategy constructor called with all details.`);
+
     return [];
 }
 
@@ -84,74 +86,77 @@ export function getStableRateSlope2(): StaticArray<u8> {
     return stableRateSlope2;
 }
 
-export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray<u64> {
-    {
+export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
-        const args = new Args(binaryArgs);
-        // const reserve = new Address(args.nextString().unwrap());
-        const availableLiquidity = args.nextU64().unwrap();
-        const totalBorrowsStable = args.nextU64().unwrap();
-        const totalBorrowsVariable = args.nextU64().unwrap();
-        const averageStableBorrowRate = args.nextU64().unwrap();
+    const args = new Args(binaryArgs);
+    // const reserve = new Address(args.nextString().unwrap());
+    const availableLiquidity = args.nextU64().unwrap();
+    const totalBorrowsStable = args.nextU64().unwrap();
+    const totalBorrowsVariable = args.nextU64().unwrap();
+    const averageStableBorrowRate = args.nextU64().unwrap();
 
-        const totalBorrows = totalBorrowsStable + totalBorrowsVariable;
+    const totalBorrows: u64 = totalBorrowsStable + totalBorrowsVariable;
 
-        const utilizationRate = (totalBorrows == 0 && availableLiquidity == 0)
-            ? 0
-            : totalBorrows / (availableLiquidity + totalBorrows);
+    const utilizationRate = (totalBorrows == 0 && availableLiquidity == 0)
+        ? 0
+        : totalBorrows * ONE_UNIT / (availableLiquidity + totalBorrows);
 
-        // let currentStableBorrowRate = ILendingRateOracle(addressesProvider.getLendingRateOracle())
-        //     .getMarketBorrowRate(_reserve);
+    // let currentStableBorrowRate = ILendingRateOracle(addressesProvider.getLendingRateOracle())
+    //     .getMarketBorrowRate(_reserve);
 
-        let currentStableBorrowRate = 10;
-        const baseVariableBorrowRate = bytesToU64(Storage.get(baseVariableBorrowRateKey));
-        const stableRateSlope1 = bytesToU64(Storage.get(stableRateSlope1Key));
-        const stableRateSlope2 = bytesToU64(Storage.get(stableRateSlope2Key));
-        const variableRateSlope1 = bytesToU64(Storage.get(variableRateSlope1Key));
-        const variableRateSlope2 = bytesToU64(Storage.get(variableRateSlope2Key));
+    let currentStableBorrowRate: u64 = 1 * ONE_UNIT;
+    const baseVariableBorrowRate = bytesToU64(Storage.get(baseVariableBorrowRateKey));
+    const stableRateSlope1 = bytesToU64(Storage.get(stableRateSlope1Key));
+    const stableRateSlope2 = bytesToU64(Storage.get(stableRateSlope2Key));
+    const variableRateSlope1 = bytesToU64(Storage.get(variableRateSlope1Key));
+    const variableRateSlope2 = bytesToU64(Storage.get(variableRateSlope2Key));
 
-        let currentVariableBorrowRate = 0;
+    let currentVariableBorrowRate: u64 = 1 * ONE_UNIT;
 
-        if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            const excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE)
-                / EXCESS_UTILIZATION_RATE;
+    if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
+        const excessUtilizationRateRatio: u64 = (utilizationRate - OPTIMAL_UTILIZATION_RATE) 
+            / EXCESS_UTILIZATION_RATE;
 
-            currentStableBorrowRate = (currentStableBorrowRate - stableRateSlope1) + (
-                stableRateSlope2 * excessUtilizationRateRatio
-            );
+        currentStableBorrowRate = (currentStableBorrowRate - stableRateSlope1 + 
+            stableRateSlope2) * excessUtilizationRateRatio;
 
-            currentVariableBorrowRate = (baseVariableBorrowRate + variableRateSlope1 +
-                variableRateSlope2) * excessUtilizationRateRatio;
-        } else {
-            currentStableBorrowRate = currentStableBorrowRate + (stableRateSlope1 * (utilizationRate / OPTIMAL_UTILIZATION_RATE));
-            currentVariableBorrowRate = baseVariableBorrowRate + (utilizationRate / (OPTIMAL_UTILIZATION_RATE * variableRateSlope1));
-        }
+        currentVariableBorrowRate = (baseVariableBorrowRate + variableRateSlope1 +
+            variableRateSlope2) * excessUtilizationRateRatio;
+    } else {
+        currentStableBorrowRate = ((currentStableBorrowRate + stableRateSlope1) * utilizationRate) / OPTIMAL_UTILIZATION_RATE;
+        currentVariableBorrowRate = ((baseVariableBorrowRate + utilizationRate) / OPTIMAL_UTILIZATION_RATE) * variableRateSlope1;
+    }
 
+    const overAllBorrow: u64 = getOverallBorrowRateInternal(totalBorrowsStable, totalBorrowsVariable, currentVariableBorrowRate, averageStableBorrowRate);
 
-        const currentLiquidityRate = getOverallBorrowRateInternal(
-            totalBorrowsStable,
-            totalBorrowsVariable,
-            currentVariableBorrowRate,
-            averageStableBorrowRate
-        ) * utilizationRate;
+    const currentLiquidityRate: u64 = overAllBorrow * utilizationRate;
 
-        return [currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]
+    // let interestData: Array<u64> = new Array(3)
 
+    // interestData.push(currentLiquidityRate);
+    // interestData.push(currentStableBorrowRate);
+    // interestData.push(currentVariableBorrowRate);
+
+    generateEvent(`Data ${currentLiquidityRate} , ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
+
+    return new Args().add<Array<u64>>([currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]).serialize();
 }
 
 function getOverallBorrowRateInternal(totalBorrowsStable: u64, totalBorrowsVariable: u64, currentVariableBorrowRate: u64, currentAverageStableBorrowRate: u64): u64 {
 
-        const totalBorrows = totalBorrowsStable + totalBorrowsVariable;
+    const totalBorrows: u64 = totalBorrowsStable + totalBorrowsVariable;
 
-        if (totalBorrows == 0) return 0;
+    if (totalBorrows == 0) {
+        return 0;
+    }
 
-        const weightedVariableRate = totalBorrowsVariable * currentVariableBorrowRate;
+    const weightedVariableRate = (totalBorrowsVariable * currentVariableBorrowRate) / ONE_UNIT;
 
-        const weightedStableRate = totalBorrowsStable * currentAverageStableBorrowRate;
+    const weightedStableRate = (totalBorrowsStable * currentAverageStableBorrowRate) / ONE_UNIT;
 
-        const overallBorrowRate = (weightedVariableRate + weightedStableRate) / totalBorrows;
+    const overallBorrowRate = (weightedVariableRate + weightedStableRate) / totalBorrows;
 
-        return overallBorrowRate;
+    return overallBorrowRate;
 }
 
-}
+

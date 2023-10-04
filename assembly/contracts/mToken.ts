@@ -195,7 +195,7 @@ function transferInternal(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('transferInternal amount argument is missing or invalid');
 
   _transfer(owner, toAddress, amount);
 
@@ -271,7 +271,7 @@ export function increaseAllowance(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('increaseAllowance amount argument is missing or invalid');
 
   // @ts-ignore
   let newAllowance = _allowance(owner, spenderAddress) + amount;
@@ -308,7 +308,7 @@ export function decreaseAllowance(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('decreaseAllowance amount argument is missing or invalid');
 
   const current = _allowance(owner, spenderAddress);
 
@@ -356,7 +356,7 @@ export function transferFrom(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('transferFrom amount argument is missing or invalid');
 
   const spenderAllowance = _allowance(owner, spenderAddress);
 
@@ -402,7 +402,7 @@ export function burn(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('burn amount argument is missing or invalid');
 
   _decreaseTotalSupply(amount);
 
@@ -428,7 +428,7 @@ export function burnFrom(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('burnFrom amount argument is missing or invalid');
 
   const spenderAllowance = _allowance(owner, Context.caller());
 
@@ -450,31 +450,31 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
   const amount =
-    args.nextU256().expect('amount argument is missing or invalid');
+    args.nextU256().expect('Amount argument is missing or invalid');
 
   assert(u64.parse(amount.toString()) > 0, "Amount to redeem needs to be > 0");
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const currentBalance = arr[1];
-  const balanceIncrease = arr[2];
-  const index = arr[3];
+  const currentBalance = arr[0];
+  const balanceIncrease = arr[1];
+  const index = arr[2];
 
-  let amountToRedeem = amount;
+  let amountToRedeem: u256 = amount;
 
   //if amount is greater than current balance, the user wants to redeem everything
-  if (amount > currentBalance) {
-    amountToRedeem = currentBalance;
+  if (amount > u256.fromU64(currentBalance)) {
+    amountToRedeem = u256.fromU64(currentBalance);
   }
 
-  assert(amountToRedeem <= currentBalance, "User cannot redeem more than the available balance");
+  assert(amountToRedeem <= u256.fromU64(currentBalance), "User cannot redeem more than the available balance");
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
 
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
-  const dataProvider = new ILendingDataProvider(addressProvider.getDataProvider());
-  const isTransferAllowed = dataProvider.balanceDecreaseAllowed(new Address(underLyingAsset), Context.caller(), amountToRedeem)
+  const dataProvider = new ILendingDataProvider(new Address(addressProvider.getDataProvider()));
+  const isTransferAllowed = dataProvider.balanceDecreaseAllowed(underLyingAsset, Context.caller().toString(), amountToRedeem)
 
   //check that the user is allowed to redeem the amount
   assert(isTransferAllowed, "Transfer cannot be allowed.");
@@ -482,15 +482,18 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   // burns tokens equivalent to the amount requested
   _burn(Context.caller(), amountToRedeem);
 
-
   // executes redeem of the underlying asset
-  const pool = new ILendingPool(addressProvider.getLendingPool());
+  const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
 
   pool.redeemUnderlying(
-    new Address(underLyingAsset),
-    Context.caller(),
+    underLyingAsset,
+    Context.caller().toString(),
     amountToRedeem,
-    new u256(u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString())));
+    u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString())
+  );
+
+  generateEvent(`Balance redeemed after mint ${amountToRedeem} incresed to ${balanceIncrease}`)
+
 }
 
 export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
@@ -499,16 +502,18 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 
   const user = new Address(args.nextString().expect('user argument is missing or invalid'));
   const amount =
-    args.nextU256().expect('amount argument is missing or invalid');
+    args.nextU256().expect('mintOnDeposit amount argument is missing or invalid');
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const balanceIncrease = arr[2];
-  const index = arr[3];
+  const balanceIncrease = arr[1];
+  // const index = arr[2];
 
   //mint an equivalent amount of tokens to cover the new deposit
   _mint(new Args().add(user).add(amount).serialize());
+
+  generateEvent(`Balance increased after mint ${balanceIncrease}`)
 
 }
 
@@ -518,17 +523,19 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
   const user = new Address(args.nextString().expect('user argument is missing or invalid'));
 
   const amount =
-    args.nextU256().expect('amount argument is missing or invalid');
+    args.nextU256().expect('burnOnLiquidation amount argument is missing or invalid');
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const currentBalance = arr[1];
-  const balanceIncrease = arr[2];
-  const index = arr[3];
+  const currentBalance = arr[0];
+  const balanceIncrease = arr[1];
+  const index = arr[2];
 
   //burns the requested amount of tokens
   _burn(user, amount);
+
+  generateEvent(`Balance decreased after mint from ${currentBalance} to ${balanceIncrease}`)
 
 }
 
@@ -539,20 +546,9 @@ export function transferOnLiquidation(binaryArgs: StaticArray<u8>): void {
   const to = new Address(
     args.nextString().expect('to argument is missing or invalid'));
   const amount =
-    args.nextU256().expect('amount argument is missing or invalid');
+    args.nextU256().expect('transferOnLiquidation amount argument is missing or invalid');
 
   _transfer(from, to, amount);
-}
-
-function calculateCumulatedBalanceInternal(
-  _user: Address,
-  _balance: u256
-): u256 {
-  // const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
-  // const core = new ILendingCore(addressProvider.getCore());
-  // const cumulatedBal = new u256(u64.parse(_balance.toString()) * core.getNormalizedIncome(underlyingAssetAddress)) / userIndexes[_user]);
-  const cumulatedBal = new u256(u64.parse(_balance.toString()) * 10 / 10);
-  return cumulatedBal;
 }
 
 export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -565,7 +561,7 @@ export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const currentPrincipalBalance = _balance(addr);
 
   if (u64.parse(currentPrincipalBalance.toString()) == 0) {
-    return stringToBytes('0');
+    return u256ToBytes(u256.Zero);
   }
 
   const balance = calculateCumulatedBalanceInternal(
@@ -591,14 +587,14 @@ export function totalSupply(): StaticArray<u8> {
 
   const currentSupplyPrincipal = bytesToU256(Storage.get(TOTAL_SUPPLY_KEY));
 
-  if (parseFloat(currentSupplyPrincipal.toString()) == 0) {
+  if (u64.parse(currentSupplyPrincipal.toString()) == 0) {
     return [0];
   }
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
-  const core = new ILendingCore(addressProvider.getCore());
-  const totalSupply = new u256(parseFloat(currentSupplyPrincipal.toString()) * parseFloat(core.getNormalizedIncome(underLyingAsset).toString()));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+  const totalSupply = u256.fromU64(u64.parse(currentSupplyPrincipal.toString()) * u64.parse(core.getNormalizedIncome(underLyingAsset).toString()));
   return u256ToBytes(totalSupply);
 }
 
@@ -607,24 +603,51 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const user = args.nextString().unwrap();
   const storageKey = `USER_INDEX_${user}`;
 
+  if (!Storage.has(stringToBytes(storageKey))) {
+    Storage.set(stringToBytes(storageKey), u256ToBytes(u256.Zero));
+  }
+
   return Storage.get(stringToBytes(storageKey));
 }
 
-function cumulateBalanceInternal(user: Address): Array<u256> {
+function calculateCumulatedBalanceInternal(
+  _user: Address,
+  _balance: u256
+): u256 {
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+  const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
+  const userIndex = bytesToString(getUserIndex(new Args().add(_user.toString()).serialize()));
+ 
+  let cumulatedBal: u256 = u256.Zero;
+  if (u64.parse(userIndex) > 0) {
+    cumulatedBal = u256.fromU64((u64.parse(_balance.toString()) * u64.parse(normalizedIncome.toString())) / u64.parse(userIndex));
+  }
+  // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
+  return cumulatedBal;
+}
+
+function cumulateBalanceInternal(user: Address): Array<u64> {
+
+  // const args = new Args(binaryArgs)
+  // const user = new Address(args.nextString().unwrap());
+
   const previousPrincipalBal = _balance(user);
   const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString());
 
-  _mint(new Args().add(user.toString()).add(balanceIncrease).serialize());
-
-  const storageKey = `USER_INDEX_${user}`;
+  _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
 
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  // Storage.set(stringToBytes(storageKey), core.getNormalizedIncome);
+  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+  const index = core.getNormalizedIncome(underLyingAsset)
+  
+  const storageKey = `USER_INDEX_${user}`;
+  Storage.set(stringToBytes(storageKey), u256ToBytes(index));
 
-  // const index = core.getNormalizedIncome()
-
-  return [previousPrincipalBal, new u256(u64.parse(previousPrincipalBal.toString()) + balanceIncrease), new u256(balanceIncrease),];
+  return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
 

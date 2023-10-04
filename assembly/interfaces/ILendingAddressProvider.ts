@@ -19,8 +19,8 @@ export class ILendingAddressProvider {
         call(this._origin, "setCore", arg, 0);
     }
 
-    getCore(): Address {
-        return new Address(bytesToString(call(this._origin, "getCore", new Args(), 0)));
+    getCore(): string {
+        return bytesToString(call(this._origin, "getCore", new Args(), 0));
     }
 
     setLendingPool(poolAddress: StaticArray<u8>): void {
@@ -28,8 +28,8 @@ export class ILendingAddressProvider {
         call(this._origin, "setLendingPool", arg, 0);
     }
 
-    getLendingPool(): Address {
-        return new Address(bytesToString(call(this._origin, "getLendingPool", new Args(), 0)));
+    getLendingPool(): string {
+        return bytesToString(call(this._origin, "getLendingPool", new Args(), 0));
     }
     
     setConfigurator(configuratorAddress: StaticArray<u8>): void {
@@ -37,8 +37,8 @@ export class ILendingAddressProvider {
         call(this._origin, "setConfigurator", arg, 0);
     }
 
-    getConfigurator(): Address {
-        return new Address(bytesToString(call(this._origin, "getConfigurator", new Args(), 0)));
+    getConfigurator(): string {
+        return bytesToString(call(this._origin, "getConfigurator", new Args(), 0));
     }
 
     setDataProvider(dataProviderAddress: StaticArray<u8>): void {
@@ -46,8 +46,8 @@ export class ILendingAddressProvider {
         call(this._origin, "setDataProvider", arg, 0);
     }
 
-    getDataProvider(): Address {
-        return new Address(bytesToString(call(this._origin, "getDataProvider", new Args(), 0)));
+    getDataProvider(): string {
+        return bytesToString(call(this._origin, "getDataProvider", new Args(), 0));
     }
 
     setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
@@ -55,8 +55,8 @@ export class ILendingAddressProvider {
         call(this._origin, "setConfigurator", arg, 0);
     }
 
-    getFeeProvider(): Address {
-        return new Address(bytesToString(call(this._origin, "getFeeProvider", new Args(), 0)));
+    getFeeProvider(): string {
+        return bytesToString(call(this._origin, "getFeeProvider", new Args(), 0));
     }
 
 }

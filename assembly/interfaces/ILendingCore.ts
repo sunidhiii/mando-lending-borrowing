@@ -24,57 +24,56 @@ export class ILendingCore {
   }
 
   getReserve(reserve: Address): Reserve {
-    const result = call(this._origin, "getReserve", new Args().add(reserve), 0);
+    const result = call(this._origin, "getReserve", new Args().add(reserve.toString()), 0);
     const reserveData = new Args(result).nextSerializable<Reserve>().unwrap();
     return reserveData;
   }
 
   deleteReserve(reserve: Address): void {
-    const arg = new Args().add(reserve);
+    const arg = new Args().add(reserve.toString());
     call(this._origin, "deleteReserve", arg, 0);
   }
 
   initUser(userReserve: UserReserve, reserve: Address): void {
-    const arg = new Args().add(userReserve).add(reserve);
+    const arg = new Args().add(userReserve).add(reserve.toString());
     call(this._origin, "initUser", arg, 10*ONE_UNIT);
   }
 
   getUserReserve(_user: Address, _reserve: Address): UserReserve {
-    const result = call(this._origin, "getUserReserve", new Args().add(_user).add(_reserve), 0);
+    const result = call(this._origin, "getUserReserve", new Args().add(_user.toString()).add(_reserve.toString()), 0);
     const userData = new Args(result).nextSerializable<UserReserve>().unwrap();
     return userData;
   }
 
   transferToReserve(_reserve: Address, _user: Address, _amount: u256): void {
-    const args = new Args().add(_reserve).add(_user).add(_amount);
+    const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferToReserve", args, 0);
   }
 
   transferFeeToOwner(_reserve: Address, _user: Address, _amount: u256): void {
-    const args = new Args().add(_reserve).add(_user).add(_amount);
+    const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferFeeToOwner", args, 0);
   }
 
   transferToUser(_reserve: Address, _user: Address, _amount: u256): void {
-    const args = new Args().add(_reserve).add(_user).add(_amount);
+    const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferToUser", args, 0);
   }
 
   viewAllReserves(): string[] {
-    // let reserves = call(this._origin, "viewAllReserves", new Args(), 0);
+    let reserves = call(this._origin, "viewAllReserves", new Args(), 0);
     // let reservesData: string[] = reserves.toString().split(',');
-    // let reservesData = new Args(reserves).nextStringArray().unwrap();
-    // return reservesData;
-
-    return bytesToFixedSizeArray<string>(call(this._origin, "viewAllReserves", new Args(), 0));
+    let reservesData = new Args(reserves).nextStringArray().unwrap();
+    return reservesData;
+    // return bytesToFixedSizeArray<string>(call(this._origin, "viewAllReserves", new Args(), 0));
   }
 
   getReserveAvailableLiquidity(reserve: Address): u256 {
-    return bytesToU256(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve), 0));
+    return bytesToU256(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve.toString()), 0));
   }
 
-  getUserBorrowBalances(reserve: string, user: string): StaticArray<u256> {
-    return bytesToFixedSizeArray<u256>(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0));
+  getUserBorrowBalances(reserve: string, user: string): Array<u64> {
+    return new Args(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
   
   updateStateOnDeposit(reserve: string, amount: u256): void {
@@ -100,8 +99,8 @@ export class ILendingCore {
     return bytesToU256(call(this._origin, "getNormalizedIncome", new Args().add(reserve), 0));
   }
 
-  getUserBasicReserveData(reserve: string, user: string): StaticArray<u256> {
-    return bytesToFixedSizeArray<u256>(call(this._origin, "getUserBasicReserveData", new Args().add(reserve).add(user), 0));
+  getUserBasicReserveData(reserve: string, user: string): Array<u64> {
+    return new Args(call(this._origin, "getUserBasicReserveData", new Args().add(reserve).add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
 
 }

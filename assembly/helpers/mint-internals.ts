@@ -27,7 +27,7 @@ export function _mint(binaryArgs: StaticArray<u8>): void {
   );
   const amount = args
     .nextU256()
-    .expect('amount argument is missing or invalid');
+    .expect('Mint: amount argument is missing or invalid');
 
   _increaseTotalSupply(amount);
 

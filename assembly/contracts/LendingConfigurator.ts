@@ -26,7 +26,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
   );
 
   generateEvent(
-    `Constructor called on contract ${Context.callee().toString()}`,
+    `Constructor called on configurator contract ${Context.callee().toString()}`,
   );
 
 }
@@ -45,7 +45,7 @@ export function addReserve(binaryArgs: StaticArray<u8>): void {
 
   const provider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   // const core = new ILendingCore(provider.getCore());
-  const core = provider.getCore()
+  const core = new Address(provider.getCore());
 
   // const args: Args = new Args(binaryArgs);
   // const reserveData = args.nextSerializable<Reserve>().unwrap();
@@ -72,7 +72,7 @@ export function removeReserve(binaryArgs: StaticArray<u8>): void {
   onlyOwner();
 
   const provider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(provider.getCore());
+  const core = new ILendingCore(new Address(provider.getCore()));
   
   const args: Args = new Args(binaryArgs);
   const reserveAddr = new Address(args.nextString().unwrap());

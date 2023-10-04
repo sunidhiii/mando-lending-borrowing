@@ -17,7 +17,7 @@ export class ILendingPool {
     this._origin = at;
   }
 
-  redeemUnderlying(reserve: Address, user: Address, amount: u256, mTokenBalanceAfterRedeem: u256): void {
+  redeemUnderlying(reserve: string, user: string, amount: u256, mTokenBalanceAfterRedeem: u64): void {
     // const arg = new Args().add(reserve);
     call(this._origin, "redeemUnderlying", new Args().add(reserve).add(user).add(amount).add(mTokenBalanceAfterRedeem), 0);
   }

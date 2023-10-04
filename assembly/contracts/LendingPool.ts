@@ -11,7 +11,7 @@ import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
 
-const ONE_UNIT = 10 ** 9;
+// const ONE_UNIT = 10 ** 9;
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
@@ -46,6 +46,8 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
   //     feeProvider.toString(),
   // );
 
+  generateEvent(`Pool contract called with address provider.`);
+
 }
 
 export function deposit(binaryArgs: StaticArray<u8>): void {
@@ -54,7 +56,8 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   const amount = args.nextU256().expect('No amount provided');
   
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+  // const core = new ILendingCore(new Address('AS12CDMGZYvpNEf5VD27icxPr7Rji66qFHaf3H2rhQf6ZcR69XGt2'));
 
   // to-do Update states for deposit
   core.updateStateOnDeposit(reserve, amount);
@@ -64,7 +67,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
-  const userReserve = new UserReserve(Context.caller().toString(), new u256(0), new u256(0), new u256(0), new u256(0), new u256(0), true);
+  const userReserve = new UserReserve(Context.caller().toString(), u256.Zero, u256.Zero, u256.Zero, u256.Zero, u256.Zero, true);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
 
@@ -82,39 +85,39 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   const interestRateMode = args.nextU8().expect('No interest rate mode provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
  
   const availableLiquidity = core.getReserveAvailableLiquidity(new Address(reserve));
   assert(availableLiquidity >= amount, 'Not enough liquidity available in this reserve');
 
-  const dataProvider = new ILendingDataProvider(addressProvider.getDataProvider());
-  const userData = dataProvider.calculateUserGlobalData(new Address(reserve), Context.caller());
+  const dataProvider = new ILendingDataProvider(new Address(addressProvider.getDataProvider()));
+  const userData = dataProvider.calculateUserGlobalData(Context.caller().toString());
   const userCollateralBalanceETH = userData[1];
   const userBorrowBalanceETH = userData[2];
   const userTotalFeesETH = userData[3];
   const currentLtv = userData[4];
   const currentLiquidationThreshold = userData[5];
 
-  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(new u256(userCollateralBalanceETH), new u256(userBorrowBalanceETH), new u256(userTotalFeesETH), new u256(currentLiquidationThreshold));
+  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(u256.fromU64(userCollateralBalanceETH), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u256.fromU64(currentLiquidationThreshold));
 
   assert(userCollateralBalanceETH > 0, "The collateral balance is 0");
   assert(!healthFactorBelowThreshold, "The borrower can already be liquidated so he cannot borrow more");
 
-  const feeProvider = new IFeeProvider(addressProvider.getFeeProvider())
+  const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()))
 
-  const borrowFee = feeProvider.calculateLoanOriginationFee(amount);
+  const borrowFee = u64.parse(feeProvider.calculateLoanOriginationFee(amount).toString());
   assert(borrowFee > 0, "The amount to borrow is too small");
 
-  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(new Address(reserve), amount, new u256(borrowFee), new u256(userBorrowBalanceETH), new u256(userTotalFeesETH), new u256(currentLtv));
-  assert(parseFloat(amountOfCollateralNeededETH.toString()) <= parseFloat(userCollateralBalanceETH.toString()), "There is not enough collateral to cover a new borrow");
+  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(reserve, amount, u256.fromU64(borrowFee), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u256.fromU64(currentLtv));
+  assert(u64.parse(amountOfCollateralNeededETH.toString()) <= u64.parse(userCollateralBalanceETH.toString()), "There is not enough collateral to cover a new borrow");
 
   if (interestRateMode == InterestRateMode.STABLE) {
     // assert(core.isUserAllowedToBorrowAtStable(reserve, Context.caller(), amount), "User cannot borrow the selected amount with a stable rate");
 
     // const maxLoanPercent = parametersProvider.getMaxStableRateBorrowSizePercent();
-    const maxLoanSizeStable = parseFloat(availableLiquidity.toString()) * (0.25);
+    const maxLoanSizeStable = u64.parse(availableLiquidity.toString()) * (250000000);
 
-    assert(parseFloat(amount.toString()) <= maxLoanSizeStable, "User is trying to borrow too much liquidity at a stable rate");
+    assert(u64.parse(amount.toString()) <= maxLoanSizeStable, "User is trying to borrow too much liquidity at a stable rate");
   }
 
   //all conditions passed - borrow is accepted (vars.finalUserBorrowRate, vars.borrowBalanceIncrease)
@@ -129,19 +132,22 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No reserve address provided');
   const amount = args.nextU256().expect('No amount provided');
   const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
  
   const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
 
   assert(availableLiq >= amount, 'Not enough liquidity');
 
   // update State On Redeem
-  core.updateStateOnRedeem(reserve, Context.caller().toString(), amount, mTokenBalanceAfterRedeem == 0);
-  core.transferToUser(new Address(reserve), Context.caller(), amount);
+  core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
+  core.transferToUser(new Address(reserve), new Address(user), amount);
+
+  generateEvent(`Redeemed ${amount} from the pool`);
 
 }
 
@@ -152,7 +158,7 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   const amount = args.nextU64().expect('No amount provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(addressProvider.getCore());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
   
   const data = core.getUserBorrowBalances(reserve, Context.caller().toString());
   // const principalBorrowBalance = data[0];
@@ -161,16 +167,16 @@ export function repay(binaryArgs: StaticArray<u8>): void {
 
   const userOriginationFee = core.getUserReserve(Context.caller(), new Address(reserve)).originationFee;
 
-  assert(parseFloat(compoundedBorrowBalance.toString()) > 0, "The user does not have any borrow pending");
+  assert(compoundedBorrowBalance > 0, "The user does not have any borrow pending");
 
-  let paybackAmount = parseFloat(compoundedBorrowBalance.toString()) + parseFloat(userOriginationFee.toString());
+  let paybackAmount = compoundedBorrowBalance + u64.parse(userOriginationFee.toString());
 
   if (amount < paybackAmount) {
     paybackAmount = amount;
   }
 
-  if (paybackAmount <= parseFloat(userOriginationFee.toString())) {
-    core.updateStateOnRepay(reserve, Context.caller().toString(), new u256(0), new u256(paybackAmount), borrowBalanceIncrease, false);
+  if (paybackAmount <= u64.parse(userOriginationFee.toString())) {
+    core.updateStateOnRepay(reserve, Context.caller().toString(), u256.Zero, u256.fromU64(paybackAmount), u256.fromU64(borrowBalanceIncrease), false);
 
     core.transferFeeToOwner(
       new Address(reserve),
@@ -178,12 +184,12 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       userOriginationFee)
   }
 
-  let paybackAmountMinusFees = paybackAmount - parseFloat(userOriginationFee.toString());
+  let paybackAmountMinusFees = u256.fromU64(paybackAmount - u64.parse(userOriginationFee.toString()));
 
-  core.updateStateOnRepay(reserve, Context.caller().toString(), new u256(paybackAmountMinusFees), userOriginationFee, borrowBalanceIncrease, parseFloat(compoundedBorrowBalance.toString()) == paybackAmountMinusFees);
+  core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, u256.fromU64(borrowBalanceIncrease), u256.fromU64(compoundedBorrowBalance) == paybackAmountMinusFees);
 
   // if the user didn't repay the origination fee, transfer the fee to the fee collection address
-  if (parseFloat(userOriginationFee.toString()) > 0) {
+  if (u64.parse(userOriginationFee.toString()) > 0) {
     core.transferFeeToOwner(
       new Address(reserve),
       Context.caller(),
@@ -196,7 +202,8 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   core.transferToReserve(
     new Address(reserve),
     Context.caller(),
-    new u256(paybackAmountMinusFees)
+    paybackAmountMinusFees
   );
 
+  generateEvent(`Repayed ${amount} to the pool`);
 }

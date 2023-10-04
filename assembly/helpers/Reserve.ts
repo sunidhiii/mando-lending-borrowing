@@ -6,12 +6,12 @@ export default class Reserve implements Serializable {
       public addr: string = '',
       public name: string = '',
       public symbol: string = '',
-      public decimals: u8,
+      public decimals: u8 = 9,
       public mTokenAddress: string = '',
       public interestCalcAddress: string = '',
-      public baseLTV: u256 = new u256(0),
-      public LiquidationThreshold: u256 = new u256(0),
-      public LiquidationBonus: u256 = new u256(0),
+      public baseLTV: u256 = new u256(0),                       // 75
+      public LiquidationThreshold: u256 = new u256(0),          // 80
+      public LiquidationBonus: u256 = new u256(0),              // 105
       public lastUpdateTimestamp: u256 = new u256(0),
       public lastUpdateTimelastLiquidityCumulativeIndexstamp: u256 = new u256(0),
       public lastLiquidityCumulativeIndex: u256 = new u256(0),
