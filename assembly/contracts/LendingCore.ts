@@ -64,7 +64,7 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   let mToken_contract_code = Storage.get(stringToBytes('mToken_contract_code'));
   let mToken_addr = createSC(mToken_contract_code);
   const provider = Storage.get('ADDRESS_PROVIDER_ADDR');
-  call(mToken_addr, 'constructor', new Args().add('mToken').add('MTOKEN').add(u8(9)).add(u256.fromU64(100000000)).add(Context.caller()).add(reserve.addr).add(provider.toString()), 10 * ONE_UNIT);
+  call(mToken_addr, 'constructor', new Args().add('mToken').add('MTOKEN').add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider.toString()), 10 * ONE_UNIT);
   // call(mToken_addr, 'constructor', new Args().add(Context.caller().toString()), 10 * ONE_UNIT);
 
   reserve.mTokenAddress = mToken_addr.toString();
@@ -172,7 +172,7 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
 
     generateEvent(
       'UserReserveCreated : ' +
-      ', addr:' +
+      'addr:' +
       userReserve.addr.toString() +
       ', principalBorrowBalance:' +
       userReserve.principalBorrowBalance.toString() +
@@ -250,7 +250,7 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
     assert(Context.transferredCoins() >= u64.parse(amount.toString()), "Not enough sent coins");
     transferCoins(Context.callee(), u64.parse(amount.toString()));
   } else {
-    // assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
+    // assert(Context.transferredCoins() == 0, "User is sending MAS along with tokens");
     new IERC20(new Address(reserve)).transferFrom(new Address(user), Context.callee(), amount);
   }
 }
@@ -263,14 +263,14 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
   const user = args.nextString().unwrap();
   const amount = args.nextU256().unwrap();
 
-  const owner = ownerAddress(new Args().serialize());
+  const owner = bytesToString(ownerAddress(new Args().serialize()));
 
   if (reserve == MAS) {
     assert(Context.transferredCoins() >= u64.parse(amount.toString()), "Not enough sent coins");
-    transferCoins(new Address(bytesToString(owner)), u64.parse(amount.toString()));
+    transferCoins(new Address(owner), u64.parse(amount.toString()));
   } else {
     // assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
-    new IERC20(new Address(reserve)).transferFrom(new Address(user), new Address(bytesToString(owner)), amount);
+    new IERC20(new Address(reserve)).transferFrom(new Address(user), new Address(owner), amount);
   }
 
 }
@@ -284,7 +284,7 @@ export function transferToUser(binaryArgs: StaticArray<u8>): void {
   const amount = args.nextU256().unwrap();
 
   if (reserve == MAS) {
-    // transferCoins(new Address(user), u64(amount));
+    transferCoins(new Address(user), u64.parse(amount.toString()));
   } else {
     new IERC20(new Address(reserve)).transfer(new Address(user), amount);
   }
@@ -373,7 +373,7 @@ export function getReserveAvailableLiquidity(binaryArgs: StaticArray<u8>): Stati
   return u256ToBytes(bal);
 }
 
-export function getUserBasicReserveData(binaryArgs: StaticArray<u8>):  StaticArray<u8> {
+export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
@@ -385,7 +385,7 @@ export function getUserBasicReserveData(binaryArgs: StaticArray<u8>):  StaticArr
   const underlyingBalance = getUserUnderlyingAssetBalance(reserve, user);
   let userReserveData: Array<u64> = new Array(3)
   userReserveData[0] = u64.parse(underlyingBalance.toString());
-  
+
   // if (u64.parse(userArgs.principalBorrowBalance.toString()) == 0) {
   //   return fixedSizeArrayToBytes(userReserveData);
   // }
@@ -430,14 +430,32 @@ export function getNormalizedIncome(binaryArgs: StaticArray<u8>): StaticArray<u8
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
 
-  const cumulated = calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp)
-  return u256ToBytes(cumulated);
+  const cumulated = (u64.parse(calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp).toString()) * u64.parse(reserveArgs.lastLiquidityCumulativeIndex.toString())) / ONE_UNIT;
+  return u256ToBytes(u256.fromU64(cumulated));
+}
+
+export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const provider = args.nextString().expect('Provider Address argument is missing or invalid');
+
+  Storage.set(
+    'ADDRESS_PROVIDER_ADDR',
+    provider,
+  );
+}
+
+export function setMTokenContractCode(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+
+  const mToken_contract_code = args.nextFixedSizeArray<u8>().unwrap();
+  Storage.set(stringToBytes('mToken_contract_code'), StaticArray.fromArray(mToken_contract_code));
+
 }
 
 function getUserUnderlyingAssetBalance(reserve: string, user: string): u256 {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
-  
+
   const mTokenAddr = new IERC20(new Address(reserveArgs.mTokenAddress));
   return mTokenAddr.balanceOf(new Address(user));
 }
@@ -454,18 +472,18 @@ function updateCumulativeIndexes(reserve: string): void {
 
   const totalBorrows = getTotalBorrows(reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable);
 
-  var updatedLastUpdateTimelastLiquidityCumulativeIndexstamp = u256.Zero;
-  var updatedLastVariableBorrowCumulativeIndex = u256.Zero;
+  var updatedLastLiquidityCumulativeIndex = reserveArgs.lastLiquidityCumulativeIndex;
+  var updatedLastVariableBorrowCumulativeIndex = reserveArgs.lastVariableBorrowCumulativeIndex;
   if (u64.parse(totalBorrows.toString()) > 0) {
     //only cumulating if there is any income being produced
     const cumulatedLiquidityInterest = calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp);
-    updatedLastUpdateTimelastLiquidityCumulativeIndexstamp = u256.fromU64(u64.parse(cumulatedLiquidityInterest.toString()) * u64.parse(reserveArgs.lastLiquidityCumulativeIndex.toString()));
+    updatedLastLiquidityCumulativeIndex = u256.fromU64((u64.parse(cumulatedLiquidityInterest.toString()) * u64.parse(reserveArgs.lastLiquidityCumulativeIndex.toString())) / ONE_UNIT);
     const cumulatedVariableBorrowInterest = calculateCompoundedInterest(reserveArgs.currentVariableBorrowRate, reserveArgs.lastUpdateTimestamp);
-    updatedLastVariableBorrowCumulativeIndex = u256.fromU64(u64.parse(cumulatedVariableBorrowInterest.toString()) * u64.parse(reserveArgs.lastVariableBorrowCumulativeIndex.toString()));
+    updatedLastVariableBorrowCumulativeIndex = u256.fromU64((u64.parse(cumulatedVariableBorrowInterest.toString()) * u64.parse(reserveArgs.lastVariableBorrowCumulativeIndex.toString())) / ONE_UNIT);
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, updatedLastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, updatedLastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, updatedLastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, updatedLastVariableBorrowCumulativeIndex);
 
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 }
@@ -511,12 +529,12 @@ function updateUserStateOnRepayInternal(reserve: string, user: string, paybackAm
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
   //update the user principal borrow balance, adding the cumulated interest and then subtracting the payback amount
-  const updatedPrincipalBorrowBalance = u256.fromU64((u64.parse(userArgs.principalBorrowBalance.toString()) + u64.parse(balanceIncrease.toString())) - u64.parse(paybackAmountMinusFees.toString()));
+  const updatedPrincipalBorrowBalance: u256 = (u64.parse(userArgs.principalBorrowBalance.toString()) + u64.parse(balanceIncrease.toString())) > u64.parse(paybackAmountMinusFees.toString()) ? u256.fromU64((u64.parse(userArgs.principalBorrowBalance.toString()) + u64.parse(balanceIncrease.toString())) - u64.parse(paybackAmountMinusFees.toString())) : u256.Zero;
   let updatedLastVariableBorrowCumulativeIndex = reserveArgs.lastVariableBorrowCumulativeIndex;
 
   //if the balance decrease is equal to the previous principal (user is repaying the whole loan)
   //and the rate mode is stable, we reset the interest rate mode of the user
-  let updatedStableBorrowRate = u256.Zero;
+  let updatedStableBorrowRate = userArgs.stableBorrowRate;
   if (repaidWholeLoan) {
     updatedStableBorrowRate = u256.Zero;
     updatedLastVariableBorrowCumulativeIndex = u256.Zero;
@@ -541,21 +559,21 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
   const userData = getUserReserve(new Args().add(user).add(reserve).serialize());
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-  let updatedStableBorrowRate = u256.Zero;
-  let updatedLastVariableBorrowCumulativeIndex = u256.Zero;
+  let updatedStableBorrowRate = userArgs.stableBorrowRate;
+  let updatedLastVariableBorrowCumulativeIndex = userArgs.lastVariableBorrowCumulativeIndex;
 
   if (rateMode == InterestRateMode.STABLE) {
-      //stable
-      //reset the user variable index, and update the stable rate
-      updatedStableBorrowRate = reserveArgs.currentStableBorrowRate;
-      updatedLastVariableBorrowCumulativeIndex = u256.Zero;
+    //stable
+    //reset the user variable index, and update the stable rate
+    updatedStableBorrowRate = reserveArgs.currentStableBorrowRate;
+    updatedLastVariableBorrowCumulativeIndex = u256.Zero;
   } else if (rateMode == InterestRateMode.VARIABLE) {
-      //variable
-      //reset the user stable rate, and store the new borrow index
-      updatedStableBorrowRate = u256.Zero;
-      updatedLastVariableBorrowCumulativeIndex = reserveArgs.lastVariableBorrowCumulativeIndex;
+    //variable
+    //reset the user stable rate, and store the new borrow index
+    updatedStableBorrowRate = u256.Zero;
+    updatedLastVariableBorrowCumulativeIndex = reserveArgs.lastVariableBorrowCumulativeIndex;
   } else {
-      abort("Invalid borrow rate mode");
+    abort("Invalid borrow rate mode");
   }
   //increase the principal borrows and the origination fee
   const updatedPrincipalBorrowBalance = u256.fromU64(u64.parse(userArgs.principalBorrowBalance.toString()) + u64.parse(amountBorrowed.toString()) + u64.parse(balanceIncrease.toString()));
@@ -633,7 +651,7 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u256 {
   let principalBorrowBalanceRay = userArgs.principalBorrowBalance;
   let compoundedBalance = u256.Zero;
   let cumulatedInterest = u256.Zero;
- 
+
   if (u64.parse(userArgs.stableBorrowRate.toString()) > 0) {
     cumulatedInterest = calculateCompoundedInterest(
       userArgs.stableBorrowRate,
@@ -641,17 +659,13 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u256 {
     );
   } else {
     //variable interest
-    cumulatedInterest = u256.fromU64(u64.parse(calculateCompoundedInterest(
-      reserveArgs
-        .currentVariableBorrowRate,
-      reserveArgs
-        .lastUpdateTimestamp
-    ).toString())
-      * u64.parse(reserveArgs.lastVariableBorrowCumulativeIndex.toString())
-      / u64.parse(userArgs.lastVariableBorrowCumulativeIndex.toString()));
+    if (u64.parse(userArgs.lastVariableBorrowCumulativeIndex.toString()) > 0) {
+      const compInterest = u64.parse(calculateCompoundedInterest(reserveArgs.currentVariableBorrowRate, reserveArgs.lastUpdateTimestamp).toString());
+      cumulatedInterest = u256.fromU64((compInterest * u64.parse(reserveArgs.lastVariableBorrowCumulativeIndex.toString())) / u64.parse(userArgs.lastVariableBorrowCumulativeIndex.toString()));
+    }
   }
 
-  compoundedBalance = u256.fromU64(u64.parse(principalBorrowBalanceRay.toString()) * u64.parse(cumulatedInterest.toString()));
+  compoundedBalance = u256.fromU64((u64.parse(principalBorrowBalanceRay.toString()) * u64.parse(cumulatedInterest.toString())) / ONE_UNIT);
 
   if (compoundedBalance == userArgs.principalBorrowBalance) {
     //solium-disable-next-line
@@ -678,11 +692,15 @@ function increaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
   //weighted average of all the borrows
   const weightedLastBorrow = u64.parse(amount.toString()) * u64.parse(rate.toString());
   const weightedPreviousTotalBorrows = u64.parse(previousTotalBorrowStable.toString()) * u64.parse(reserveArgs.currentAverageStableBorrowRate.toString());
+
+  let updatedCurrentAverageStableBorrowRate: u256 = reserveArgs.currentAverageStableBorrowRate;
   
-  const updatedCurrentAverageStableBorrowRate = u256.fromU64((weightedLastBorrow + weightedPreviousTotalBorrows) / u64.parse(updatedTotalBorrowsStable.toString()));
-  
+  if(updatedTotalBorrowsStable > u256.Zero) {
+    updatedCurrentAverageStableBorrowRate = u256.fromU64((weightedLastBorrow + weightedPreviousTotalBorrows) / u64.parse(updatedTotalBorrowsStable.toString()));
+  }
+
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, updatedTotalBorrowsStable, reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, updatedCurrentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, updatedTotalBorrowsStable, reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, updatedCurrentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 }
 
@@ -695,10 +713,10 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
   const previousTotalBorrowStable = reserveArgs.totalBorrowsStable;
 
   //updating reserve borrows stable
-  const updatedTotalBorrowsStable =  u64.parse(reserveArgs.totalBorrowsStable.toString()) > u64.parse(amount.toString()) ? u64.parse(reserveArgs.totalBorrowsStable.toString()) - u64.parse(amount.toString()) : 0;
-  var updatedCurrentAverageStableBorrowRate: u64 = 0;
+  const updatedTotalBorrowsStable = u64.parse(reserveArgs.totalBorrowsStable.toString()) > u64.parse(amount.toString()) ? u64.parse(reserveArgs.totalBorrowsStable.toString()) - u64.parse(amount.toString()) : 0;
+  var updatedCurrentAverageStableBorrowRate: u64 = u64.parse(reserveArgs.currentAverageStableBorrowRate.toString());
   if (updatedTotalBorrowsStable == 0) {
-    updatedCurrentAverageStableBorrowRate = 0; //no income if there are no stable rate borrows
+    updatedCurrentAverageStableBorrowRate = 0; // no income if there are no stable rate borrows
     return;
   }
 
@@ -712,13 +730,13 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
     "The amounts to subtract don't match"
   );
 
-  if(updatedTotalBorrowsStable > 0) {
+  if (updatedTotalBorrowsStable > 0) {
     const weightedFinalBorrow: u64 = weightedPreviousTotalBorrows > weightedLastBorrow ? (weightedPreviousTotalBorrows - weightedLastBorrow) : 0
     updatedCurrentAverageStableBorrowRate = weightedFinalBorrow / updatedTotalBorrowsStable;
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, u256.fromU64(updatedTotalBorrowsStable), reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, u256.fromU64(updatedCurrentAverageStableBorrowRate), reserveArgs.lastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, u256.fromU64(updatedTotalBorrowsStable), reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, u256.fromU64(updatedCurrentAverageStableBorrowRate), reserveArgs.lastVariableBorrowCumulativeIndex);
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 }
 
@@ -729,7 +747,7 @@ function increaseTotalBorrowsVariable(reserve: string, amount: u256): void {
   const updatedTotalBorrowsVariable = u256.fromU64(u64.parse(reserveArgs.totalBorrowsVariable.toString()) + u64.parse(amount.toString()));
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, updatedTotalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, updatedTotalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 
 }
@@ -742,21 +760,21 @@ function decreaseTotalBorrowsVariable(reserve: string, amount: u256): void {
     reserveArgs.totalBorrowsVariable >= amount,
     "The amount that is being subtracted from the variable total borrows is incorrect"
   );
-  
+
   const updatedTotalStableBorrows = u64.parse(reserveArgs.totalBorrowsVariable.toString()) > u64.parse(amount.toString()) ? u64.parse(reserveArgs.totalBorrowsVariable.toString()) - u64.parse(amount.toString()) : 0;
   const updatedTotalBorrowsVariable = u256.fromU64(updatedTotalStableBorrows);
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, updatedTotalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, updatedTotalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 }
 
 function calculateLinearInterest(rate: u256, lastUpdateTimestamp: u256): u256 {
   const timeDifference = timestamp() - u64.parse(lastUpdateTimestamp.toString());
 
-  const timeDelta = timeDifference / SECONDS_PER_YEAR;
+  const timeDelta = timeDifference * ONE_UNIT / SECONDS_PER_YEAR;
 
-  return u256.fromU64((u64.parse(rate.toString()) * timeDelta) + ONE_UNIT);
+  return u256.fromU64(((u64.parse(rate.toString()) * timeDelta) / ONE_UNIT) + ONE_UNIT);
 }
 
 function calculateCompoundedInterest(rate: u256, lastUpdateTimestamp: u256): u256 {
@@ -781,9 +799,11 @@ function updateReserveInterestRatesAndTimestampInternal(reserve: string, liquidi
 
   // (const newLiquidityRate, uint256 newStableRate, uint256 newVariableRate) = interestRateStrategyAddress().calculateInterestRates(,
   const reserveLiq = bytesToU256(getReserveAvailableLiquidity(new Args().add(reserve).serialize()));
-  
+
+  const totalLiq: u64 = (u64.parse(reserveLiq.toString()) + u64.parse(liquidityAdded.toString())) > u64.parse(liquidityTaken.toString()) ? (u64.parse(reserveLiq.toString()) + u64.parse(liquidityAdded.toString())) - u64.parse(liquidityTaken.toString()) : 0 ;
+
   const res: Array<u64> = interestRateStrategyAddress.calculateInterestRates(
-    u64.parse(reserveLiq.toString()) + u64.parse(liquidityAdded.toString()) - u64.parse(liquidityTaken.toString()),
+    totalLiq,
     u64.parse(reserveArgs.totalBorrowsStable.toString()),
     u64.parse(reserveArgs.totalBorrowsVariable.toString()),
     u64.parse(reserveArgs.currentAverageStableBorrowRate.toString())
@@ -804,7 +824,7 @@ function updateReserveInterestRatesAndTimestampInternal(reserve: string, liquidi
   const updatedLastUpdateTimestamp = u256.fromU64(timestamp());
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
-  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, updatedLastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, reserveArgs.lastLiquidityCumulativeIndex, updatedCurrentLiquidityRate, reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable, updatedCurrentVariableBorrowRate, updatedCurrentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
+  const updatedReserve = new Reserve(reserve, reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, updatedLastUpdateTimestamp, reserveArgs.lastLiquidityCumulativeIndex, updatedCurrentLiquidityRate, reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable, updatedCurrentVariableBorrowRate, updatedCurrentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 
 }

@@ -13,15 +13,14 @@ export default class Reserve implements Serializable {
       public LiquidationThreshold: u256 = new u256(0),          // 80
       public LiquidationBonus: u256 = new u256(0),              // 105
       public lastUpdateTimestamp: u256 = new u256(0),
-      public lastUpdateTimelastLiquidityCumulativeIndexstamp: u256 = new u256(0),
-      public lastLiquidityCumulativeIndex: u256 = new u256(0),
+      public lastLiquidityCumulativeIndex: u256 = new u256(1000000000),
       public currentLiquidityRate: u256 = new u256(0),
       public totalBorrowsStable: u256 = new u256(0),
       public totalBorrowsVariable: u256 = new u256(0),
       public currentVariableBorrowRate: u256 = new u256(0),
       public currentStableBorrowRate: u256 = new u256(0),
       public currentAverageStableBorrowRate: u256 = new u256(0),
-      public lastVariableBorrowCumulativeIndex: u256 = new u256(0),
+      public lastVariableBorrowCumulativeIndex: u256 = new u256(1000000000),
     ) { }
   
     public serialize(): StaticArray<u8> {
@@ -36,7 +35,6 @@ export default class Reserve implements Serializable {
       args.add(this.LiquidationThreshold);
       args.add(this.LiquidationBonus);
       args.add(this.lastUpdateTimestamp);
-      args.add(this.lastUpdateTimelastLiquidityCumulativeIndexstamp);
       args.add(this.lastLiquidityCumulativeIndex);
       args.add(this.currentLiquidityRate);
       args.add(this.totalBorrowsStable);
@@ -110,13 +108,7 @@ export default class Reserve implements Serializable {
         return new Result(0, "Can't deserialize the lastUpdateTimestamp");
       }
       this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
-  
-      const lastUpdateTimelastLiquidityCumulativeIndexstamp = args.nextU256();
-      if (lastUpdateTimelastLiquidityCumulativeIndexstamp.isErr()) {
-        return new Result(0, "Can't deserialize the lastUpdateTimelastLiquidityCumulativeIndexstamp");
-      }
-      this.lastUpdateTimelastLiquidityCumulativeIndexstamp = lastUpdateTimelastLiquidityCumulativeIndexstamp.unwrap();
-  
+
       const lastLiquidityCumulativeIndex = args.nextU256();
       if (lastLiquidityCumulativeIndex.isErr()) {
         return new Result(0, "Can't deserialize the lastLiquidityCumulativeIndex");

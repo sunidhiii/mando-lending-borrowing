@@ -80,3 +80,14 @@ export function removeReserve(binaryArgs: StaticArray<u8>): void {
   core.deleteReserve(reserveAddr);
 }
 
+
+export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const provider = args.nextString().expect('Provider Address argument is missing or invalid');
+  
+  Storage.set(
+    'ADDRESS_PROVIDER_ADDR',
+    provider,
+  );
+}
+

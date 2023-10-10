@@ -77,22 +77,22 @@ export class ILendingCore {
   }
   
   updateStateOnDeposit(reserve: string, amount: u256): void {
-    call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(amount), 0);
+    call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(amount), 10);
   }
 
   updateStateOnBorrow(reserve: string, user: string, amount: u256, borrowFee: u64, rateMode: u8): void {
     const args = new Args().add(reserve).add(user).add(amount).add(borrowFee).add(rateMode);
-    call(this._origin, "updateStateOnBorrow", args, 0);
+    call(this._origin, "updateStateOnBorrow", args, 10);
   }
 
   updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u256, originationFeeRepaid: u256, balanceIncrease: u256, repaidWholeLoan: bool): void {
     const args = new Args().add(reserve).add(user).add(paybackAmountMinusFees).add(originationFeeRepaid).add(balanceIncrease).add(repaidWholeLoan);
-    call(this._origin, "updateStateOnRepay", args, 0);
+    call(this._origin, "updateStateOnRepay", args, 90);
   }
 
   updateStateOnRedeem(reserve: string, user: string, amountRedeemed: u256, userRedeemedEverything: bool): void {
     const args = new Args().add(reserve).add(user).add(amountRedeemed).add(userRedeemedEverything);
-    call(this._origin, "updateStateOnRedeem", args, 0);
+    call(this._origin, "updateStateOnRedeem", args, 10);
   }
 
   getNormalizedIncome(reserve: string): u256 {

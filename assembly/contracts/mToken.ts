@@ -16,6 +16,7 @@ import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
 import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { ILendingPool } from '../interfaces/ILendingPool';
+import { ONE_UNIT } from './FeeProvider';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -80,8 +81,8 @@ export function constructor(stringifyArgs: StaticArray<u8>): void {
     .expect('Error while initializing totalSupply');
   Storage.set(TOTAL_SUPPLY_KEY, u256ToBytes(totalSupply));
 
-  const user = args.nextString().expect('Error while initializing owner');
-  setOwner(new Args().add(user).serialize());
+  // const user = args.nextString().expect('Error while initializing owner');
+  // setOwner(new Args().add(user).serialize());
   // _setBalance(new Address(user), totalSupply);
 
   // underlying asset
@@ -140,7 +141,7 @@ export function symbol(_: StaticArray<u8>): StaticArray<u8> {
  * @param _ - unused see https://github.com/massalabs/massa-sc-std/issues/18
  * @returns u256
  */
-function totalSupplyInternal(_: StaticArray<u8>): StaticArray<u8> {
+export function totalSupplyInternal(_: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(TOTAL_SUPPLY_KEY);
 }
 
@@ -457,9 +458,8 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const currentBalance = arr[0];
-  const balanceIncrease = arr[1];
-  const index = arr[2];
+  const currentBalance = arr[1];
+  const balanceIncrease = arr[2];
 
   let amountToRedeem: u256 = amount;
 
@@ -502,18 +502,18 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
 
-  const user = args.nextString().expect('user argument is missing or invalid');
+  const user = new Address(args.nextString().expect('user argument is missing or invalid'));
   const amount =
     args.nextU256().expect('mintOnDeposit amount argument is missing or invalid');
 
   //cumulates the balance of the user
-  const arr = cumulateBalanceInternal(Context.caller());
+  const arr = cumulateBalanceInternal(user);
 
-  const balanceIncrease = arr[1];
+  const balanceIncrease = arr[2];
   // const index = arr[2];
 
   //mint an equivalent amount of tokens to cover the new deposit
-  _mint(new Args().add(user).add(amount).serialize());
+  _mint(new Args().add(user.toString()).add(amount).serialize());
 
   generateEvent(`Balance increased after mint ${balanceIncrease} tokens`)
 
@@ -528,11 +528,11 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
     args.nextU256().expect('burnOnLiquidation amount argument is missing or invalid');
 
   //cumulates the balance of the user
-  const arr = cumulateBalanceInternal(Context.caller());
+  const arr = cumulateBalanceInternal(user);
 
-  const currentBalance = arr[0];
-  const balanceIncrease = arr[1];
-  const index = arr[2];
+  const currentBalance = arr[1];
+  const balanceIncrease = arr[2];
+  // const index = arr[2];
 
   //burns the requested amount of tokens
   _burn(user, amount);
@@ -567,7 +567,7 @@ export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   }
 
   const balance = calculateCumulatedBalanceInternal(
-    addr,
+    addr.toString(),
     currentPrincipalBalance
   )
 
@@ -590,13 +590,13 @@ export function totalSupply(): StaticArray<u8> {
   const currentSupplyPrincipal = bytesToU256(Storage.get(TOTAL_SUPPLY_KEY));
 
   if (u64.parse(currentSupplyPrincipal.toString()) == 0) {
-    return [0];
+    return u256ToBytes(u256.Zero);
   }
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
-  const totalSupply = u256.fromU64(u64.parse(currentSupplyPrincipal.toString()) * u64.parse(core.getNormalizedIncome(underLyingAsset).toString()));
+  const totalSupply = u256.fromU64(u64.parse(currentSupplyPrincipal.toString()) * u64.parse(core.getNormalizedIncome(underLyingAsset).toString()) / ONE_UNIT);
   return u256ToBytes(totalSupply);
 }
 
@@ -612,16 +612,36 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(stringToBytes(storageKey));
 }
 
-function calculateCumulatedBalanceInternal(_user: Address, _balance: u256): u256 {
+export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const provider = args.nextString().expect('Provider Address argument is missing or invalid');
+
+  Storage.set(
+    ADDRESS_PROVIDER_KEY,
+    stringToBytes(provider),
+  );
+}
+
+export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const underLyingAsset = args.nextString().expect('Error while initializing underlying asset');
+  
+  Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
+}
+
+function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 {
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
-  const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
- 
+
+  const storageKey = `USER_INDEX_${_user}`;
+  const userIndex = bytesToU256(Storage.get(stringToBytes(storageKey)));
+  // const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
+
   let cumulatedBal: u256 = u256.Zero;
-  if (u64.parse(userIndex.toString()) > 0) {
+  if (userIndex > u256.Zero) {
     cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * (u64.parse(normalizedIncome.toString()) / u64.parse(userIndex.toString())));
   }
   // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
@@ -636,7 +656,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const previousPrincipalBal = _balance(user);
   const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
 
-  if(balanceIncrease > 0) {
+  if (balanceIncrease > 0) {
     _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
   }
 
@@ -645,7 +665,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const index = core.getNormalizedIncome(underLyingAsset)
-  
+
   const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u256ToBytes(index));
 
