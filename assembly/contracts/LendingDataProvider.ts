@@ -6,6 +6,7 @@ import { onlyOwner } from '../helpers/ownership';
 import { u256 } from 'as-bignum/assembly';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { IPriceOracle } from '../interfaces/IPriceOracle';
+import { ONE_UNIT } from './FeeProvider';
 
 // const OWNER_ADDR = 'OWNER_ADDR';
 
@@ -97,25 +98,25 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
 
       if (usageAsCollateralEnabled) {
         totalCollateralBalanceETH = totalCollateralBalanceETH + liquidityBalanceETH;
-        currentLtv = currentLtv + (liquidityBalanceETH * u64.parse(reserveBaseLTV.toString()));
-        currentLiquidationThreshold = currentLiquidationThreshold + (liquidityBalanceETH * u64.parse(liquidationThreshold.toString()));
+        currentLtv = currentLtv + (liquidityBalanceETH * u64(reserveBaseLTV));
+        currentLiquidationThreshold = currentLiquidationThreshold + (liquidityBalanceETH * liquidationThreshold);
       }
     }
 
     if (compoundedBorrowBalance > 0) {
       totalBorrowBalanceETH = totalBorrowBalanceETH + (reserveUnitPrice * u64.parse(compoundedBorrowBalance.toString())) / (tokenUnit);
-      totalFeesETH = totalFeesETH + (u64.parse(originationFee.toString()) * reserveUnitPrice) / tokenUnit;
+      totalFeesETH = totalFeesETH + (originationFee * reserveUnitPrice) / tokenUnit;
     }
   }
 
   currentLtv = totalCollateralBalanceETH > 0 ? currentLtv / totalCollateralBalanceETH : 0;
-  currentLiquidationThreshold = totalCollateralBalanceETH > 0 ? currentLiquidationThreshold / totalCollateralBalanceETH : 0;
+  currentLiquidationThreshold = totalCollateralBalanceETH > 0 ? u8(currentLiquidationThreshold / totalCollateralBalanceETH) : 0;
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
     totalCollateralBalanceETH,
     totalBorrowBalanceETH,
     totalFeesETH,
-    currentLiquidationThreshold
+    u8(currentLiquidationThreshold)
   );
 
   // const healthFactorBelowThreshold = u64.parse(healthFactor.toString()) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
@@ -125,7 +126,7 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
   userGlobalData[1] = totalCollateralBalanceETH;
   userGlobalData[2] = totalBorrowBalanceETH;
   userGlobalData[3] = totalFeesETH;
-  userGlobalData[4] = currentLtv;
+  userGlobalData[4] = u64(currentLtv);
   userGlobalData[5] = currentLiquidationThreshold;
   userGlobalData[6] = healthFactor;
 
@@ -140,13 +141,13 @@ export function calculateUserHealthFactorBelowThresh(binaryArgs: StaticArray<u8>
   const totalCollateralBalanceETH = args.nextU256().unwrap();
   const totalBorrowBalanceETH = args.nextU256().unwrap();
   const totalFeesETH = args.nextU256().unwrap();
-  const currentLiquidationThreshold = args.nextU256().unwrap();
+  const currentLiquidationThreshold = args.nextU8().unwrap();
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
     u64.parse(totalCollateralBalanceETH.toString()),
     u64.parse(totalBorrowBalanceETH.toString()),
     u64.parse(totalFeesETH.toString()),
-    u64.parse(currentLiquidationThreshold.toString())
+    currentLiquidationThreshold
   );
 
   const healthFactorBelowThreshold = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
@@ -201,13 +202,13 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
   const aData = (collateralBalanceETH * currentLiquidationThreshold);
   const bData = (amountToDecreaseETH * u64.parse(reserveLiquidationThreshold.toString()));
   const finalData = aData > bData ? aData - bData : 0;
-  const liquidationThresholdAfterDecrease = finalData / (collateralBalanceAfterDecrease);
+  const liquidationThresholdAfterDecrease = u8(finalData / collateralBalanceAfterDecrease);
 
   const healthFactorAfterDecrease = calculateHealthFactorFromBalancesInternal(
     collateralBalanceAfterDecrease,
     borrowBalanceETH,
     totalFeesETH,
-    liquidationThresholdAfterDecrease
+    u8(liquidationThresholdAfterDecrease)
   );
 
   return boolToByte(healthFactorAfterDecrease > HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
@@ -221,7 +222,7 @@ export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): Sta
   const fee = args.nextU256().unwrap();
   const userCurrentBorrowBalanceTH = args.nextU256().unwrap();
   const userCurrentFeesETH = args.nextU256().unwrap();
-  const userCurrentLtv = args.nextU256().unwrap();
+  const userCurrentLtv = args.nextU8().unwrap();
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -235,8 +236,8 @@ export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): Sta
 
   //add the current already borrowed amount to the amount requested to calculate the total collateral needed.
   let collateralNeededInETH: u256 = u256.Zero;
-  if (userCurrentLtv > u256.Zero) {
-    collateralNeededInETH = u256.fromU64(((u64.parse(userCurrentBorrowBalanceTH.toString()) + u64.parse(userCurrentFeesETH.toString()) + (requestedBorrowAmountETH)) * 100) / u64.parse(userCurrentLtv.toString())); //LTV is calculated in percentage
+  if (userCurrentLtv > 0) {
+    collateralNeededInETH = u256.fromU64(((u64.parse(userCurrentBorrowBalanceTH.toString()) + u64.parse(userCurrentFeesETH.toString()) + (requestedBorrowAmountETH)) * 100) / userCurrentLtv); //LTV is calculated in percentage
   }
 
   return u256ToBytes(collateralNeededInETH);
@@ -291,12 +292,12 @@ export function setPriceOracle(binaryArgs: StaticArray<u8>): void {
   );
 }
 
-function calculateHealthFactorFromBalancesInternal(collateralBalanceETH: u64, borrowBalanceETH: u64, totalFeesETH: u64, liquidationThreshold: u64): u64 {
+function calculateHealthFactorFromBalancesInternal(collateralBalanceETH: u64, borrowBalanceETH: u64, totalFeesETH: u64, liquidationThreshold: u8): u64 {
   if (borrowBalanceETH == 0) return u64.MAX_VALUE;
 
   let res: u64 = 0;
   if ((borrowBalanceETH + totalFeesETH) > 0) {
-    res = (((collateralBalanceETH * liquidationThreshold) / 100) / (borrowBalanceETH + totalFeesETH));
+    res = ((((collateralBalanceETH * liquidationThreshold) / 100) * ONE_UNIT) / (borrowBalanceETH + totalFeesETH));
   }
   return res;
 }

@@ -9,10 +9,10 @@ export default class Reserve implements Serializable {
       public decimals: u8 = 9,
       public mTokenAddress: string = '',
       public interestCalcAddress: string = '',
-      public baseLTV: u256 = new u256(0),                       // 75
-      public LiquidationThreshold: u256 = new u256(0),          // 80
-      public LiquidationBonus: u256 = new u256(0),              // 105
-      public lastUpdateTimestamp: u256 = new u256(0),
+      public baseLTV: u8 = 0,                       // 75
+      public LiquidationThreshold: u8 = 0,          // 80
+      public LiquidationBonus: u8 = 0,              // 105
+      public lastUpdateTimestamp: u64 = 0,
       public lastLiquidityCumulativeIndex: u256 = new u256(1000000000),
       public currentLiquidityRate: u256 = new u256(0),
       public totalBorrowsStable: u256 = new u256(0),
@@ -85,25 +85,25 @@ export default class Reserve implements Serializable {
       }
       this.interestCalcAddress = interestCalcAddress.unwrap();
   
-      const baseLTV = args.nextU256();
+      const baseLTV = args.nextU8();
       if (baseLTV.isErr()) {
         return new Result(0, "Can't deserialize the baseLTV");
       }
       this.baseLTV = baseLTV.unwrap();
   
-      const LiquidationThreshold = args.nextU256();
+      const LiquidationThreshold = args.nextU8();
       if (LiquidationThreshold.isErr()) {
         return new Result(0, "Can't deserialize the LiquidationThreshold");
       }
       this.LiquidationThreshold = LiquidationThreshold.unwrap();
   
-      const LiquidationBonus = args.nextU256();
+      const LiquidationBonus = args.nextU8();
       if (LiquidationBonus.isErr()) {
         return new Result(0, "Can't deserialize the LiquidationBonus");
       }
       this.LiquidationBonus = LiquidationBonus.unwrap();
   
-      const lastUpdateTimestamp = args.nextU256();
+      const lastUpdateTimestamp = args.nextU64();
       if (lastUpdateTimestamp.isErr()) {
         return new Result(0, "Can't deserialize the lastUpdateTimestamp");
       }

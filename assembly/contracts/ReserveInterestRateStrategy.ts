@@ -4,8 +4,8 @@ import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { onlyOwner } from '../helpers/ownership';
 
 export const ONE_UNIT: u64 = 10 ** 9;
-export const OPTIMAL_UTILIZATION_RATE: u64 = 800000000;
-export const EXCESS_UTILIZATION_RATE: u64 = 200000000;
+export const OPTIMAL_UTILIZATION_RATE: u64 = 800000000;   // 0.8
+export const EXCESS_UTILIZATION_RATE: u64 = 200000000;    // 0.2
 
 export const baseVariableBorrowRateKey = stringToBytes('BASE_VARIABLE_BORROW_RATE'); // 0
 export const variableRateSlope1Key = stringToBytes('VARIABLE_SLOPE1');               // 0.08
@@ -163,8 +163,8 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
         currentVariableBorrowRate = baseVariableBorrowRate + (((variableRateSlope1 +
             variableRateSlope2) * excessUtilizationRateRatio) / ONE_UNIT); 
     } else {
-        currentStableBorrowRate = currentStableBorrowRate + (stableRateSlope1 * ((utilizationRate * ONE_UNIT) / OPTIMAL_UTILIZATION_RATE) / ONE_UNIT);
-        currentVariableBorrowRate = baseVariableBorrowRate + (variableRateSlope1 * ((utilizationRate * ONE_UNIT) / OPTIMAL_UTILIZATION_RATE) / ONE_UNIT);
+        currentStableBorrowRate = currentStableBorrowRate + ((stableRateSlope1 * ((utilizationRate * ONE_UNIT) / OPTIMAL_UTILIZATION_RATE)) / ONE_UNIT);
+        currentVariableBorrowRate = baseVariableBorrowRate + ((variableRateSlope1 * ((utilizationRate * ONE_UNIT) / OPTIMAL_UTILIZATION_RATE)) / ONE_UNIT);
     }
 
     const overAllBorrow: u64 = getOverallBorrowRateInternal(totalBorrowsStable, totalBorrowsVariable, currentVariableBorrowRate, averageStableBorrowRate);

@@ -67,7 +67,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
-  const userReserve = new UserReserve(Context.caller().toString(), u256.Zero, u256.Zero, u256.Zero, u256.Zero, u256.Zero, true);
+  const userReserve = new UserReserve(Context.caller().toString(), u256.Zero, u256.Zero, 0, u256.Zero, 0, true);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
 
@@ -100,7 +100,7 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   const currentLtv = userData[4];
   const currentLiquidationThreshold = userData[5];
 
-  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(u256.fromU64(userCollateralBalanceETH), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u256.fromU64(currentLiquidationThreshold));
+  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(u256.fromU64(userCollateralBalanceETH), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u8(currentLiquidationThreshold));
 
   assert(userCollateralBalanceETH > 0, "The collateral balance is 0");
   assert(!healthFactorBelowThreshold, "The borrower can already be liquidated so he cannot borrow more");
@@ -110,7 +110,7 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   const borrowFee = u64.parse(feeProvider.calculateLoanOriginationFee(amount).toString());
   assert(borrowFee > 0, "The amount to borrow is too small");
 
-  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(reserve, amount, u256.fromU64(borrowFee), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u256.fromU64(currentLtv));
+  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(reserve, amount, u256.fromU64(borrowFee), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u8(currentLtv));
   assert(u64.parse(amountOfCollateralNeededETH.toString()) <= u64.parse(userCollateralBalanceETH.toString()), "There is not enough collateral to cover a new borrow");
 
   if (interestRateMode == InterestRateMode.STABLE) {
@@ -171,26 +171,26 @@ export function repay(binaryArgs: StaticArray<u8>): void {
 
   assert(compoundedBorrowBalance > 0, "The user does not have any borrow pending");
 
-  let paybackAmount = compoundedBorrowBalance + u64.parse(userOriginationFee.toString());
+  let paybackAmount = compoundedBorrowBalance + userOriginationFee;
 
   if (amount < paybackAmount) {
     paybackAmount = amount;
   }
 
-  if (paybackAmount <= u64.parse(userOriginationFee.toString())) {
-    core.updateStateOnRepay(reserve, Context.caller().toString(), u256.Zero, u256.fromU64(paybackAmount), u256.fromU64(borrowBalanceIncrease), false);
+  if (paybackAmount <= userOriginationFee) {
+    core.updateStateOnRepay(reserve, Context.caller().toString(), u256.Zero, paybackAmount, u256.fromU64(borrowBalanceIncrease), false);
     core.transferFeeToOwner(new Address(reserve), Context.caller(), u256.fromU64(paybackAmount))
 
     generateEvent(`Repayed ${amount} tokens to the pool`);
     // return;
   } 
   else {
-    let paybackAmountMinusFees = u256.fromU64(paybackAmount - u64.parse(userOriginationFee.toString()));
+    let paybackAmountMinusFees = u256.fromU64(paybackAmount - userOriginationFee);
     core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, u256.fromU64(borrowBalanceIncrease), u256.fromU64(compoundedBorrowBalance) == paybackAmountMinusFees);
   
     // if the user didn't repay the origination fee, transfer the fee to the fee collection address
-    if (u64.parse(userOriginationFee.toString()) > 0) {
-      core.transferFeeToOwner(new Address(reserve), Context.caller(), userOriginationFee)
+    if (userOriginationFee > 0) {
+      core.transferFeeToOwner(new Address(reserve), Context.caller(), u256.fromU64(userOriginationFee))
     }
   
     //sending the total msg.value if the transfer is ETH.

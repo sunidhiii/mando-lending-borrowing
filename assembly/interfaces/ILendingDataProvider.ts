@@ -20,11 +20,11 @@ export class ILendingDataProvider {
     return new Args(call(this._origin, "calculateUserGlobalData", new Args().add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
 
-  calculateUserHealthFactorBelowThresh(totalCollateralBalanceETH: u256, totalBorrowBalanceETH: u256, totalFeesETH: u256, currentLiquidationThreshold: u256): bool {
+  calculateUserHealthFactorBelowThresh(totalCollateralBalanceETH: u256, totalBorrowBalanceETH: u256, totalFeesETH: u256, currentLiquidationThreshold: u8): bool {
     return byteToBool(call(this._origin, "calculateUserHealthFactorBelowThresh", new Args().add(totalCollateralBalanceETH).add(totalBorrowBalanceETH).add(totalFeesETH).add(currentLiquidationThreshold), 0));
   }
 
-  calculateCollateralNeededInETH(reserve: string, amount: u256, fee: u256, userCurrentBorrowBalanceTH: u256, userCurrentFeesETH: u256, userCurrentLtv: u256): u256 {
+  calculateCollateralNeededInETH(reserve: string, amount: u256, fee: u256, userCurrentBorrowBalanceTH: u256, userCurrentFeesETH: u256, userCurrentLtv: u8): u256 {
     return bytesToU256(call(this._origin, "calculateCollateralNeededInETH", new Args().add(reserve).add(amount).add(fee).add(userCurrentBorrowBalanceTH).add(userCurrentFeesETH).add(userCurrentLtv), 0));
   }
 

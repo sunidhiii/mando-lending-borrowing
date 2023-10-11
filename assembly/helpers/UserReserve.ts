@@ -6,9 +6,9 @@ export default class UserReserve implements Serializable {
       public addr: string = '',
       public principalBorrowBalance: u256 = new u256(0),
       public lastVariableBorrowCumulativeIndex: u256 = new u256(0),
-      public originationFee: u256 = new u256(0),
+      public originationFee: u64 = 0,
       public stableBorrowRate: u256 = new u256(0),
-      public lastUpdateTimestamp: u256 = new u256(0),
+      public lastUpdateTimestamp: u64 = 0,
       public useAsCollateral: bool = false,
     ) { }
   
@@ -45,7 +45,7 @@ export default class UserReserve implements Serializable {
       }
       this.lastVariableBorrowCumulativeIndex = lastVariableBorrowCumulativeIndex.unwrap();
   
-      const originationFee = args.nextU256();
+      const originationFee = args.nextU64();
       if (originationFee.isErr()) {
         return new Result(0, "Can't deserialize the originationFee");
       }
@@ -57,7 +57,7 @@ export default class UserReserve implements Serializable {
       }
       this.stableBorrowRate = stableBorrowRate.unwrap();
   
-      const lastUpdateTimestamp = args.nextU256();
+      const lastUpdateTimestamp = args.nextU64();
       if (lastUpdateTimestamp.isErr()) {
         return new Result(0, "Can't deserialize the lastUpdateTimestamp");
       }

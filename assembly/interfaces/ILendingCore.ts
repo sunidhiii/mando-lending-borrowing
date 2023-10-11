@@ -85,14 +85,14 @@ export class ILendingCore {
     call(this._origin, "updateStateOnBorrow", args, 10);
   }
 
-  updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u256, originationFeeRepaid: u256, balanceIncrease: u256, repaidWholeLoan: bool): void {
+  updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u256, originationFeeRepaid: u64, balanceIncrease: u256, repaidWholeLoan: bool): void {
     const args = new Args().add(reserve).add(user).add(paybackAmountMinusFees).add(originationFeeRepaid).add(balanceIncrease).add(repaidWholeLoan);
-    call(this._origin, "updateStateOnRepay", args, 90);
+    call(this._origin, "updateStateOnRepay", args, 20);
   }
 
   updateStateOnRedeem(reserve: string, user: string, amountRedeemed: u256, userRedeemedEverything: bool): void {
     const args = new Args().add(reserve).add(user).add(amountRedeemed).add(userRedeemedEverything);
-    call(this._origin, "updateStateOnRedeem", args, 10);
+    call(this._origin, "updateStateOnRedeem", args, 20);
   }
 
   getNormalizedIncome(reserve: string): u256 {
