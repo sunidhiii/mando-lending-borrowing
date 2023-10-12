@@ -53,6 +53,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 export function deposit(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No reserve address provided');
   const amount = args.nextU256().expect('No amount provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
@@ -67,12 +68,12 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
-  const userReserve = new UserReserve(Context.caller().toString(), u256.Zero, u256.Zero, 0, u256.Zero, 0, true);
+  const userReserve = new UserReserve(user, u256.Zero, u256.Zero, 0, u256.Zero, 0, true, false);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
 
-  mToken.mintOnDeposit(Context.caller(), amount);
-  core.transferToReserve(new Address(reserve), Context.caller(), amount);
+  mToken.mintOnDeposit(new Address(user), amount);
+  core.transferToReserve(new Address(reserve), new Address(user), amount);
 
   generateEvent(`Deposited ${amount} tokens to the pool`);
 

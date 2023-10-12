@@ -1,5 +1,7 @@
-import { Args, Result, Serializable, bytesToFixedSizeArray, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
+import { Args, Result, Serializable, bytesToFixedSizeArray, bytesToU64, stringToBytes } from "@massalabs/as-types";
+import { Address, Context, Storage, call } from "@massalabs/massa-as-sdk";
+
+const baseVariableBorrowRateKey = stringToBytes('BASE_VARIABLE_BORROW_RATE'); // 0
 
 export class IReserveInterestRateStrategy {
 
@@ -12,6 +14,10 @@ export class IReserveInterestRateStrategy {
      */
     constructor(at: Address) {
         this._origin = at;
+    }
+
+    getBaseVariableBorrowRate(): u64 {
+        return bytesToU64(Storage.getOf(this._origin, baseVariableBorrowRateKey));
     }
 
     calculateInterestRates(availableLiquidity: u64, totalBorrowsStable: u64, totalBorrowsVariable: u64, averageStableBorrowRate: u64): Array<u64> {        

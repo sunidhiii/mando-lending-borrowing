@@ -5,10 +5,11 @@ import {
   Storage,
   createEvent,
   callerHasWriteAccess,
+  sendMessage,
+  unsafeRandom,
 } from '@massalabs/massa-as-sdk';
 import { Args, bytesToString, bytesToU256, stringToBytes, u256ToBytes } from '@massalabs/as-types';
 import { _balance, _setBalance, _approve, _allowance } from '../helpers/token-internals';
-import { setOwner } from '../helpers/ownership';
 import { u256 } from 'as-bignum/assembly';
 import { _mint } from '../helpers/mint-internals';
 import { _burn, _decreaseTotalSupply } from '../helpers/burn-internals';
@@ -17,6 +18,8 @@ import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { ILendingPool } from '../interfaces/ILendingPool';
 import { ONE_UNIT } from './FeeProvider';
+import { IRouter } from '../interfaces/IRouter';
+import { IERC20 } from '../interfaces/IERC20';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -28,6 +31,10 @@ export const TOTAL_SUPPLY_KEY = stringToBytes('TOTAL_SUPPLY');
 export const DECIMALS_KEY = stringToBytes('DECIMALS');
 export const UNDERLYINGASSET_KEY = stringToBytes('UNDERLYINGASSET');
 export const ADDRESS_PROVIDER_KEY = stringToBytes('ADDRPROVIDER');
+
+export const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+export const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+export const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
 
 /**
  * Initialize the ERC20 contract
@@ -625,7 +632,7 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
 export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const underLyingAsset = args.nextString().expect('Error while initializing underlying asset');
-  
+
   Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
 }
 
@@ -656,14 +663,21 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const previousPrincipalBal = _balance(user);
   const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
 
-  if (balanceIncrease > 0) {
-    _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
-  }
-
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+
+  const isAutoRewardEnabled = core.getUserReserve(user, new Address(underLyingAsset)).autonomousRewardStrategyEnabled;
+
+  if (balanceIncrease > 0) {
+    if (isAutoRewardEnabled) {
+      swapTokensAndAddDeposit(balanceIncrease);
+    } else {
+      _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
+    }
+  }
+
   const index = core.getNormalizedIncome(underLyingAsset)
 
   const storageKey = `USER_INDEX_${user.toString()}`;
@@ -671,4 +685,77 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
 
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
+
+function sendFuturOperation(): void {
+  const functionName = 'swapTokensAndAddDeposit';
+  const address = Context.callee();
+  const validityStartPeriod = Context.currentPeriod();
+  const validityStartThread = Context.currentThread();
+  let validityEndPeriod = validityStartThread + 1;
+  let validityEndThread = validityStartPeriod;
+
+  if (validityEndPeriod >= 32) {
+    ++validityEndThread;
+    validityEndPeriod = 0;
+  }
+  const maxGas = 1_000_000_000; // gas for smart contract execution
+  const rawFee = 0;
+  const coins = 0; // coins that can be used inside SC
+
+  // Send the message
+  sendMessage(
+    address,
+    functionName,
+    validityStartPeriod,
+    validityStartThread,
+    validityEndPeriod,
+    validityEndThread,
+    maxGas,
+    rawFee,
+    coins,
+    [],
+  );
+
+  generateEvent(
+    `Next update planned on period ${validityStartPeriod.toString()} thread: ${validityStartThread.toString()}`,
+  );
+}
+
+function swapTokensAndAddDeposit(amount: u64): void {
+  const binStep: u64 = 100;
+  const router = new IRouter(ROUTER);
+  const wmas = new IERC20(WMAS);
+  const usdc = new IERC20(USDC);
+  const deadline = Context.timestamp() + 5000;
+  const callee = Context.callee();
+  const path = [wmas, usdc];
+  const amountIn = amount;
+  const amountOut = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, callee, deadline);
+
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
+
+  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+
+  pool.deposit(underLyingAsset, Context.caller().toString(), u256.fromU64(amountOut));
+
+  sendFuturOperation();
+
+}
+
+// function swapTokens(amount: u64): void {
+//     const binStep: u64 = 100;
+//     const router = new IRouter(ROUTER);
+//     // const factory = new IFactory(FACTORY);
+//     const wmas = new IERC20(WMAS);
+//     const usdc = new IERC20(USDC);
+//     // const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+//     // const wmas_is_y = pair.getTokenY()._origin == wmas._origin;
+//     // const swapForY = wmas_is_y;
+//     const amountIn = router.getSwapIn(pair, amount * ONE_UNIT, swapForY).amountIn;
+//     const path = [usdc, wmas];
+//     const deadline = Context.timestamp() + 5000;
+//     router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+//     generateEvent(`DEBUG: Bought ${amount} WMAS for ${amountIn} USDC`);
+// }
 

@@ -725,6 +725,7 @@ async function deposit() {
                     functionName: "deposit",
                     parameter: new Args()
                         .addString(RESERVE_ADDRESS)
+                        .addString(baseAccount.address)
                         .addU256(BigInt(2000000000000n))
                         .serialize(),
                     maxGas: 4_294_967_295n,
@@ -733,13 +734,23 @@ async function deposit() {
                 })
                 .then((res) => {
                     const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
-                    console.log("OpId: ", res);
-                    // return res;
+                    // console.log("OpId: ", res);
+                    return res;
                 });
         }
     } catch (error) {
         console.error(error);
     }
+}
+
+async function checkStatus() {
+    const depo = deposit();
+    const client = await createClient();
+    const status = await client
+        .smartContracts()
+        .awaitRequiredOperationStatus(depo, EOperationStatus.FINAL)
+    if (status !== EOperationStatus.FINAL)
+        throw new Error("Transaction failed")
 }
 
 async function transferToReserve() {
@@ -1274,8 +1285,8 @@ borrow(RESERVE_ADDRESS, 1);
 // getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS);
 
-// setPrice();  
-// getPrice(); 
+// setPrice();
+// getPrice();
 // getOriginationFee();
 // calculateLoanOriginationFee();
 // getOwner()

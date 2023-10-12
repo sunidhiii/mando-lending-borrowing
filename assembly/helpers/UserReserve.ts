@@ -10,6 +10,7 @@ export default class UserReserve implements Serializable {
       public stableBorrowRate: u256 = new u256(0),
       public lastUpdateTimestamp: u64 = 0,
       public useAsCollateral: bool = false,
+      public autonomousRewardStrategyEnabled: bool = false,
     ) { }
   
     public serialize(): StaticArray<u8> {
@@ -21,6 +22,7 @@ export default class UserReserve implements Serializable {
       args.add(this.stableBorrowRate);
       args.add(this.lastUpdateTimestamp);
       args.add(this.useAsCollateral);
+      args.add(this.autonomousRewardStrategyEnabled);
       return args.serialize();
     }
   
@@ -68,6 +70,12 @@ export default class UserReserve implements Serializable {
         return new Result(0, "Can't deserialize the useAsCollateral");
       }
       this.useAsCollateral = useAsCollateral.unwrap();
+  
+      const autonomousRewardStrategyEnabled = args.nextBool();
+      if (autonomousRewardStrategyEnabled.isErr()) {
+        return new Result(0, "Can't deserialize the autonomousRewardStrategyEnabled");
+      }
+      this.autonomousRewardStrategyEnabled = autonomousRewardStrategyEnabled.unwrap();
   
       return new Result(args.offset);
     }

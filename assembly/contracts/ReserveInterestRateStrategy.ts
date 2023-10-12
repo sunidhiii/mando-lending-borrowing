@@ -59,30 +59,30 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     generateEvent(`Interest Rate Strategy constructor called with all details.`);
 }
 
-export function getBaseVariableBorrowRate(): StaticArray<u8> {
-    const baseVariableBorrowRate = Storage.get(baseVariableBorrowRateKey);
-    return baseVariableBorrowRate;
-}
+// export function getBaseVariableBorrowRate(): StaticArray<u8> {
+//     const baseVariableBorrowRate = Storage.get(baseVariableBorrowRateKey);
+//     return baseVariableBorrowRate;
+// }
 
-export function getVariableRateSlope1(): StaticArray<u8> {
-    const variableRateSlope1 = Storage.get(variableRateSlope1Key);
-    return variableRateSlope1;
-}
+// export function getVariableRateSlope1(): StaticArray<u8> {
+//     const variableRateSlope1 = Storage.get(variableRateSlope1Key);
+//     return variableRateSlope1;
+// }
 
-export function getVariableRateSlope2(): StaticArray<u8> {
-    const variableRateSlope2 = Storage.get(variableRateSlope2Key);
-    return variableRateSlope2;
-}
+// export function getVariableRateSlope2(): StaticArray<u8> {
+//     const variableRateSlope2 = Storage.get(variableRateSlope2Key);
+//     return variableRateSlope2;
+// }
 
-export function getStableRateSlope1(): StaticArray<u8> {
-    const stableRateSlope1 = Storage.get(stableRateSlope1Key);
-    return stableRateSlope1;
-}
+// export function getStableRateSlope1(): StaticArray<u8> {
+//     const stableRateSlope1 = Storage.get(stableRateSlope1Key);
+//     return stableRateSlope1;
+// }
 
-export function getStableRateSlope2(): StaticArray<u8> {
-    const stableRateSlope2 = Storage.get(stableRateSlope2Key);
-    return stableRateSlope2;
-}
+// export function getStableRateSlope2(): StaticArray<u8> {
+//     const stableRateSlope2 = Storage.get(stableRateSlope2Key);
+//     return stableRateSlope2;
+// }
 
 export function setBaseVariableBorrowRate(binaryArgs: StaticArray<u8>): void {
     const args = new Args(binaryArgs);
