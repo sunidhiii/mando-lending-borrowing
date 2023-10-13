@@ -692,7 +692,7 @@ async function testt() {
                 .readSmartContract({
                     maxGas: fromMAS(2),
                     targetAddress: DATA_PROVIDER,
-                    targetFunction: "calculateUserHealthFactorBelowThresh",
+                    targetFunction: "calculateUserGlobalData",
                     parameter: new Args()
                         // .addString(RESERVE_ADDRESS)
                         // .addString(baseAccount.address)
@@ -743,15 +743,15 @@ async function deposit() {
     }
 }
 
-async function checkStatus() {
-    const depo = deposit();
-    const client = await createClient();
-    const status = await client
-        .smartContracts()
-        .awaitRequiredOperationStatus(depo, EOperationStatus.FINAL)
-    if (status !== EOperationStatus.FINAL)
-        throw new Error("Transaction failed")
-}
+// async function checkStatus() {
+//     const depo = deposit();
+//     const client = await createClient();
+//     const status = await client
+//         .smartContracts()
+//         .awaitRequiredOperationStatus(depo, EOperationStatus.FINAL)
+//     if (status !== EOperationStatus.FINAL)
+//         throw new Error("Transaction failed")
+// }
 
 async function transferToReserve() {
 

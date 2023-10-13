@@ -667,12 +667,11 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
-
   const isAutoRewardEnabled = core.getUserReserve(user, new Address(underLyingAsset)).autonomousRewardStrategyEnabled;
 
   if (balanceIncrease > 0) {
     if (isAutoRewardEnabled) {
-      swapTokensAndAddDeposit(balanceIncrease);
+      swapTokensAndAddDeposit(user.toString());
     } else {
       _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
     }
@@ -686,13 +685,16 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
 
-function sendFuturOperation(): void {
+function sendFuturOperation(amount: u64): void {
   const functionName = 'swapTokensAndAddDeposit';
   const address = Context.callee();
   const validityStartPeriod = Context.currentPeriod();
   const validityStartThread = Context.currentThread();
   let validityEndPeriod = validityStartThread + 1;
   let validityEndThread = validityStartPeriod;
+  const msg = new Args().add(amount).serialize();
+  const filterAddress: Address = new Address();
+  const filterKey: StaticArray<u8> = new StaticArray<u8>(0);
 
   if (validityEndPeriod >= 32) {
     ++validityEndThread;
@@ -713,7 +715,9 @@ function sendFuturOperation(): void {
     maxGas,
     rawFee,
     coins,
-    [],
+    msg,
+    filterAddress,
+    filterKey
   );
 
   generateEvent(
@@ -721,7 +725,7 @@ function sendFuturOperation(): void {
   );
 }
 
-function swapTokensAndAddDeposit(amount: u64): void {
+function swapTokensAndAddDeposit(user: string): void {
   const binStep: u64 = 100;
   const router = new IRouter(ROUTER);
   const wmas = new IERC20(WMAS);
@@ -729,6 +733,10 @@ function swapTokensAndAddDeposit(amount: u64): void {
   const deadline = Context.timestamp() + 5000;
   const callee = Context.callee();
   const path = [wmas, usdc];
+
+  const previousPrincipalBal = _balance(new Address(user));
+  const amount = u64.parse(balanceOf(new Args().add(user).serialize()).toString()) - u64.parse(previousPrincipalBal.toString());
+
   const amountIn = amount;
   const amountOut = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, callee, deadline);
 
@@ -739,7 +747,7 @@ function swapTokensAndAddDeposit(amount: u64): void {
 
   pool.deposit(underLyingAsset, Context.caller().toString(), u256.fromU64(amountOut));
 
-  sendFuturOperation();
+  sendFuturOperation(amount);
 
 }
 

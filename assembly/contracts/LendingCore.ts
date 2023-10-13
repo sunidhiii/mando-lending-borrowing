@@ -545,7 +545,7 @@ function updateUserStateOnRepayInternal(reserve: string, user: string, paybackAm
   const updatedLastUpdateTimestamp = timestamp();
 
   const storageKey = `${USER_KEY}_${user}_${reserve}`;
-  const updatedUserReserve = new UserReserve(user, updatedPrincipalBorrowBalance, updatedLastVariableBorrowCumulativeIndex, updatedOriginationFee, updatedStableBorrowRate, updatedLastUpdateTimestamp, userArgs.useAsCollateral);
+  const updatedUserReserve = new UserReserve(user, updatedPrincipalBorrowBalance, updatedLastVariableBorrowCumulativeIndex, updatedOriginationFee, updatedStableBorrowRate, updatedLastUpdateTimestamp, userArgs.useAsCollateral, userArgs.autonomousRewardStrategyEnabled);
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 
@@ -583,7 +583,7 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
   const updatedLastUpdateTimestamp = timestamp();
 
   const storageKey = `${USER_KEY}_${user}_${reserve}`;
-  const updatedUserReserve = new UserReserve(user, updatedPrincipalBorrowBalance, updatedLastVariableBorrowCumulativeIndex, updatedOriginationFee, updatedStableBorrowRate, updatedLastUpdateTimestamp, userArgs.useAsCollateral);
+  const updatedUserReserve = new UserReserve(user, updatedPrincipalBorrowBalance, updatedLastVariableBorrowCumulativeIndex, updatedOriginationFee, updatedStableBorrowRate, updatedLastUpdateTimestamp, userArgs.useAsCollateral, userArgs.autonomousRewardStrategyEnabled);
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 
@@ -853,7 +853,24 @@ function setUserUseReserveAsCollateral(reserve: string, user: string, useAsColla
   const updatedUseAsCollateral = useAsCollateral;
 
   const storageKey = `${USER_KEY}_${user}_${reserve}`;
-  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, updatedUseAsCollateral);
+  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, updatedUseAsCollateral, userArgs.autonomousRewardStrategyEnabled);
+
+  Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
+}
+
+export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
+  const autonomousRewardStrategy = args.nextBool().unwrap();
+
+  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
+  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+
+  const updatedAutonomousRewardStrategyEnabled = autonomousRewardStrategy;
+
+  const storageKey = `${USER_KEY}_${user}_${reserve}`;
+  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, userArgs.useAsCollateral, updatedAutonomousRewardStrategyEnabled);
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 }
