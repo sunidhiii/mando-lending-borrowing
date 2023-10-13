@@ -685,14 +685,14 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
 
-function sendFuturOperation(amount: u64): void {
+function sendFuturOperation(user: string): void {
   const functionName = 'swapTokensAndAddDeposit';
   const address = Context.callee();
   const validityStartPeriod = Context.currentPeriod();
   const validityStartThread = Context.currentThread();
   let validityEndPeriod = validityStartThread + 1;
   let validityEndThread = validityStartPeriod;
-  const msg = new Args().add(amount).serialize();
+  const msg = new Args().add(user).serialize();
   const filterAddress: Address = new Address();
   const filterKey: StaticArray<u8> = new StaticArray<u8>(0);
 
@@ -747,7 +747,7 @@ function swapTokensAndAddDeposit(user: string): void {
 
   pool.deposit(underLyingAsset, Context.caller().toString(), u256.fromU64(amountOut));
 
-  sendFuturOperation(amount);
+  sendFuturOperation(user);
 
 }
 
