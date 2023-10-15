@@ -1,4 +1,4 @@
-import { Amount, Args, Result, Serializable, byteToBool, bytesToFixedSizeArray, bytesToU256, stringToBytes } from "@massalabs/as-types";
+import { Amount, Args, Result, Serializable, byteToBool, bytesToFixedSizeArray, bytesToU256, bytesToU64, stringToBytes } from "@massalabs/as-types";
 import { Address, Context, call } from "@massalabs/massa-as-sdk";
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
@@ -45,17 +45,17 @@ export class ILendingCore {
     return userData;
   }
 
-  transferToReserve(_reserve: Address, _user: Address, _amount: u256): void {
+  transferToReserve(_reserve: Address, _user: Address, _amount: u64): void {
     const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferToReserve", args, 0);
   }
 
-  transferFeeToOwner(_reserve: Address, _user: Address, _amount: u256): void {
+  transferFeeToOwner(_reserve: Address, _user: Address, _amount: u64): void {
     const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferFeeToOwner", args, 0);
   }
 
-  transferToUser(_reserve: Address, _user: Address, _amount: u256): void {
+  transferToUser(_reserve: Address, _user: Address, _amount: u64): void {
     const args = new Args().add(_reserve.toString()).add(_user.toString()).add(_amount);
     call(this._origin, "transferToUser", args, 0);
   }
@@ -68,35 +68,35 @@ export class ILendingCore {
     // return bytesToFixedSizeArray<string>(call(this._origin, "viewAllReserves", new Args(), 0));
   }
 
-  getReserveAvailableLiquidity(reserve: Address): u256 {
-    return bytesToU256(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve.toString()), 0));
+  getReserveAvailableLiquidity(reserve: Address): u64 {
+    return bytesToU64(call(this._origin, "getReserveAvailableLiquidity", new Args().add(reserve.toString()), 0));
   }
 
   getUserBorrowBalances(reserve: string, user: string): Array<u64> {
     return new Args(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
   
-  updateStateOnDeposit(reserve: string, amount: u256): void {
+  updateStateOnDeposit(reserve: string, amount: u64): void {
     call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(amount), 10);
   }
 
-  updateStateOnBorrow(reserve: string, user: string, amount: u256, borrowFee: u64, rateMode: u8): void {
+  updateStateOnBorrow(reserve: string, user: string, amount: u64, borrowFee: u64, rateMode: u8): void {
     const args = new Args().add(reserve).add(user).add(amount).add(borrowFee).add(rateMode);
     call(this._origin, "updateStateOnBorrow", args, 10);
   }
 
-  updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u256, originationFeeRepaid: u64, balanceIncrease: u256, repaidWholeLoan: bool): void {
+  updateStateOnRepay(reserve: string, user: string, paybackAmountMinusFees: u64, originationFeeRepaid: u64, balanceIncrease: u64, repaidWholeLoan: bool): void {
     const args = new Args().add(reserve).add(user).add(paybackAmountMinusFees).add(originationFeeRepaid).add(balanceIncrease).add(repaidWholeLoan);
-    call(this._origin, "updateStateOnRepay", args, 20);
+    call(this._origin, "updateStateOnRepay", args, 10);
   }
 
-  updateStateOnRedeem(reserve: string, user: string, amountRedeemed: u256, userRedeemedEverything: bool): void {
+  updateStateOnRedeem(reserve: string, user: string, amountRedeemed: u64, userRedeemedEverything: bool): void {
     const args = new Args().add(reserve).add(user).add(amountRedeemed).add(userRedeemedEverything);
-    call(this._origin, "updateStateOnRedeem", args, 20);
+    call(this._origin, "updateStateOnRedeem", args, 10);
   }
 
-  getNormalizedIncome(reserve: string): u256 {
-    return bytesToU256(call(this._origin, "getNormalizedIncome", new Args().add(reserve), 0));
+  getNormalizedIncome(reserve: string): u64 {
+    return bytesToU64(call(this._origin, "getNormalizedIncome", new Args().add(reserve), 0));
   }
 
   getUserBasicReserveData(reserve: string, user: string): Array<u64> {

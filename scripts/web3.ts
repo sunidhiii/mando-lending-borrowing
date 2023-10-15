@@ -1,13 +1,6 @@
 // import MessageResponse from "./interfaces/MessageResponse";
-import {
-    ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64
-} from "@massalabs/massa-web3";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64} from "@massalabs/massa-web3";
 import pollAsyncEvents from './pollAsyncEvent';
-import { base58Decode } from "@massalabs/massa-web3/dist/esm/utils/Xbqcrypto";
-import { readFileSync } from 'fs';
-import path from 'path';
-import { Address } from "@massalabs/massa-web3/dist/esm/utils/keyAndAddresses";
-import { isUint16Array } from "util/types";
 
 // create a base account for signing transactions
 // const baseAccount = {
@@ -21,39 +14,41 @@ const baseAccount = {
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
-let FEE_ADDRESS = 'AS12siiezjR5th6NDJAf2dVxCX3c9AdPnL1ZpQXjU2QzkYBjnhNC2';
+let FEE_ADDRESS = 'AS1oehDh1LzsoxLDL4JicSXSimWADvGMJ9kxm8SDLVG7RqMCmup8';
 // const token address = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g'; // AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz
 let PRICE_ORACLE = 'AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69';
 let ADDRESS_PROVIDER = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
-let DATA_PROVIDER = 'AS122mMZPYrK41GXnWEzo27JJCG6mjWW7x1LrEkweuhhrNfMhuUdy'      // 'AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8';
-let INTEREST_ADDRESS = 'AS17MpgjV2F2ZaY9KZQ2uCDXC8cmeZtD6nm4M3r76LSmXMDggjr7';
-let CORE_ADDRESS = 'AS1yjSWbpK8nDL5Hmagj5kXoaQvMhXGv8PdDWTvPD6sCqtHdKJB4'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
+let DATA_PROVIDER = 'AS17fkjQMzwBtBPMUJLVH1g2YhMmYK5uArwjoYqDeu2z4g59nbdX'      // 'AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8';
+let INTEREST_ADDRESS = 'AS128sfzGpR8TSTEXD8bE6ThVyb6XHDK4rccKsS8jttrKXtbYjRp7';
+let CORE_ADDRESS = 'AS13x3KS3GmmxCyvuX8zsxxyf3vYRHgK2yM9v6rwWHHmJsP2R73o'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
 let RESERVE_ADDRESS = 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
-const mToken = 'AS1AYZ657bxYJSSbRt7HUF2h65bJphmdWdo2vwXNSrBsnFXb6ReA' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
-const POOL_ADDRESS = 'AS12UT6ghzXT7Ff5poABhaEmGa6B3awZHtjYGSswKoHPY43AXxBLk'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
+const mToken = 'AS12amxCpP8cphGXxmYPnyWBzgF6mzTZu6CPXh7vKegXgxmbDLVNG' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
+const POOL_ADDRESS = 'AS1j2cS3rxUku66RdfEegjS1XR9faHpMDQKimPBseMkhu6UNsMW9'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
 
 class UserReserve implements ISerializable<UserReserve> {
     constructor(
         public addr: string = '',
-        public principalBorrowBalance: bigint = 0n,
-        public lastVariableBorrowCumulativeIndex: bigint = 0n,
+        public principalBorrowBalance: number = 0,
+        public lastVariableBorrowCumulativeIndex: number = 0,
         public originationFee: number = 0,
-        public stableBorrowRate: bigint = 0n,
+        public stableBorrowRate: number = 0,
         public lastUpdateTimestamp: number = 0,
         public useAsCollateral: boolean = false,
+        public autonomousRewardStrategyEnabled: boolean = false,
     ) { }
 
     serialize(): Uint8Array {
         const args = new Args();
         args.addString(this.addr);
-        args.addU256(BigInt(this.principalBorrowBalance));
-        args.addU256(BigInt(this.lastVariableBorrowCumulativeIndex));
+        args.addU64(BigInt(this.principalBorrowBalance));
+        args.addU64(BigInt(this.lastVariableBorrowCumulativeIndex));
         args.addU64(BigInt(this.originationFee));
-        args.addU256(BigInt(this.stableBorrowRate));
+        args.addU64(BigInt(this.stableBorrowRate));
         args.addU64(BigInt(this.lastUpdateTimestamp));
         args.addBool(this.useAsCollateral);
+        args.addBool(this.autonomousRewardStrategyEnabled);
         return new Uint8Array(args.serialize());
     }
 
@@ -61,12 +56,13 @@ class UserReserve implements ISerializable<UserReserve> {
         const args = new Args(data, offset);
 
         this.addr = args.nextString();
-        this.principalBorrowBalance = BigInt(args.nextU256().toString());
-        this.lastVariableBorrowCumulativeIndex = BigInt(args.nextU256().toString());
+        this.principalBorrowBalance = parseInt(args.nextU64().toString());
+        this.lastVariableBorrowCumulativeIndex = parseInt(args.nextU64().toString());
         this.originationFee = parseInt(args.nextU64().toString());
-        this.stableBorrowRate = BigInt(args.nextU256().toString());
+        this.stableBorrowRate = parseInt(args.nextU64().toString());
         this.lastUpdateTimestamp = parseInt(args.nextU64().toString());
         this.useAsCollateral = args.nextBool();
+        this.autonomousRewardStrategyEnabled = args.nextBool();
 
         return { instance: this, offset: args.getOffset() };
     }
@@ -83,14 +79,14 @@ class Reserve implements ISerializable<Reserve> {
         public LiquidationThreshold: number = 0,                                 // 80
         public LiquidationBonus: number = 0,                                     // 105
         public lastUpdateTimestamp: number = 0,
-        public lastLiquidityCumulativeIndex: bigint = 1000000000n,
-        public currentLiquidityRate: bigint = 0n,
-        public totalBorrowsStable: bigint = 0n,
-        public totalBorrowsVariable: bigint = 0n,
-        public currentVariableBorrowRate: bigint = 0n,
-        public currentStableBorrowRate: bigint = 0n,
-        public currentAverageStableBorrowRate: bigint = 0n,
-        public lastVariableBorrowCumulativeIndex: bigint = 1000000000n,
+        public lastLiquidityCumulativeIndex: number = 1000000000,
+        public currentLiquidityRate: number = 0,
+        public totalBorrowsStable: number = 0,
+        public totalBorrowsVariable: number = 0,
+        public currentVariableBorrowRate: number = 0,
+        public currentStableBorrowRate: number = 0,
+        public currentAverageStableBorrowRate: number = 0,
+        public lastVariableBorrowCumulativeIndex: number = 1000000000,
 
     ) { }
 
@@ -106,14 +102,14 @@ class Reserve implements ISerializable<Reserve> {
         args.addU8(this.LiquidationThreshold);
         args.addU8(this.LiquidationBonus);
         args.addU64(BigInt(this.lastUpdateTimestamp));
-        args.addU256(BigInt(this.lastLiquidityCumulativeIndex));
-        args.addU256(BigInt(this.currentLiquidityRate));
-        args.addU256(BigInt(this.totalBorrowsStable));
-        args.addU256(BigInt(this.totalBorrowsVariable));
-        args.addU256(BigInt(this.currentVariableBorrowRate));
-        args.addU256(BigInt(this.currentStableBorrowRate));
-        args.addU256(BigInt(this.currentAverageStableBorrowRate));
-        args.addU256(BigInt(this.lastVariableBorrowCumulativeIndex));
+        args.addU64(BigInt(this.lastLiquidityCumulativeIndex));
+        args.addU64(BigInt(this.currentLiquidityRate));
+        args.addU64(BigInt(this.totalBorrowsStable));
+        args.addU64(BigInt(this.totalBorrowsVariable));
+        args.addU64(BigInt(this.currentVariableBorrowRate));
+        args.addU64(BigInt(this.currentStableBorrowRate));
+        args.addU64(BigInt(this.currentAverageStableBorrowRate));
+        args.addU64(BigInt(this.lastVariableBorrowCumulativeIndex));
         return new Uint8Array(args.serialize());
     }
 
@@ -130,14 +126,14 @@ class Reserve implements ISerializable<Reserve> {
         this.LiquidationThreshold = parseInt(args.nextU8().toString());
         this.LiquidationBonus = parseInt(args.nextU8().toString());
         this.lastUpdateTimestamp = parseInt(args.nextU64().toString());
-        this.lastLiquidityCumulativeIndex = BigInt(args.nextU256().toString());
-        this.currentLiquidityRate = BigInt(args.nextU256().toString());
-        this.totalBorrowsStable = BigInt(args.nextU256().toString());
-        this.totalBorrowsVariable = BigInt(args.nextU256().toString());
-        this.currentVariableBorrowRate = BigInt(args.nextU256().toString());
-        this.currentStableBorrowRate = BigInt(args.nextU256().toString());
-        this.currentAverageStableBorrowRate = BigInt(args.nextU256().toString());
-        this.lastVariableBorrowCumulativeIndex = BigInt(args.nextU256().toString());
+        this.lastLiquidityCumulativeIndex = parseInt(args.nextU64().toString());
+        this.currentLiquidityRate = parseInt(args.nextU64().toString());
+        this.totalBorrowsStable = parseInt(args.nextU64().toString());
+        this.totalBorrowsVariable = parseInt(args.nextU64().toString());
+        this.currentVariableBorrowRate = parseInt(args.nextU64().toString());
+        this.currentStableBorrowRate = parseInt(args.nextU64().toString());
+        this.currentAverageStableBorrowRate = parseInt(args.nextU64().toString());
+        this.lastVariableBorrowCumulativeIndex = parseInt(args.nextU64().toString());
 
         return { instance: this, offset: args.getOffset() };
     }
@@ -357,10 +353,10 @@ async function addUserData() {
                     functionName: "initUser",
                     parameter: new Args().addSerializable<UserReserve>(new UserReserve(
                         'AU139TmwoP6w5mgUQrpF9s49VXeFGXmN1SiuX5HEtzcGmuJAoXFa',
-                        BigInt(0),
-                        BigInt(0),
                         0,
-                        BigInt(0),
+                        0,
+                        0,
+                        0,
                         0,
                         true))
                         .addString(RESERVE_ADDRESS).serialize(),
@@ -456,19 +452,19 @@ async function addReserveData() {
                             75,
                             125,
                             0,
-                            BigInt(1000000000n),
-                            BigInt(0),
-                            BigInt(0),
-                            BigInt(0),
-                            BigInt(0),
-                            BigInt(0),
-                            BigInt(0),
-                            BigInt(1000000000n)
+                            1000000000,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1000000000
                         ))
                         .serialize(),
                     maxGas: 4_294_967_295n,
-                    coins: fromMAS(60),
-                    fee: BigInt(0),
+                    coins: fromMAS(70),
+                    fee: fromMAS(0.1),
                 })
                 .then((res) => {
                     console.log("OpId: ", res);
@@ -726,7 +722,7 @@ async function deposit() {
                     parameter: new Args()
                         .addString(RESERVE_ADDRESS)
                         .addString(baseAccount.address)
-                        .addU256(BigInt(2000000000000n))
+                        .addU64(BigInt(1000000000000n))
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(10),
@@ -795,8 +791,8 @@ async function borrow(reserve: string, amount: number) {
                     functionName: "borrow",
                     parameter: new Args()
                         .addString(reserve)
-                        .addU256(BigInt(amount))
-                        .addU8(2)
+                        .addU64(BigInt(amount))
+                        .addU8(1)
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(20),
@@ -825,7 +821,7 @@ async function repay(reserve: string) {
                     functionName: "repay",
                     parameter: new Args()
                         .addString(reserve)
-                        .addU256(5000n)
+                        .addU64(50000000n)
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(30),
@@ -853,7 +849,7 @@ async function redeemUnderlying() {
                     targetAddress: mToken,
                     functionName: "redeem",
                     parameter: new Args()
-                        .addU256(10n)
+                        .addU64(50000000000n)
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(40),
@@ -1005,7 +1001,7 @@ async function calculateLoanOriginationFee() {
                     maxGas: fromMAS(1),
                     targetAddress: FEE_ADDRESS,
                     targetFunction: "calculateLoanOriginationFee",
-                    parameter: new Args().addU256(1n).serialize(),
+                    parameter: new Args().addU64(1n).serialize(),
                 }).then((res) => {
                     console.log("LoanOriginationFee", bytesToU256(res.returnValue));
                     // return bytesToU256(res.returnValue);
@@ -1089,7 +1085,7 @@ async function readContractDataPool() {
 
     const client = await createClient();
     // const keyy = strToBytes("USER_KEY");
-    const keyy = "USER_KEY_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8_AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g";
+    const keyy = "USER_KEY_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8_AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva";
 
     try {
         let args = new Args();
@@ -1278,7 +1274,7 @@ async function test1() {
 // test();
 // testt();
 // transferToReserve() 
-borrow(RESERVE_ADDRESS, 1);
+// borrow(RESERVE_ADDRESS, 10000000000);
 // repay(RESERVE_ADDRESS);
 // getReserveAvailableLiquiditySupply(RESERVE_ADDRESS);
 // getUserBasicReserveData(baseAccount.address);
@@ -1291,13 +1287,13 @@ borrow(RESERVE_ADDRESS, 1);
 // calculateLoanOriginationFee();
 // getOwner()
 // setCoreAddress()
-// setLendingPoolAddress()
-// setFeeProviderAddress()
+// setLendingPoolAddress();
+// setFeeProviderAddress();
 // setDataProviderAddress();
 
 // getVariableRateSlope1()
 
-// getUserReserve();
+getUserReserve();
 // redeemUnderlying();
 // getMTokenBalance(baseAccount.address);
 // getMTokenTotalSupply();

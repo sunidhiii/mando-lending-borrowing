@@ -1,9 +1,8 @@
-import { Args, boolToByte, bytesToFixedSizeArray, bytesToString, fixedSizeArrayToBytes, u256ToBytes } from '@massalabs/as-types';
-import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
+import { Args, boolToByte, u64ToBytes } from '@massalabs/as-types';
+import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { onlyOwner } from '../helpers/ownership';
-import { u256 } from 'as-bignum/assembly';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { IPriceOracle } from '../interfaces/IPriceOracle';
 import { ONE_UNIT } from './FeeProvider';
@@ -93,7 +92,7 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
 
     //liquidity and collateral balance
     if (compoundedLiquidityBalance > 0) {
-      let liquidityBalanceETH = (reserveUnitPrice * u64.parse(compoundedLiquidityBalance.toString())) / tokenUnit;
+      let liquidityBalanceETH = (reserveUnitPrice * compoundedLiquidityBalance) / tokenUnit;
       totalLiquidityBalanceETH = totalLiquidityBalanceETH + liquidityBalanceETH;
 
       if (usageAsCollateralEnabled) {
@@ -104,7 +103,7 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
     }
 
     if (compoundedBorrowBalance > 0) {
-      totalBorrowBalanceETH = totalBorrowBalanceETH + (reserveUnitPrice * u64.parse(compoundedBorrowBalance.toString())) / (tokenUnit);
+      totalBorrowBalanceETH = totalBorrowBalanceETH + (reserveUnitPrice * compoundedBorrowBalance) / (tokenUnit);
       totalFeesETH = totalFeesETH + (originationFee * reserveUnitPrice) / tokenUnit;
     }
   }
@@ -138,15 +137,15 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
 export function calculateUserHealthFactorBelowThresh(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
-  const totalCollateralBalanceETH = args.nextU256().unwrap();
-  const totalBorrowBalanceETH = args.nextU256().unwrap();
-  const totalFeesETH = args.nextU256().unwrap();
+  const totalCollateralBalanceETH = args.nextU64().unwrap();
+  const totalBorrowBalanceETH = args.nextU64().unwrap();
+  const totalFeesETH = args.nextU64().unwrap();
   const currentLiquidationThreshold = args.nextU8().unwrap();
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
-    u64.parse(totalCollateralBalanceETH.toString()),
-    u64.parse(totalBorrowBalanceETH.toString()),
-    u64.parse(totalFeesETH.toString()),
+    totalCollateralBalanceETH,
+    totalBorrowBalanceETH,
+    totalFeesETH,
     currentLiquidationThreshold
   );
 
@@ -161,7 +160,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
 
   const underlyingAssetAddress = args.nextString().unwrap();
   const user = args.nextString().unwrap();
-  const amount = args.nextU256().unwrap();
+  const amount = args.nextU64().unwrap();
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -190,7 +189,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
 
   const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
 
-  const amountToDecreaseETH = (oracle.getPrice(new Address(underlyingAssetAddress)) * u64.parse(amount.toString())) / 10 ** decimals;
+  const amountToDecreaseETH = (oracle.getPrice(new Address(underlyingAssetAddress)) * amount) / 10 ** decimals;
 
   const collateralBalanceAfterDecrease: u64 = collateralBalanceETH > amountToDecreaseETH ? collateralBalanceETH - amountToDecreaseETH : 0;
 
@@ -200,7 +199,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
   }
 
   const aData = (collateralBalanceETH * currentLiquidationThreshold);
-  const bData = (amountToDecreaseETH * u64.parse(reserveLiquidationThreshold.toString()));
+  const bData = (amountToDecreaseETH * reserveLiquidationThreshold);
   const finalData = aData > bData ? aData - bData : 0;
   const liquidationThresholdAfterDecrease = u8(finalData / collateralBalanceAfterDecrease);
 
@@ -218,10 +217,10 @@ export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): Sta
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
-  const amount = args.nextU256().unwrap();
-  const fee = args.nextU256().unwrap();
-  const userCurrentBorrowBalanceTH = args.nextU256().unwrap();
-  const userCurrentFeesETH = args.nextU256().unwrap();
+  const amount = args.nextU64().unwrap();
+  const fee = args.nextU64().unwrap();
+  const userCurrentBorrowBalanceTH = args.nextU64().unwrap();
+  const userCurrentFeesETH = args.nextU64().unwrap();
   const userCurrentLtv = args.nextU8().unwrap();
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
@@ -232,34 +231,34 @@ export function calculateCollateralNeededInETH(binaryArgs: StaticArray<u8>): Sta
 
   const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
 
-  const requestedBorrowAmountETH = (oracle.getPrice(new Address(reserve)) * (u64.parse(amount.toString()) + u64.parse(fee.toString()))) / (10 ** reserveDecimals); //price is in Mas
+  const requestedBorrowAmountETH = (oracle.getPrice(new Address(reserve)) * (amount + fee)) / (10 ** reserveDecimals); //price is in Mas
 
   //add the current already borrowed amount to the amount requested to calculate the total collateral needed.
-  let collateralNeededInETH: u256 = u256.Zero;
+  let collateralNeededInETH: u64 = 0;
   if (userCurrentLtv > 0) {
-    collateralNeededInETH = u256.fromU64(((u64.parse(userCurrentBorrowBalanceTH.toString()) + u64.parse(userCurrentFeesETH.toString()) + (requestedBorrowAmountETH)) * 100) / userCurrentLtv); //LTV is calculated in percentage
+    collateralNeededInETH = ((userCurrentBorrowBalanceTH + userCurrentFeesETH + requestedBorrowAmountETH) * 100) / userCurrentLtv; //LTV is calculated in percentage
   }
 
-  return u256ToBytes(collateralNeededInETH);
+  return u64ToBytes(collateralNeededInETH);
 }
 
 export function calculateAvailableBorrowsETHInternal(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const args = new Args(binaryArgs);
-  const collateralBalanceETH = args.nextU256().unwrap();
-  const borrowBalanceETH = args.nextU256().unwrap();
-  const totalFeesETH = args.nextU256().unwrap();
-  const ltv = args.nextU256().unwrap();
+  const collateralBalanceETH = args.nextU64().unwrap();
+  const borrowBalanceETH = args.nextU64().unwrap();
+  const totalFeesETH = args.nextU64().unwrap();
+  const ltv = args.nextU64().unwrap();
 
-  var availableBorrowsETH = u256.fromU64((u64.parse(collateralBalanceETH.toString()) * u64.parse(ltv.toString())) / 100); //ltv is in percentage
+  var availableBorrowsETH = (collateralBalanceETH * ltv) / 100; //ltv is in percentage
 
   if (availableBorrowsETH < borrowBalanceETH) {
-    return u256ToBytes(u256.Zero);
+    return u64ToBytes(0);
   }
 
   // const totalBorrow = u64.parse(availableBorrowsETH.toString()) - u64.parse(borrowBalanceETH.toString());
-  if (u64.parse(availableBorrowsETH.toString()) > (u64.parse(borrowBalanceETH.toString()) + u64.parse(totalFeesETH.toString()))) {
-    availableBorrowsETH = u256.fromU64(u64.parse(availableBorrowsETH.toString()) - (u64.parse(borrowBalanceETH.toString()) + u64.parse(totalFeesETH.toString())));
+  if (availableBorrowsETH > (borrowBalanceETH + totalFeesETH)) {
+    availableBorrowsETH = availableBorrowsETH - (borrowBalanceETH + totalFeesETH);
   }
 
   //calculate fee
@@ -267,8 +266,8 @@ export function calculateAvailableBorrowsETHInternal(binaryArgs: StaticArray<u8>
   const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()));
 
   const borrowFee = u64(feeProvider.calculateLoanOriginationFee(availableBorrowsETH));
-  const availableBorrows: u256 = u256.fromU64(u64.parse(availableBorrowsETH.toString()) - borrowFee);
-  return u256ToBytes(availableBorrows);
+  const availableBorrows: u64 = availableBorrowsETH - borrowFee;
+  return u64ToBytes(availableBorrows);
   // return availableBorrowsETH;
 }
 
