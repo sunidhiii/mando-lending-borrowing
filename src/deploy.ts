@@ -91,11 +91,11 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   coins: fromMAS(0.1), // coins for deployment
     //   args: new Args(), // arguments for deployment   
     // };
-    const DataProviderContract: ISCData = {      // AS122mMZPYrK41GXnWEzo27JJCG6mjWW7x1LrEkweuhhrNfMhuUdy   // AS12ui9SXJSEVgnovXidY741tLxrnt6QALL6zkkoLuKVgKctf2mrE   // AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8
-      data: readFileSync(path.join(__dirname, "build", "LendingDataProvider.wasm")),
-      coins: fromMAS(0.63), // coins for deployment
-      args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp').addString('AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69'), // arguments for deployment   
-    };
+    // const DataProviderContract: ISCData = {      // AS122mMZPYrK41GXnWEzo27JJCG6mjWW7x1LrEkweuhhrNfMhuUdy   // AS12ui9SXJSEVgnovXidY741tLxrnt6QALL6zkkoLuKVgKctf2mrE   // AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8
+    //   data: readFileSync(path.join(__dirname, "build", "LendingDataProvider.wasm")),
+    //   coins: fromMAS(0.63), // coins for deployment
+    //   args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp').addString('AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69'), // arguments for deployment   
+    // };
     // const PoolContract: ISCData = {      // AS12UT6ghzXT7Ff5poABhaEmGa6B3awZHtjYGSswKoHPY43AXxBLk           // AS177n5fut3EfvN4LaXbebrqSBUVXHAvTWG84YN51wcN658KQb2F       // AS1Z7UjqsSNqe6HwwtnNWDpuCCTXX7M4gP8ygeqNa1hjefojv9nL
     //   data: readFileSync(path.join(__dirname, 'build', 'LendingPool.wasm')), // smart contract bytecode
     //   coins: fromMAS(0.68), // coins for deployment 63000000
@@ -114,17 +114,17 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   args: new Args().addU8(9).addU256(1000000000000000n), // arguments for deployment
     //   // protoPaths: [], // proto files for deployment
     // };
-    // const testAgain: ISCData = {               // AS1WxmcceUVSKhHS7dq48oaAVZY3CLPEXzfTUzbvb9j3a3bdW66M
-    //   data: readFileSync(path.join(__dirname, 'build', 'testAgain.wasm')), // smart contract bytecode
-    //   coins: fromMAS(0.001), // coins for deployment 63000000
-    // };
+    const testAgain: ISCData = {               // AS1WxmcceUVSKhHS7dq48oaAVZY3CLPEXzfTUzbvb9j3a3bdW66M
+      data: readFileSync(path.join(__dirname, 'build', 'testAgain.wasm')), // smart contract bytecode
+      coins: fromMAS(0.001), // coins for deployment 63000000
+    };
     // const reserveToken: ISCData = {               // AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva
     //   data: readFileSync(path.join(__dirname, 'build', 'ReserveToken.wasm')), // smart contract bytecode
     //   coins: fromMAS(1), // coins for deployment 63000000
     //   args: new Args().addString('myToken').addString('MTOKEN').addU8(9).addU256(1000000000000000n), // arguments for deployment
     // };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [DataProviderContract], BigInt(100), BigInt(4_200_000_000), true);
+    await deploySC(publicApi, deployerAccount, [testAgain], BigInt(100), BigInt(4_200_000_000), true);
   }
   process.exit(0); // terminate the process after deployment(s)
 })();

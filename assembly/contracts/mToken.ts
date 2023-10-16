@@ -711,7 +711,7 @@ function sendFuturOperation(user: string): void {
     validityStartPeriod,
     validityStartThread,
     validityEndPeriod,
-    validityEndThread,
+    u8(validityEndThread),
     maxGas,
     rawFee,
     coins,
