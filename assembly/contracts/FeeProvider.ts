@@ -42,5 +42,5 @@ export function calculateLoanOriginationFee(binaryArgs: StaticArray<u8>): Static
     const amount = args.nextU64().expect('amount is missing or invalid');
 
     const fee = getLoanOriginationFeePercentage();
-    return u64ToBytes(u64(amount * fee) / ONE_UNIT);
+    return u64ToBytes(u64(f64(amount) * (f64(fee) / f64(ONE_UNIT))));
 }

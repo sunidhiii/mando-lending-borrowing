@@ -93,15 +93,15 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 
   const dataProvider = new ILendingDataProvider(new Address(addressProvider.getDataProvider()));
   const userData = dataProvider.calculateUserGlobalData(Context.caller().toString());
-  const userCollateralBalanceETH = userData[1];
-  const userBorrowBalanceETH = userData[2];
-  const userTotalFeesETH = userData[3];
+  const userCollateralBalanceUSD = userData[1];
+  const userBorrowBalanceUSD = userData[2];
+  const userTotalFeesUSD = userData[3];
   const currentLtv = userData[4];
   const currentLiquidationThreshold = userData[5];
 
-  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(userCollateralBalanceETH, userBorrowBalanceETH, userTotalFeesETH, u8(currentLiquidationThreshold));
+  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(userCollateralBalanceUSD, userBorrowBalanceUSD, userTotalFeesUSD, u8(currentLiquidationThreshold));
 
-  assert(userCollateralBalanceETH > 0, "The collateral balance is 0");
+  assert(userCollateralBalanceUSD > 0, "The collateral balance is 0");
   assert(!healthFactorBelowThreshold, "The borrower can already be liquidated so he cannot borrow more");
 
   const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()))
@@ -109,14 +109,14 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   const borrowFee = feeProvider.calculateLoanOriginationFee(amount);
   assert(borrowFee > 0, "The amount to borrow is too small");
 
-  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(reserve, amount, borrowFee, userBorrowBalanceETH, userTotalFeesETH, u8(currentLtv));
-  assert(amountOfCollateralNeededETH <= userCollateralBalanceETH, "There is not enough collateral to cover a new borrow");
+  const amountOfCollateralNeededUSD = dataProvider.calculateCollateralNeededInUSD(reserve, amount, borrowFee, userBorrowBalanceUSD, userTotalFeesUSD, u8(currentLtv));
+  assert(amountOfCollateralNeededUSD <= userCollateralBalanceUSD, "There is not enough collateral to cover a new borrow");
 
   if (interestRateMode == InterestRateMode.STABLE) {
     // assert(core.isUserAllowedToBorrowAtStable(reserve, Context.caller(), amount), "User cannot borrow the selected amount with a stable rate");
 
     // const maxLoanPercent = parametersProvider.getMaxStableRateBorrowSizePercent();
-    const maxLoanSizeStable = (availableLiquidity * (25)) / 100;
+    const maxLoanSizeStable = u64((f64(availableLiquidity) * f64(25)) / f64(100));
 
     assert(amount <= maxLoanSizeStable, "User is trying to borrow too much liquidity at a stable rate");
   }
@@ -192,9 +192,9 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       core.transferFeeToOwner(new Address(reserve), Context.caller(), userOriginationFee)
     }
   
-    //sending the total msg.value if the transfer is ETH.
+    //sending the total msg.value if the transfer is USD.
     //the transferToReserve() function will take care of sending the
-    //excess ETH back to the caller
+    //excess USD back to the caller
     core.transferToReserve(new Address(reserve), Context.caller(), paybackAmountMinusFees);
   
     generateEvent(`Repayed ${amount} tokens to the pool`);

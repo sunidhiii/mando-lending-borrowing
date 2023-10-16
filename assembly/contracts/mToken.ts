@@ -577,7 +577,7 @@ export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     currentPrincipalBalance
   )
 
-  return u256ToBytes(u256.fromU64(balance));
+  return u256ToBytes(balance);
 }
 
 export function principalBalanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -602,8 +602,10 @@ export function totalSupply(): StaticArray<u8> {
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
-  const totalSupply = u256.fromU64((u64.parse(currentSupplyPrincipal.toString()) * core.getNormalizedIncome(underLyingAsset)) / ONE_UNIT);
-  return u256ToBytes(totalSupply);
+
+  const totalSupply = f64.parse(currentSupplyPrincipal.toString()) * (f64(core.getNormalizedIncome(underLyingAsset)) / f64(ONE_UNIT));
+
+  return u256ToBytes(u256.fromF64(totalSupply));
 }
 
 export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -635,7 +637,7 @@ export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
   Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
 }
 
-function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u64 {
+function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 {
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
@@ -646,12 +648,12 @@ function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u64 {
   const userIndex = bytesToU64(Storage.get(stringToBytes(storageKey)));
   // const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
 
-  let cumulatedBal: u64 = 0;
+  let cumulatedBal: f64 = 0;
   if (userIndex > 0) {
-    cumulatedBal = ((u64.parse(_balance.toString()) * normalizedIncome) / userIndex);
+    cumulatedBal = f64.parse(_balance.toString()) * (f64(normalizedIncome) / f64(userIndex));
   }
   // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
-  return cumulatedBal;
+  return u256.fromF64(cumulatedBal);
 }
 
 function cumulateBalanceInternal(user: Address): Array<u64> {

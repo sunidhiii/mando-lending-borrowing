@@ -7,9 +7,9 @@ import { ONE_UNIT } from "./FeeProvider";
 export function constructor(_: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
-  const ONE_UNIT = 1000000000;
-  const lastUpdateTimestamp = 1697010645182;
-  const rate: u256 = u256.fromU64(1000001248);
+  // const ONE_UNIT = 1000000000;
+  // const lastUpdateTimestamp = 1697010645182;
+  // const rate: u256 = u256.fromU64(1000001248);
   // const rate1 = 1.000001248;
 
   // const ratePerSecond = u64.parse(rate.toString()) / 31536000;
@@ -46,21 +46,52 @@ export function constructor(_: StaticArray<u8>): void {
   // const data1 = u64(data);
   // const data2 = u256.fromF64(data);
 
-  var n = timestamp() - lastUpdateTimestamp
-  var ratePerSecond = u64.parse(rate.toString()) / 31536000;
-  var x = ONE_UNIT + ratePerSecond;
+  // var n = timestamp() - lastUpdateTimestamp
+  // var ratePerSecond = u64.parse(rate.toString()) / 31536000;
+  // var x = ONE_UNIT + ratePerSecond;
 
-  var z = n % 2 != 0 ? x : ONE_UNIT;
+  // var z = n % 2 != 0 ? x : ONE_UNIT;
 
-  for (n /= 2; n != 0; n /= 2) {
-    x = (x * x) / ONE_UNIT;
+  // for (n /= 2; n != 0; n /= 2) {
+  //   x = (x * x) / ONE_UNIT;
 
-    if (n % 2 != 0) {
-      z = (z * x) / ONE_UNIT;
-    }
-  }
+  //   if (n % 2 != 0) {
+  //     z = (z * x) / ONE_UNIT;
+  //   }
+  // }
 
-  generateEvent(`data ${ratePerSecond}, ${z}, ${x}`);
+  // const _balance: u256 = new u256(8050000000000);
+  // const normalizedIncome: u256 = new u256(1023186051);
+  // const userIndex: u256 = new u256(1022945862);
+  // const currentSupplyPrincipal: u256 = new u256(5014925727293);
+  // const normalizedIncome1: u64 = 1023186051;
+  // const userIndex1: u64 = 1022945862;
+  // let cumulatedBal: u256 = u256.Zero;
+  // let cumulatedBal2: u64 = 0;
+  // let cumulatedBal1: u64 = 0;
+  // cumulatedBal = u256.fromU64((u64.parse(_balance.toString()) * u64.parse(normalizedIncome.toString())) / u64.parse(userIndex.toString()));
+  // cumulatedBal2 = (u64.parse(_balance.toString()) * (normalizedIncome / userIndex));
+  // const totalSupply = (u64.parse(currentSupplyPrincipal.toString()) * u64.parse(normalizedIncome.toString())) / ONE_UNIT;
+  // const totalSupply3 = u64((f64.parse(currentSupplyPrincipal.toString()) * f64.parse(normalizedIncome.toString())) / f64(ONE_UNIT));
+  // const totalSupply1 = u64.parse(currentSupplyPrincipal.toString()) * (u64.parse(normalizedIncome.toString()) / ONE_UNIT);
+  // const totalSupply2 = u64(f64.parse(currentSupplyPrincipal.toString()) * (f64.parse(normalizedIncome.toString()) / f64(ONE_UNIT)));
+
+  // cumulatedBal1 = u64((f64.parse(_balance.toString()) * f64(normalizedIncome1)) / f64(userIndex1));
+  //     data: 'data 9189004056, 8051890150321.562, 8050000000000'
+
+  // const reserveDecimals = 9;
+  // const reserveDecimals1 = 18;
+  // const tokenUnit = 10 ** reserveDecimals;
+  // const tokenUnit1 = 10 ** reserveDecimals1;
+
+  const ONE_UNIT = 1000000000;
+  const cumulatedLiquidityInterest: f64 = 1289733654621123.0;
+  const cumulatedLiquidityInterest1 = 128923733654698;
+
+  const updatedLastLiquidityCumulativeIndex = u64(cumulatedLiquidityInterest) * u64(f64(cumulatedLiquidityInterest1) / f64(ONE_UNIT));
+  // const updatedLastLiquidityCumulativeIndex1 = u64((cumulatedLiquidityInterest * f64(cumulatedLiquidityInterest1)) / f64(ONE_UNIT));
+
+  generateEvent(`data ${updatedLastLiquidityCumulativeIndex}`);
 }
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked
@@ -309,4 +340,27 @@ OpId:  {
     useAsCollateral: true
   },
   offset: 218
-}*/
+}
+
+User data: [
+  5046483899999n,
+  5046483899999n,
+  931552346630n,
+  0n,
+  60n,
+  75n,
+  4062963223n
+]
+User global data: [
+  5096948738998n,
+  5096948738998n,
+  940867870096n,
+  0n,
+  60n,
+  75n,
+  4062963223n
+]
+User Borrow balances: [ 931400435837n, 931692418470n, 291982633n ]
+Available borrows USD: 2112008119869n
+User Basic Reserve Data:  [ 5050328630000n, 931692418470n, 0n ]
+Available borrows: 2091097148386n*/

@@ -397,7 +397,7 @@ export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): StaticArra
 
   generateEvent(`User basic reserve data: ${underlyingBalance}, ${compoundedBal} and ${userArgs.originationFee}`);
 
-  return new Args().add(userReserveData).serialize();
+  return new Args().add(userReserveData).serialize(); 
 
 }
 
@@ -431,8 +431,25 @@ export function getNormalizedIncome(binaryArgs: StaticArray<u8>): StaticArray<u8
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
 
-  const cumulated = ((calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp) * reserveArgs.lastLiquidityCumulativeIndex)) / ONE_UNIT;
+  const cumulated = u64(calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp) * (f64(reserveArgs.lastLiquidityCumulativeIndex) / f64(ONE_UNIT)));
   return u64ToBytes(cumulated);
+}
+
+export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
+  const autonomousRewardStrategy = args.nextBool().unwrap();
+
+  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
+  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+
+  const updatedAutonomousRewardStrategyEnabled = autonomousRewardStrategy;
+
+  const storageKey = `${USER_KEY}_${user}_${reserve}`;
+  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, userArgs.useAsCollateral, updatedAutonomousRewardStrategyEnabled);
+
+  Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
@@ -478,9 +495,9 @@ function updateCumulativeIndexes(reserve: string): void {
   if (totalBorrows > 0) {
     //only cumulating if there is any income being produced
     const cumulatedLiquidityInterest = calculateLinearInterest(reserveArgs.currentLiquidityRate, reserveArgs.lastUpdateTimestamp);
-    updatedLastLiquidityCumulativeIndex = (cumulatedLiquidityInterest * reserveArgs.lastLiquidityCumulativeIndex) / ONE_UNIT;
+    updatedLastLiquidityCumulativeIndex = u64(cumulatedLiquidityInterest * (f64(reserveArgs.lastLiquidityCumulativeIndex) / f64(ONE_UNIT)));
     const cumulatedVariableBorrowInterest = calculateCompoundedInterest(reserveArgs.currentVariableBorrowRate, reserveArgs.lastUpdateTimestamp);
-    updatedLastVariableBorrowCumulativeIndex = (cumulatedVariableBorrowInterest * reserveArgs.lastVariableBorrowCumulativeIndex) / ONE_UNIT;
+    updatedLastVariableBorrowCumulativeIndex = u64(cumulatedVariableBorrowInterest * (f64(reserveArgs.lastVariableBorrowCumulativeIndex) / f64(ONE_UNIT)));
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
@@ -651,7 +668,7 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u64 {
 
   let principalBorrowBalanceRay = userArgs.principalBorrowBalance;
   let compoundedBalance: u64 = 0;
-  let cumulatedInterest: u64 = 0;
+  let cumulatedInterest: f64 = 0.0;
 
   if (userArgs.stableBorrowRate > 0) {
     cumulatedInterest = calculateCompoundedInterest(
@@ -662,11 +679,11 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u64 {
     //variable interest
     if (userArgs.lastVariableBorrowCumulativeIndex > 0) {
       const compInterest = calculateCompoundedInterest(reserveArgs.currentVariableBorrowRate, reserveArgs.lastUpdateTimestamp);
-      cumulatedInterest = (compInterest * reserveArgs.lastVariableBorrowCumulativeIndex) / userArgs.lastVariableBorrowCumulativeIndex;
+      cumulatedInterest = (compInterest * f64(reserveArgs.lastVariableBorrowCumulativeIndex)) / f64(userArgs.lastVariableBorrowCumulativeIndex);
     }
   }
 
-  compoundedBalance = (principalBorrowBalanceRay * cumulatedInterest) / ONE_UNIT;
+  compoundedBalance = u64((f64(principalBorrowBalanceRay) * cumulatedInterest) / f64(ONE_UNIT));
 
   if (compoundedBalance == userArgs.principalBorrowBalance) {
     //solium-disable-next-line
@@ -691,13 +708,13 @@ function increaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
 
   //update the average stable rate
   //weighted average of all the borrows
-  const weightedLastBorrow = amount * rate;
-  const weightedPreviousTotalBorrows = previousTotalBorrowStable * reserveArgs.currentAverageStableBorrowRate;
+  const weightedLastBorrow = f64(amount) * f64(rate);
+  const weightedPreviousTotalBorrows = f64(previousTotalBorrowStable) * f64(reserveArgs.currentAverageStableBorrowRate);
 
   let updatedCurrentAverageStableBorrowRate: u64 = reserveArgs.currentAverageStableBorrowRate;
 
   if (updatedTotalBorrowsStable > 0) {
-    updatedCurrentAverageStableBorrowRate = (weightedLastBorrow + weightedPreviousTotalBorrows) / updatedTotalBorrowsStable;
+    updatedCurrentAverageStableBorrowRate = u64((weightedLastBorrow + weightedPreviousTotalBorrows) / f64(updatedTotalBorrowsStable));
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
@@ -723,8 +740,8 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
 
   //update the average stable rate
   //weighted average of all the borrows
-  const weightedLastBorrow = amount * rate;
-  const weightedPreviousTotalBorrows = previousTotalBorrowStable * updatedCurrentAverageStableBorrowRate;
+  const weightedLastBorrow = f64(amount) * f64(rate);
+  const weightedPreviousTotalBorrows = f64(previousTotalBorrowStable) * f64(updatedCurrentAverageStableBorrowRate);
 
   assert(
     weightedPreviousTotalBorrows >= weightedLastBorrow,
@@ -732,8 +749,8 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(reserve: string, amount:
   );
 
   if (updatedTotalBorrowsStable > 0) {
-    const weightedFinalBorrow: u64 = weightedPreviousTotalBorrows > weightedLastBorrow ? (weightedPreviousTotalBorrows - weightedLastBorrow) : 0
-    updatedCurrentAverageStableBorrowRate = weightedFinalBorrow / updatedTotalBorrowsStable;
+    const weightedFinalBorrow: f64 = weightedPreviousTotalBorrows > weightedLastBorrow ? (weightedPreviousTotalBorrows - weightedLastBorrow) : 0.0
+    updatedCurrentAverageStableBorrowRate = u64(weightedFinalBorrow / f64(updatedTotalBorrowsStable));
   }
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
@@ -770,15 +787,15 @@ function decreaseTotalBorrowsVariable(reserve: string, amount: u64): void {
   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
 }
 
-function calculateLinearInterest(rate: u64, lastUpdateTimestamp: u64): u64 {
+function calculateLinearInterest(rate: u64, lastUpdateTimestamp: u64): f64 {
   const timeDifference = timestamp() - lastUpdateTimestamp;
 
-  const timeDelta = timeDifference * ONE_UNIT / SECONDS_PER_YEAR;
+  const timeDelta = (f64(timeDifference) * f64(ONE_UNIT)) / f64(SECONDS_PER_YEAR);
 
-  return ((rate * timeDelta) / ONE_UNIT) + ONE_UNIT;
+  return ((f64(rate) * timeDelta) / f64(ONE_UNIT)) + f64(ONE_UNIT);
 }
 
-function calculateCompoundedInterest(rate: u64, lastUpdateTimestamp: u64): u64 {
+function calculateCompoundedInterest(rate: u64, lastUpdateTimestamp: u64): f64 {
   // const timeDifference = timestamp() - lastUpdateTimestamp;
   // const ratePerSecond = (u64.parse(rate.toString()) * ONE_UNIT) / SECONDS_PER_YEAR;
   // const rate = (ratePerSecond + ONE_UNIT) / ONE_UNIT;
@@ -788,20 +805,20 @@ function calculateCompoundedInterest(rate: u64, lastUpdateTimestamp: u64): u64 {
 
   const exp = timestamp() - lastUpdateTimestamp;
   if (exp == 0) {
-    return ONE_UNIT;
+    return f64(ONE_UNIT);
   }
   const expMinusOne = exp - 1;
   const expMinusTwo = exp > 2 ? exp - 2 : 0;
 
-  const ratePerSecond = (rate / SECONDS_PER_YEAR);
+  const ratePerSecond = (f64(rate) / f64(SECONDS_PER_YEAR));
 
-  const basePowerTwo = (ratePerSecond * ratePerSecond) / ONE_UNIT;
-  const basePowerThree = (basePowerTwo * ratePerSecond) / ONE_UNIT;
+  const basePowerTwo = (ratePerSecond * ratePerSecond) / f64(ONE_UNIT);
+  const basePowerThree = (basePowerTwo * ratePerSecond) / f64(ONE_UNIT);
 
-  const secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
-  const thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
+  const secondTerm = (f64(exp) * f64(expMinusOne) * basePowerTwo) / 2.0;
+  const thirdTerm = (f64(exp) * f64(expMinusOne) * f64(expMinusTwo) * basePowerThree) / 6.0;
 
-  return ONE_UNIT + (ratePerSecond * exp) + secondTerm + thirdTerm;
+  return f64(ONE_UNIT) + (ratePerSecond * f64(exp)) + secondTerm + thirdTerm;
 }
 
 function getTotalBorrows(totalBorrowsStable: u64, totalBorrowsVariable: u64): u64 {
@@ -859,22 +876,6 @@ function setUserUseReserveAsCollateral(reserve: string, user: string, useAsColla
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 }
 
-export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
-  const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const autonomousRewardStrategy = args.nextBool().unwrap();
-
-  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
-
-  const updatedAutonomousRewardStrategyEnabled = autonomousRewardStrategy;
-
-  const storageKey = `${USER_KEY}_${user}_${reserve}`;
-  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, userArgs.useAsCollateral, updatedAutonomousRewardStrategyEnabled);
-
-  Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
-}
 
 // function calculatePow(x: u64, n: u64): u256 {
 //   var z = n % 2 != 0 ? x : ONE_UNIT;

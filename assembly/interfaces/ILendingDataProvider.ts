@@ -20,12 +20,12 @@ export class ILendingDataProvider {
     return new Args(call(this._origin, "calculateUserGlobalData", new Args().add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
 
-  calculateUserHealthFactorBelowThresh(totalCollateralBalanceETH: u64, totalBorrowBalanceETH: u64, totalFeesETH: u64, currentLiquidationThreshold: u8): bool {
-    return byteToBool(call(this._origin, "calculateUserHealthFactorBelowThresh", new Args().add(totalCollateralBalanceETH).add(totalBorrowBalanceETH).add(totalFeesETH).add(currentLiquidationThreshold), 0));
+  calculateUserHealthFactorBelowThresh(totalCollateralBalanceUSD: u64, totalBorrowBalanceUSD: u64, totalFeesUSD: u64, currentLiquidationThreshold: u8): bool {
+    return byteToBool(call(this._origin, "calculateUserHealthFactorBelowThresh", new Args().add(totalCollateralBalanceUSD).add(totalBorrowBalanceUSD).add(totalFeesUSD).add(currentLiquidationThreshold), 0));
   }
 
-  calculateCollateralNeededInETH(reserve: string, amount: u64, fee: u64, userCurrentBorrowBalanceTH: u64, userCurrentFeesETH: u64, userCurrentLtv: u8): u64 {
-    return bytesToU64(call(this._origin, "calculateCollateralNeededInETH", new Args().add(reserve).add(amount).add(fee).add(userCurrentBorrowBalanceTH).add(userCurrentFeesETH).add(userCurrentLtv), 0));
+  calculateCollateralNeededInUSD(reserve: string, amount: u64, fee: u64, userCurrentBorrowBalancUSD: u64, userCurrentFeesUSD: u64, userCurrentLtv: u8): u64 {
+    return bytesToU64(call(this._origin, "calculateCollateralNeededInUSD", new Args().add(reserve).add(amount).add(fee).add(userCurrentBorrowBalancUSD).add(userCurrentFeesUSD).add(userCurrentLtv), 0));
   }
 
   balanceDecreaseAllowed(underlyingAssetAddress: string, user: string, amount: u64): bool {
