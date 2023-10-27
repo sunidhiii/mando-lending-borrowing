@@ -1,12 +1,13 @@
 import { call, Context, createSC, Storage, Address, transferCoins, balance, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, Result, Serializable, bytesToString, bytesToU64, fixedSizeArrayToBytes, i32ToBytes, serializableObjectsArrayToBytes, stringToBytes, u256ToBytes, u64ToBytes, u8toByte } from '@massalabs/as-types';
-import { onlyOwner, ownerAddress } from '../helpers/ownership';
+import { Args, bytesToString, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
+import { onlyOwner } from '../helpers/ownership';
 import { IERC20 } from '../interfaces/IERC20';
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
 import { u256 } from 'as-bignum/assembly';
 import { timestamp } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { IReserveInterestRateStrategy } from '../interfaces/IReserveInterestStrategy';
+import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
 
 const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
@@ -53,7 +54,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 
 export function initReserve(binaryArgs: StaticArray<u8>): void {
 
-  // onlyOwner();
+  onlyOwner();
 
   // convert the binary input to Args
   const args: Args = new Args(binaryArgs);
@@ -151,7 +152,7 @@ export function deleteReserve(binaryArgs: StaticArray<u8>): void {
 
 export function initUser(binaryArgs: StaticArray<u8>): void {
 
-  // onlyOwner();
+  // onlyOwner();  // onlyLendingPool
 
   // convert the binary input to Args
   const args: Args = new Args(binaryArgs);
@@ -263,7 +264,9 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
   const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
-  const owner = bytesToString(ownerAddress(new Args().serialize()));
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  // const owner = bytesToString(ownerAddress(new Args().serialize()));
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
 
   if (reserve == MAS) {
     assert(Context.transferredCoins() >= amount, "Not enough sent coins");
@@ -276,7 +279,7 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
 }
 
 export function transferToUser(binaryArgs: StaticArray<u8>): void {
-
+  // onlyLendingPool
   const args = new Args(binaryArgs);
 
   const reserve = args.nextString().unwrap();
@@ -436,6 +439,7 @@ export function getNormalizedIncome(binaryArgs: StaticArray<u8>): StaticArray<u8
 }
 
 export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
+  // onlyUser
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
   const user = args.nextString().unwrap();
@@ -453,6 +457,8 @@ export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): vo
 }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
   const provider = args.nextString().expect('Provider Address argument is missing or invalid');
 
@@ -463,6 +469,8 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setMTokenContractCode(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
 
   const mToken_contract_code = args.nextFixedSizeArray<u8>().unwrap();
@@ -479,7 +487,7 @@ function getUserUnderlyingAssetBalance(reserve: string, user: string): u64 {
 }
 
 /**
-* This functions retrieves the core address.
+* This functions updates the cumulative indexes.
 *
 * @returns The serialized address found.
 *
@@ -875,7 +883,6 @@ function setUserUseReserveAsCollateral(reserve: string, user: string, useAsColla
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 }
-
 
 // function calculatePow(x: u64, n: u64): u256 {
 //   var z = n % 2 != 0 ? x : ONE_UNIT;

@@ -873,7 +873,7 @@ async function getUserBorrowBalances() {
                     let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
                     console.log("User Borrow balances:", reservesData);
                 });
-        }
+        } // User Borrow balances: [ 2099008071911n, 13273547856707n, 11174539784796n ] 9317039828084
     } catch (error) {
         console.error(error);
     }
@@ -898,6 +898,59 @@ async function balanceDecreaseAllowed() {
                     console.log("Balance Decrease allowed? ", byteToBool(res.returnValue));
                 });
         } // 
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getUtilizationRate() {
+    const client = await createClient();
+    try {
+        const reserve = await client
+            .smartContracts()
+            .readSmartContract({
+                maxGas: fromMAS(0.1),
+                targetAddress: CORE_ADDRESS,
+                targetFunction: "getReserve",
+                parameter: new Args()
+                    .addString(RESERVE_ADDRESS)
+                    .serialize(),
+            })
+        const reserveData = new Reserve(reserve.returnValue.toString()).deserialize(reserve.returnValue, 0)
+
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: CORE_ADDRESS,
+                    targetFunction: "getReserveAvailableLiquidity",
+                    parameter: new Args().addString(RESERVE_ADDRESS).serialize(),
+                })
+                .then((res) => {
+                    const totalBorrows =
+                        reserveData.instance.totalBorrowsStable +
+                        reserveData.instance.totalBorrowsVariable;
+                    console.log(
+                        `total borrow ${totalBorrows} ${bytesToU64(res.returnValue)}`
+                    );
+                    let utilization: number =
+                        !totalBorrows || !bytesToU64(res.returnValue)
+                            ? 0.0
+                            : totalBorrows /
+                                (Number(bytesToU64(res.returnValue)) + totalBorrows);
+                    console.log(utilization);
+                    console.log(
+                        "Rserve available liquidity",
+                        bytesToU64(res.returnValue),
+                        utilization
+                    );
+                    // setUtilizationRate(utilization);
+                    // setAvailableLiquidity(String(toMAS(bytesToU64(res.returnValue))));
+                    // return bytesToU256(res.returnValue);
+                    // console.log("Reserve data", utilization);
+                });
+        }
     } catch (error) {
         console.error(error);
     }
@@ -976,6 +1029,43 @@ async function calculateAvailableBorrowsUSD() {
     }
 }
 
+async function getUserAvailableBorrows() {
+    const client = await createClient();
+    try {
+        if (client) {
+            const user = await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: DATA_PROVIDER,
+                    targetFunction: "calculateUserData",
+                    parameter: new Args()
+                        .addString(baseAccount.address)
+                        .serialize(),
+                })
+
+            let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayType.U64);
+            // console.log("User Data:", userData[1], userData[2], userData[3], userData[4]);
+
+            const availableBorrows = await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.002),
+                    targetAddress: DATA_PROVIDER,
+                    targetFunction: "calculateAvailableBorrows",
+                    parameter: new Args()
+                        .addU64(BigInt(userData[1])).addU64(BigInt(userData[2])).addU64(BigInt(userData[3])).addU64(BigInt(userData[4]))
+                        .serialize(),
+                })
+            const userAvailableBorrows = bytesToU64(availableBorrows.returnValue);
+            console.log("User Available Borrows:", userAvailableBorrows);
+            // return userAvailableBorrows;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 async function calculateAvailableBorrows() {
     const client = await createClient();
     try {
@@ -1012,7 +1102,7 @@ async function deposit() {
                     parameter: new Args()
                         .addString(RESERVE_ADDRESS)
                         .addString(baseAccount.address)
-                        .addU64(BigInt(500000000000n))
+                        .addU64(BigInt(fromMAS(1)))
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(10),
@@ -1111,11 +1201,11 @@ async function repay(reserve: string) {
                     functionName: "repay",
                     parameter: new Args()
                         .addString(reserve)
-                        .addU64(100000000000n)
+                        .addU64(10000018849n)
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(10),
-                    fee: fromMAS(0),
+                    fee: fromMAS(0), // 388008570  5101457714250
                 })
                 .then((res) => {
                     const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
@@ -1139,10 +1229,10 @@ async function redeemUnderlying() {
                     targetAddress: mToken,
                     functionName: "redeem",
                     parameter: new Args()
-                        .addU64(3000000000000n)
+                        .addU64(1000000000n)
                         .serialize(),
                     maxGas: 4_294_967_295n,
-                    coins: fromMAS(10),
+                    coins: fromMAS(1),
                     fee: BigInt(0),
                 })
                 .then((res) => {
@@ -1305,10 +1395,11 @@ async function readContractData() {
 
     const client = await createClient();
     // const keyy = strToBytes("USER_KEY");
-    const keyy = "USER_INDEX_AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8";
+    // const keyy = `USER_KEY_${baseAccount.address}_${RESERVE_ADDRESS}`;
+    const keyy = 'BALANCEAU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8';
+    // const keyy = `$'USER_KEY_'${baseAccount.address}_${RESERVE_ADDRESS}`;
 
     try {
-        let args = new Args();
         if (client) {
             let res = await client
                 .publicApi()
@@ -1318,7 +1409,28 @@ async function readContractData() {
             if (res[0].candidate_value) {
                 // let data = bytesToStr(res[0].candidate_value);
                 // const data = new UserReserve(res[0].candidate_value.toString()).deserialize(res[0].candidate_value, 217)
-                console.log("greetingDecoded", bytesToU64(res[0].candidate_value));
+                console.log("greetingDecoded", bytesToU256(res[0].candidate_value));
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function checkUserExists() {
+
+    const client = await createClient();
+    const keyy = `USER_KEY_${baseAccount.address}_${RESERVE_ADDRESS}`;
+
+    try {
+        if (client) {
+            let res = await client
+                .publicApi()
+                .getDatastoreEntries([
+                    { address: CORE_ADDRESS, key: strToBytes(keyy) },
+                ]);
+            if (res[0].candidate_value) {
+                console.log("User exists?", byteToBool(res[0].candidate_value));
             }
         }
     } catch (error) {
@@ -1371,6 +1483,34 @@ async function setCore() {
                 })
                 .then((res) => {
                     const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function setUserAutonomousRewardStrategy() {
+
+    const client = await createClient();
+
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_294_967_295n,
+                    targetAddress: CORE_ADDRESS,
+                    functionName: "setUserAutonomousRewardStrategy",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS).addString(baseAccount.address).addBool(true)
+                        .serialize(),
+                    coins: fromMAS(1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    // const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
                     console.log("OpId: ", res);
                 });
         }
@@ -1504,7 +1644,7 @@ async function test1() {
 // setCore();
 // getCoreAddress();
 // createClient();
-// readContractData();  
+// readContractData();
 // readContractDataPool()
 // addReserveData();
 // viewReserveData();
@@ -1524,17 +1664,17 @@ async function test1() {
 // balanceDecreaseAllowed();
 // calculateCollateralNeededInUSD()
 // calculateCollateralNeeded()
-calculateAvailableBorrowsUSD();
-// calculateAvailableBorrows(); 
-// getUserBorrowBalances()
+// calculateAvailableBorrowsUSD();
+// calculateAvailableBorrows();
+// getUserBorrowBalances();
 // getReserveAvailableLiquiditySupply();
 // getNormalizedIncome();
 // getUserBasicReserveData();
 // transferToReserve() 187018757n 104450016n
-// borrow(RESERVE_ADDRESS, 100000000000, 2);
+// borrow(RESERVE_ADDRESS, 1000000000, 2);
 // repay(RESERVE_ADDRESS);
-// getBalance(baseAccount.address); 
-// getBalance(CORE_ADDRESS); 
+// getBalance(baseAccount.address);
+// getBalance(CORE_ADDRESS);
 
 // setPrice();
 // getPrice();
@@ -1544,16 +1684,21 @@ calculateAvailableBorrowsUSD();
 // setCoreAddress()
 // setLendingPoolAddress();
 // setFeeProviderAddress();
-// setDataProviderAddress();
+// setDataProviderAddress(); 
 
 // getVariableRateSlope1()
 
 // getUserReserve();
 // redeemUnderlying();
-// getMTokenBalance(baseAccount.address);
+getMTokenBalance(baseAccount.address);
 // getMTokenTotalSupply();
+// checkUserExists();
+// getUserAvailableBorrows();
+// getUtilizationRate();
 
-// getStatus('O1PvM97rLTfX3XFR2czSH1twhpVpBJdaKDm9JLR5htksA5B6pMc');
+// setUserAutonomousRewardStrategy();
+
+// getStatus('O12rSTeWTHVi29stABThqgW9rN3UnGQ5bZYMEcYtxRFRywoSnMBN');
 
 // test1();
 

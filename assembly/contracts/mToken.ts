@@ -1,13 +1,4 @@
-import {
-  Address,
-  Context,
-  generateEvent,
-  Storage,
-  createEvent,
-  callerHasWriteAccess,
-  sendMessage,
-  unsafeRandom,
-} from '@massalabs/massa-as-sdk';
+import { Address, Context, generateEvent, Storage, createEvent, callerHasWriteAccess, sendMessage } from '@massalabs/massa-as-sdk';
 import { Args, bytesToString, bytesToU256, bytesToU64, stringToBytes, u256ToBytes, u64ToBytes } from '@massalabs/as-types';
 import { _balance, _setBalance, _approve, _allowance } from '../helpers/token-internals';
 import { u256 } from 'as-bignum/assembly';
@@ -20,6 +11,7 @@ import { ILendingPool } from '../interfaces/ILendingPool';
 import { ONE_UNIT } from './FeeProvider';
 import { IRouter } from '../interfaces/IRouter';
 import { IERC20 } from '../interfaces/IERC20';
+import { onlyOwner } from '../helpers/ownership';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -397,6 +389,7 @@ export function transferFrom(binaryArgs: StaticArray<u8>): void {
 */
 export function mint(binaryArgs: StaticArray<u8>): void {
   // onlyOwner();
+
   _mint(binaryArgs);
 }
 
@@ -465,8 +458,8 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const currentBalance = arr[1];
-  const balanceIncrease = arr[2];
+  const currentBalance: u64 = arr[1];
+  const balanceIncrease: u64 = arr[2];
 
   let amountToRedeem: u64 = amount;
 
@@ -516,7 +509,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(user);
 
-  const balanceIncrease = arr[2];
+  const balanceIncrease: u64 = arr[2];
   // const index = arr[2];
 
   //mint an equivalent amount of tokens to cover the new deposit
@@ -682,6 +675,8 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
 
   const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u64ToBytes(index));
+
+  generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
 
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }

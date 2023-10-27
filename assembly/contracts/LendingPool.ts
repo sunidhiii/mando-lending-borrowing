@@ -8,6 +8,7 @@ import UserReserve from '../helpers/UserReserve';
 import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
+import { onlyOwner } from '../helpers/ownership';
 
 // const ONE_UNIT = 10 ** 9;
 
@@ -51,7 +52,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 export function deposit(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
-  const user = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No user address provided');
   const amount = args.nextU64().expect('No amount provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
@@ -203,6 +204,8 @@ export function repay(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
   const provider = args.nextString().expect('Provider Address argument is missing or invalid');
 

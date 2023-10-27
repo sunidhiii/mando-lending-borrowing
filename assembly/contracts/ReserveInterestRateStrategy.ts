@@ -1,6 +1,5 @@
-import { Args, bytesToU64, fixedSizeArrayToBytes, stringToBytes, u64ToBytes } from '@massalabs/as-types';
-import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
-import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
+import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { onlyOwner } from '../helpers/ownership';
 
 export const ONE_UNIT: f64 = 1000000000.0;
@@ -85,6 +84,8 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 // }
 
 export function setBaseVariableBorrowRate(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     const baseVariableBorrowRate = args.nextU64().expect('baseVariableBorrowRate argument is missing or invalid');
 
@@ -92,6 +93,8 @@ export function setBaseVariableBorrowRate(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setVariableRateSlope1(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     
     const variableRateSlope1 = args.nextU64().expect('variableRateSlope1 argument is missing or invalid');
@@ -99,6 +102,8 @@ export function setVariableRateSlope1(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setVariableRateSlope2(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     
     const variableRateSlope2 = args.nextU64().expect('variableRateSlope2 argument is missing or invalid');
@@ -106,6 +111,8 @@ export function setVariableRateSlope2(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setStableRateSlope1(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     
     const stableRateSlope1 = args.nextU64().expect('stableRateSlope1 argument is missing or invalid');
@@ -113,6 +120,8 @@ export function setStableRateSlope1(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setStableRateSlope2(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     
     const stableRateSlope2 = args.nextU64().expect('stableRateSlope2 argument is missing or invalid');
@@ -120,6 +129,8 @@ export function setStableRateSlope2(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setReserve(binaryArgs: StaticArray<u8>): void {
+    onlyOwner();
+
     const args = new Args(binaryArgs);
     
     const reserve = args.nextString().expect('reserve argument is missing or invalid');

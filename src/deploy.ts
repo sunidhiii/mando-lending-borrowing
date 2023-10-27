@@ -114,17 +114,17 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   args: new Args().addU8(9).addU256(1000000000000000n), // arguments for deployment
     //   // protoPaths: [], // proto files for deployment
     // };
-    // const testAgain: ISCData = {               // AS1WxmcceUVSKhHS7dq48oaAVZY3CLPEXzfTUzbvb9j3a3bdW66M
-    //   data: readFileSync(path.join(__dirname, 'build', 'testAgain.wasm')), // smart contract bytecode
-    //   coins: fromMAS(0.001), // coins for deployment 63000000
-    // };
+    const testAgain: ISCData = {               // AS1WxmcceUVSKhHS7dq48oaAVZY3CLPEXzfTUzbvb9j3a3bdW66M
+      data: readFileSync(path.join(__dirname, 'build', 'testAgain.wasm')), // smart contract bytecode
+      coins: fromMAS(0.001), // coins for deployment 63000000
+    };
     // const reserveToken: ISCData = {               // AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva
     //   data: readFileSync(path.join(__dirname, 'build', 'ReserveToken.wasm')), // smart contract bytecode
     //   coins: fromMAS(1), // coins for deployment 63000000
     //   args: new Args().addString('myToken').addString('MTOKEN').addU8(9).addU256(1000000000000000n), // arguments for deployment
     // };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [FeeProviderContract, InterestStrategyContract, DataProviderContract, PoolContract, CoreContract], BigInt(100), BigInt(4_200_000_000), true);
+    await deploySC(publicApi, deployerAccount, [testAgain], BigInt(100), BigInt(4_200_000_000), true);
   }
   process.exit(0); // terminate the process after deployment(s)
 })();

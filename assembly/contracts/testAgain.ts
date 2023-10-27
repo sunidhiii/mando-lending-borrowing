@@ -1,8 +1,11 @@
-import { generateEvent } from "@massalabs/massa-as-sdk";
+import { Address, generateEvent } from "@massalabs/massa-as-sdk";
 import { u256 } from 'as-bignum/assembly';
 import { timestamp } from "@massalabs/massa-as-sdk/assembly/std/context";
-import { onlyOwner } from "../helpers/ownership";
+import { onlyOwner, ownerAddress } from "../helpers/ownership";
 import { ONE_UNIT } from "./FeeProvider";
+import { ILendingCore } from "../interfaces/ILendingCore";
+import { ILendingAddressProvider } from "../interfaces/ILendingAddressProvider";
+import { Args, bytesToString } from "@massalabs/as-types";
 
 export function constructor(_: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
@@ -84,14 +87,23 @@ export function constructor(_: StaticArray<u8>): void {
   // const tokenUnit = 10 ** reserveDecimals;
   // const tokenUnit1 = 10 ** reserveDecimals1;
 
-  const ONE_UNIT = 1000000000;
-  const cumulatedLiquidityInterest: f64 = 1289733654621123.0;
-  const cumulatedLiquidityInterest1 = 128923733654698;
+  // const ONE_UNIT = 1000000000;
+  // const cumulatedLiquidityInterest: f64 = 1289733654621123.0;
+  // const cumulatedLiquidityInterest1 = 128923733654698;
 
-  const updatedLastLiquidityCumulativeIndex = u64(cumulatedLiquidityInterest) * u64(f64(cumulatedLiquidityInterest1) / f64(ONE_UNIT));
+  // const updatedLastLiquidityCumulativeIndex = u64(cumulatedLiquidityInterest) * u64(f64(cumulatedLiquidityInterest1) / f64(ONE_UNIT));
   // const updatedLastLiquidityCumulativeIndex1 = u64((cumulatedLiquidityInterest * f64(cumulatedLiquidityInterest1)) / f64(ONE_UNIT));
 
-  generateEvent(`data ${updatedLastLiquidityCumulativeIndex}`);
+  // const core = new ILendingCore(new Address('AS12mPMppiXh1RNWLLxpgexDZPhjGTukaeovjvrMzUPsexFXnbM2y'));
+  // const isAutoRewardEnabled = core.getUserReserve(new Address('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8'), new Address('AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva')).autonomousRewardStrategyEnabled;
+  // const owner = new ILendingAddressProvider(new Address('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp')).getOwner();
+  // const owner = bytesToString(ownerAddress(new Args().serialize()));
+
+  const balanceOf: u256 = new u256(3074008113407);
+  const previousPrincipalBal: u256 = new u256(3073999999969);
+  const balanceIncrease = u64.parse(balanceOf.toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf.toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  
+  generateEvent(`data ${balanceIncrease}`);
 }
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked

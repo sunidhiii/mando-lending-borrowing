@@ -3,7 +3,7 @@ import { Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-a
 import { onlyOwner } from '../helpers/ownership';
 
 export const ORIGNATION_FEE: u64 = 2500000;   // 100000000000
-export const ONE_UNIT: u64 = 10**9;
+export const ONE_UNIT: u64 = 10 ** 9;
 
 export function constructor(_: StaticArray<u8>): void {
     // This line is important. It ensures that this function can't be called in the future.
@@ -11,7 +11,7 @@ export function constructor(_: StaticArray<u8>): void {
     assert(callerHasWriteAccess());
     Storage.set('ORIGNATION_FEE', ORIGNATION_FEE.toString());
 
-  generateEvent(`Fee Provider called with origination fee.`);
+    generateEvent(`Fee Provider called with origination fee.`);
 
 }
 

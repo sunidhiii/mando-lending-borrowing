@@ -399,6 +399,8 @@ export function calculateCollateralNeeded(binaryArgs: StaticArray<u8>): StaticAr
 }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
   const provider = args.nextString().expect('Provider Address argument is missing or invalid');
 
@@ -409,6 +411,8 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
 }
 
 export function setPriceOracle(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
   const oracle = args.nextString().expect('Oracle Address argument is missing or invalid');
 

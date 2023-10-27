@@ -1,4 +1,5 @@
-import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, fromMAS } from "@massalabs/massa-web3";
+// import MessageResponse from "./interfaces/MessageResponse";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64 } from "@massalabs/massa-web3";
 
 // create a base account for signing transactions
 const baseAccount = {
@@ -7,7 +8,8 @@ const baseAccount = {
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
-let CORE_ADDRESS = 'AS12mPMppiXh1RNWLLxpgexDZPhjGTukaeovjvrMzUPsexFXnbM2y'
+let INTEREST_ADDRESS = 'AS19jFaWTJbfUzYQ4Bi76AWQnDMhJYmA75ZzBFFHMjyV17aJhBbT';
+let CORE_ADDRESS = 'AS12mPMppiXh1RNWLLxpgexDZPhjGTukaeovjvrMzUPsexFXnbM2y'    
 let RESERVE_ADDRESS = 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';
 
 class Reserve implements ISerializable<Reserve> {
@@ -100,10 +102,21 @@ async function getCurrentAPY() {
     const client = await createClient();
     try {
         if (client) {
+            const reserveLiquidity = await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: CORE_ADDRESS,
+                    targetFunction: "getReserveAvailableLiquidity",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS)
+                        .serialize(),
+                })
+
             const reserveArgs = await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.0006),
+                    maxGas: fromMAS(0.01),
                     targetAddress: CORE_ADDRESS,
                     targetFunction: "getReserve",
                     parameter: new Args()
@@ -111,12 +124,20 @@ async function getCurrentAPY() {
                         .serialize(),
                 })
             const reserveData = new Reserve(reserveArgs.returnValue.toString()).deserialize(reserveArgs.returnValue, 0)
-            const currentLiquidityRate = reserveData.instance.currentLiquidityRate;
-            const currentVariableBorrowRate = reserveData.instance.currentVariableBorrowRate;
 
-            console.log("Current Liquidity rate(APY)", currentLiquidityRate);
-            console.log("Current Variable Borrow rate", currentVariableBorrowRate);
-            return [currentLiquidityRate, currentVariableBorrowRate];
+            const reserveInterest = await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.01),
+                    targetAddress: INTEREST_ADDRESS,
+                    targetFunction: "calculateInterestRates",
+                    parameter: new Args()
+                        .addU64(BigInt(bytesToU64(reserveLiquidity.returnValue))).addU64(BigInt(reserveData.instance.totalBorrowsStable)).addU64(BigInt(reserveData.instance.totalBorrowsVariable)).addU64(BigInt(reserveData.instance.currentAverageStableBorrowRate))
+                        .serialize(),
+                })
+            const reserveInterestRates = new Args(reserveInterest.returnValue).nextArray(ArrayType.U64);
+            console.log("Current Liquidity rate(APY)", reserveInterestRates[0]);
+            return reserveInterestRates[0];
         }
     } catch (error) {
         console.error(error);
@@ -124,3 +145,4 @@ async function getCurrentAPY() {
 }
 
 getCurrentAPY()
+
