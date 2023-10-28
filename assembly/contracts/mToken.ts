@@ -494,7 +494,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after mint ${amountToRedeem} incresed to ${balanceIncrease}`)
+  generateEvent(`Balance redeemed after mint ${amountToRedeem} increased to ${balanceIncrease}`)
 
 }
 
@@ -655,7 +655,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   // const user = new Address(args.nextString().unwrap());
 
   const previousPrincipalBal = _balance(user);
-  const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  const balanceIncrease = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
 
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -731,7 +731,7 @@ function swapTokensAndAddDeposit(user: string): void {
   const path = [wmas, usdc];
 
   const previousPrincipalBal = _balance(new Address(user));
-  const amount = u64.parse(balanceOf(new Args().add(user).serialize()).toString()) - u64.parse(previousPrincipalBal.toString());
+  const amount = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString());
 
   const amountIn = amount;
   const amountOut = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, callee, deadline);

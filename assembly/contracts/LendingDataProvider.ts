@@ -2,7 +2,6 @@ import { Args, boolToByte, u64ToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
-import { onlyOwner } from '../helpers/ownership';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { IPriceOracle } from '../interfaces/IPriceOracle';
 import { ONE_UNIT } from './FeeProvider';
@@ -430,4 +429,11 @@ function calculateHealthFactorFromBalancesInternal(collateralBalanceUSD: f64, bo
     res = u64((((collateralBalanceUSD * liquidationThreshold) / 100.0) / (borrowBalanceUSD + totalFeesUSD)) * f64(ONE_UNIT));
   }
   return res;
+}
+
+function onlyOwner(): void {
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+  
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }

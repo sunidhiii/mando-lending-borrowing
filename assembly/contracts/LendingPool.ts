@@ -8,7 +8,6 @@ import UserReserve from '../helpers/UserReserve';
 import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
-import { onlyOwner } from '../helpers/ownership';
 
 // const ONE_UNIT = 10 ** 9;
 
@@ -213,4 +212,11 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
     'ADDRESS_PROVIDER_ADDR',
     provider,
   );
+}
+
+function onlyOwner(): void {
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+  
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }

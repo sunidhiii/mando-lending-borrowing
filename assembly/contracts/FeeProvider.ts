@@ -17,7 +17,7 @@ export function constructor(_: StaticArray<u8>): void {
 
 export function updateFee(binaryArgs: StaticArray<u8>): void {
 
-    onlyOwner();
+    // onlyOwner();
 
     const args = new Args(binaryArgs);
     const fee = args.nextU64().unwrap();

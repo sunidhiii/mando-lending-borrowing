@@ -1,6 +1,5 @@
 import { call, Context, createSC, Storage, Address, transferCoins, balance, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
-import { onlyOwner } from '../helpers/ownership';
+import { Args, bytesToString, bytesToU32, bytesToU64, stringToBytes, u32ToBytes, u64ToBytes } from '@massalabs/as-types';
 import { IERC20 } from '../interfaces/IERC20';
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
@@ -23,7 +22,6 @@ export enum InterestRateMode { NONE, STABLE, VARIABLE }
 // getReserveCurrentVariableBorrowRate
 // getReserveCurrentStableBorrowRate
 // getReserveUtilizationRate
-// getUserCurrentBorrowRateMode
 // getUserCurrentBorrowRate
 
 /**
@@ -86,24 +84,24 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   addReserveToList(reserve.addr);
 
   generateEvent(
-    'ReserveCreated : ' +
-    ', addr:' +
+    'ReserveCreated: ' +
+    'addr:' +
     reserve.addr.toString() +
-    ', name:' +
+    ', name: ' +
     reserve.name.toString() +
-    ', symbol:' +
+    ', symbol: ' +
     reserve.symbol.toString() +
-    ', decimals:' +
+    ', decimals: ' +
     reserve.decimals.toString() +
-    ', mTokenAddress:' +
+    ', mTokenAddress: ' +
     reserve.mTokenAddress.toString() +
-    ', interestCalcAddress:' +
+    ', interestCalcAddress: ' +
     reserve.interestCalcAddress.toString() +
-    ', baseLTV:' +
+    ', baseLTV: ' +
     reserve.baseLTV.toString() +
-    'LiquidationThreshold: ' +
+    ', LiquidationThreshold: ' +
     reserve.LiquidationThreshold.toString() +
-    'LiquidationBonus: ' +
+    ', LiquidationBonus: ' +
     reserve.LiquidationBonus.toString(),
   );
 
@@ -172,20 +170,20 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
     Storage.set(stringToBytes(storageKey), userReserve.serialize());
 
     generateEvent(
-      'UserReserveCreated : ' +
+      'UserReserveCreated: ' +
       'addr:' +
       userReserve.addr.toString() +
-      ', principalBorrowBalance:' +
+      ', principalBorrowBalance: ' +
       userReserve.principalBorrowBalance.toString() +
-      ', lastVariableBorrowCumulativeIndex:' +
+      ', lastVariableBorrowCumulativeIndex: ' +
       userReserve.lastVariableBorrowCumulativeIndex.toString() +
-      ', originationFee:' +
+      ', originationFee: ' +
       userReserve.originationFee.toString() +
-      ', stableBorrowRate:' +
+      ', stableBorrowRate: ' +
       userReserve.stableBorrowRate.toString() +
-      ', lastUpdateTimestamp:' +
+      ', lastUpdateTimestamp: ' +
       userReserve.lastUpdateTimestamp.toString() +
-      ', useAsCollateral:' +
+      ', useAsCollateral: ' +
       userReserve.useAsCollateral.toString(),
     );
   }
@@ -438,6 +436,21 @@ export function getNormalizedIncome(binaryArgs: StaticArray<u8>): StaticArray<u8
   return u64ToBytes(cumulated);
 }
 
+export function getUserCurrentBorrowRateMode(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
+  
+  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
+  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+
+  if (userArgs.principalBorrowBalance == 0) {
+    return u32ToBytes(InterestRateMode.NONE);
+  }
+
+  return userArgs.stableBorrowRate > 0 ? u32ToBytes(InterestRateMode.STABLE) : u32ToBytes(InterestRateMode.VARIABLE);
+}
+
 export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
   // onlyUser
   const args = new Args(binaryArgs);
@@ -519,7 +532,7 @@ function updateReserveStateOnRepayInternal(reserve: string, user: string, paybac
   const userData = getUserReserve(new Args().add(user).add(reserve).serialize());
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-  const borrowRateMode: InterestRateMode = getUserCurrentBorrowRateMode(reserve, user);
+  const borrowRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   //update the indexes
   updateCumulativeIndexes(reserve);
@@ -533,17 +546,6 @@ function updateReserveStateOnRepayInternal(reserve: string, user: string, paybac
     increaseTotalBorrowsVariable(reserve, balanceIncrease);
     decreaseTotalBorrowsVariable(reserve, paybackAmountMinusFees);
   }
-}
-
-function getUserCurrentBorrowRateMode(reserve: string, user: string): InterestRateMode {
-  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
-
-  if (userArgs.principalBorrowBalance == 0) {
-    return InterestRateMode.NONE;
-  }
-
-  return userArgs.stableBorrowRate > 0 ? InterestRateMode.STABLE : InterestRateMode.VARIABLE;
 }
 
 function updateUserStateOnRepayInternal(reserve: string, user: string, paybackAmountMinusFees: u64, originationFeeRepaid: u64, balanceIncrease: u64, repaidWholeLoan: bool): void {
@@ -630,7 +632,7 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
 // }
 
 function updateReserveTotalBorrowsByRateModeInternal(reserve: string, user: string, principalBalance: u64, balanceIncrease: u64, amountBorrowed: u64, newBorrowRateMode: InterestRateMode): void {
-  const previousRateMode: InterestRateMode = getUserCurrentBorrowRateMode(reserve, user);
+  const previousRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
@@ -882,6 +884,13 @@ function setUserUseReserveAsCollateral(reserve: string, user: string, useAsColla
   const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, updatedUseAsCollateral, userArgs.autonomousRewardStrategyEnabled);
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
+}
+
+function onlyOwner(): void {
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }
 
 // function calculatePow(x: u64, n: u64): u256 {

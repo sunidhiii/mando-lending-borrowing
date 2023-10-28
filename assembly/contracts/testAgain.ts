@@ -99,11 +99,23 @@ export function constructor(_: StaticArray<u8>): void {
   // const owner = new ILendingAddressProvider(new Address('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp')).getOwner();
   // const owner = bytesToString(ownerAddress(new Args().serialize()));
 
+  const arr = cumulateBalanceInternal();
+
+  const previousBalance: u64 = arr[1];
+  const currentBalance: u64 = arr[1];
+  const balanceIncrease: u64 = arr[2];
+
+  generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
+}
+
+function cumulateBalanceInternal(): Array<u64> { 
   const balanceOf: u256 = new u256(3074008113407);
   const previousPrincipalBal: u256 = new u256(3073999999969);
   const balanceIncrease = u64.parse(balanceOf.toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf.toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
   
-  generateEvent(`data ${balanceIncrease}`);
+  generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
+
+  return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked

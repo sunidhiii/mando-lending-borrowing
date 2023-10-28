@@ -124,7 +124,7 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   args: new Args().addString('myToken').addString('MTOKEN').addU8(9).addU256(1000000000000000n), // arguments for deployment
     // };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [testAgain], BigInt(100), BigInt(4_200_000_000), true);
+    await deploySC(publicApi, deployerAccount, [CoreContract], BigInt(100), BigInt(4_200_000_000), true);
   }
   process.exit(0); // terminate the process after deployment(s)
 })();

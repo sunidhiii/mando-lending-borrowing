@@ -1,6 +1,7 @@
 import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
-import { Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
-import { onlyOwner } from '../helpers/ownership';
+import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
+import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
+import { setOwner, onlyOwner } from '../helpers/ownership';
 
 export const ONE_UNIT: f64 = 1000000000.0;
 export const OPTIMAL_UTILIZATION_RATE: f64 = 800000000.0;   // 0.8
@@ -54,6 +55,8 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     Storage.set(stableRateSlope1Key, u64ToBytes(stableRateSlope1));
     Storage.set(stableRateSlope2Key, u64ToBytes(stableRateSlope2));
     Storage.set(reserveKey, stringToBytes(reserve));
+
+    setOwner(new Args().add(Context.caller()).serialize());
 
     generateEvent(`Interest Rate Strategy constructor called with all details.`);
 }
@@ -207,3 +210,10 @@ function getOverallBorrowRateInternal(totalBorrowsStable: u64, totalBorrowsVaria
 
     return overallBorrowRate;
 }
+
+// function onlyOwner(): void {
+//     const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+//     const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+    
+//     assert(Context.caller().toString() === owner, 'Caller is not the owner');
+// }
