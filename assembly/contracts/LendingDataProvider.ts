@@ -245,7 +245,7 @@ export function calculateAvailableBorrowsUSD(binaryArgs: StaticArray<u8>): Stati
   const totalFeesUSD = args.nextU64().unwrap();
   const ltv = args.nextU8().unwrap();
 
-  var availableBorrowsUSD: u64 = u64((f64(collateralBalanceUSD) * f64(ltv)) / 100.0); //ltv is in percentage
+  var availableBorrowsUSD: u64 = u64((f64(collateralBalanceUSD) * f64(ltv)) / 100.0); // ltv is in percentage
 
   if (availableBorrowsUSD < borrowBalanceUSD) {
     return u64ToBytes(0);

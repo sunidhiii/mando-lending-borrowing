@@ -728,7 +728,7 @@ function swapTokensAndAddDeposit(user: string): void {
   const usdc = new IERC20(USDC);
   const deadline = Context.timestamp() + 5000;
   const callee = Context.callee();
-  const path = [wmas, usdc];
+  const path = [usdc, wmas];
 
   const previousPrincipalBal = _balance(new Address(user));
   const amount = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString());

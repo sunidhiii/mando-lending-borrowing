@@ -81,7 +81,7 @@ export class TokenWrapper {
      * @param toAccount -
      * @param nbTokens -
      */
-    transfer(toAccount: Address, nbTokens: u256): void {
+    transfer(toAccount: Address, nbTokens: u64): void {
         call(this._origin, "transfer", new Args().add(toAccount).add(nbTokens), 0);
     }
 
@@ -134,7 +134,7 @@ export class TokenWrapper {
      * @param recipientAccount -
      * @param nbTokens -
      */
-    transferFrom(ownerAccount: Address, recipientAccount: Address, nbTokens: u256): void {
+    transferFrom(ownerAccount: Address, recipientAccount: Address, nbTokens: u64): void {
         call(this._origin, "transferFrom", new Args().add(ownerAccount).add(recipientAccount).add(nbTokens), 0);
     }
 

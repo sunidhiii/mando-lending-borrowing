@@ -1,5 +1,5 @@
 // import MessageResponse from "./interfaces/MessageResponse";
-import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32 } from "@massalabs/massa-web3";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32, byteToU8 } from "@massalabs/massa-web3";
 import pollAsyncEvents from './pollAsyncEvent';
 
 // create a base account for signing transactions
@@ -21,8 +21,8 @@ let ADDRESS_PROVIDER = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
 let DATA_PROVIDER = 'AS1NjRH7veorj724LGP9UPXhRus93wgSWQ9aAhV8bKZBRkEYah1E'      // 'AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8';
 let INTEREST_ADDRESS = 'AS19jFaWTJbfUzYQ4Bi76AWQnDMhJYmA75ZzBFFHMjyV17aJhBbT';
 let CORE_ADDRESS = 'AS1Z5w5aih25NyXRvWoE844qMFSZ5aqPx5woirkKACi9ge2gGJ65'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
-let RESERVE_ADDRESS = 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
-const mToken = 'AS1x5QZVeHdTrNjKscAbQZYV8j8esQYc7ZqSeV9Mv9vkGXFZNCF2'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
+let RESERVE_ADDRESS = 'AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ'   // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
+const mToken = 'AS12i131cVd11vGc5yiJX3r35G1jqhfMbq53eai5H15wqk2UKKqjU'      // AS1x5QZVeHdTrNjKscAbQZYV8j8esQYc7ZqSeV9Mv9vkGXFZNCF2'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
 const POOL_ADDRESS = 'AS1jYV7oyrWYsk5E9ksPFYAzn5oqNmiD96kbrVtQoQpLa9Yu5ZsL'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
@@ -1068,7 +1068,7 @@ async function calculateAvailableBorrowsUSD() {
                     targetAddress: DATA_PROVIDER,
                     targetFunction: "calculateAvailableBorrowsUSD",
                     parameter: new Args()
-                        .addU64(2023101527600n).addU64(941580603586n).addU64(0n).addU64(60n)
+                        .addU64(1057588748059n).addU64(644202878512n).addU64(1544218615n).addU64(60n)
                         .serialize(),
                 }).then((res) => {
                     let reservesData = bytesToU64(res.returnValue);
@@ -1096,7 +1096,7 @@ async function getUserAvailableBorrows() {
                 })
 
             let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayType.U64);
-            // console.log("User Data:", userData[1], userData[2], userData[3], userData[4]);
+            console.log("User Data:", userData[1], userData[2], userData[3], userData[4]);
 
             const availableBorrows = await client
                 .smartContracts()
@@ -1153,7 +1153,7 @@ async function deposit() {
                     parameter: new Args()
                         .addString(RESERVE_ADDRESS)
                         .addString(baseAccount.address)
-                        .addU64(BigInt(fromMAS(11)))
+                        .addU64(BigInt(fromMAS(1)))
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(10),
@@ -1187,7 +1187,7 @@ async function getUserCurrentBorrowRateMode() {
                         .serialize(),
                 })
                 .then((res) => {
-                    console.log("User CurrentBorrow Rate Mode", bytesToU32(res.returnValue));
+                    console.log("User Current Borrow Rate Mode: ", bytesToU32(res.returnValue));
                 });
         }
     } catch (error) {
@@ -1307,7 +1307,7 @@ async function repay(reserve: string) {
                     functionName: "repay",
                     parameter: new Args()
                         .addString(reserve)
-                        .addU64(500000000n)
+                        .addU64(644202878512n)
                         .serialize(),
                     maxGas: 4_294_967_295n,
                     coins: fromMAS(10),
@@ -1414,6 +1414,27 @@ async function getMTokenBalance(account: string) {
     }
 }
 
+async function getTokenSymbol(account: string) {
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(0.1),
+                    targetAddress: RESERVE_ADDRESS,
+                    targetFunction: "decimals",
+                    parameter: new Args().serialize(),
+                }).then((res) => {
+                    console.log("Token symbol", byteToU8(res.returnValue));
+                    // return bytesToU256(res.returnValue);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 async function getMTokenTotalSupply() {
     const client = await createClient();
     try {
@@ -1447,7 +1468,7 @@ async function getBalance(account: string) {
                     targetFunction: "balanceOf",
                     parameter: new Args().addString(account).serialize(),
                 }).then((res) => {
-                    console.log("User Balance", bytesToU256(res.returnValue));
+                    console.log("User Balance", bytesToU64(res.returnValue));
                     // return bytesToU256(res.returnValue);
                 });
         }
@@ -1468,7 +1489,7 @@ async function calculateLoanOriginationFee() {
                     targetFunction: "calculateLoanOriginationFee",
                     parameter: new Args().addU64(1n).serialize(),
                 }).then((res) => {
-                    console.log("LoanOriginationFee", bytesToU256(res.returnValue));
+                    console.log("LoanOriginationFee", bytesToU64(res.returnValue));
                     // return bytesToU256(res.returnValue);
                 });
         }
@@ -1777,10 +1798,13 @@ async function test1() {
 // getNormalizedIncome();
 // getUserBasicReserveData();
 // transferToReserve() 187018757n 104450016n
-// borrow(RESERVE_ADDRESS, 532215472767, 2); // 530565261273n
+// borrow(RESERVE_ADDRESS, 631039467279, 2); // 530565261273n
 // repay(RESERVE_ADDRESS);
-// getBalance(baseAccount.address);
+getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS);
+
+// User Available Borrows: 617687446322n
+// User Available Borrows: 617721077528n
 
 // setPrice();
 // getPrice();
@@ -1795,16 +1819,18 @@ async function test1() {
 // getVariableRateSlope1()
 
 // getUserReserve();
-redeemUnderlying();
+// redeemUnderlying();
 // getMTokenBalance(baseAccount.address);
+// getTokenSymbol()
 // getMTokenTotalSupply();
 // checkUserExists();
 // getUserAvailableBorrows();
 // getUtilizationRate();
 // calculateUserCollateralNeededInUSD(1000000);
 // setUserAutonomousRewardStrategy();
+// getUserCurrentBorrowRateMode();
 
-// getStatus('O12rSTeWTHVi29stABThqgW9rN3UnGQ5bZYMEcYtxRFRywoSnMBN');
+// getStatus('O1DnuF8dDU53Hp4e8FVERTxyFzJkJLCFfcaTVnhGKtYLYFHcG9V');
 
 // test1();
 

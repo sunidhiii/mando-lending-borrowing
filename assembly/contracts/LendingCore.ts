@@ -1,5 +1,5 @@
 import { call, Context, createSC, Storage, Address, transferCoins, balance, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, bytesToU32, bytesToU64, stringToBytes, u32ToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Args, byteToU8, bytesToString, bytesToU32, bytesToU64, stringToBytes, u32ToBytes, u64ToBytes, u8toByte } from '@massalabs/as-types';
 import { IERC20 } from '../interfaces/IERC20';
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
@@ -250,7 +250,7 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
     transferCoins(Context.callee(), amount);
   } else {
     // assert(Context.transferredCoins() == 0, "User is sending MAS along with tokens");
-    new IERC20(new Address(reserve)).transferFrom(new Address(user), Context.callee(), u256.fromU64(amount));
+    new IERC20(new Address(reserve)).transferFrom(new Address(user), Context.callee(), amount);
   }
 }
 
@@ -271,7 +271,7 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
     transferCoins(new Address(owner), amount);
   } else {
     // assert(Context.transferredCoins() == 0, "User is sending Massa along with tokens");
-    new IERC20(new Address(reserve)).transferFrom(new Address(user), new Address(owner), u256.fromU64(amount));
+    new IERC20(new Address(reserve)).transferFrom(new Address(user), new Address(owner), amount);
   }
 
 }
@@ -287,7 +287,7 @@ export function transferToUser(binaryArgs: StaticArray<u8>): void {
   if (reserve == MAS) {
     transferCoins(new Address(user), amount);
   } else {
-    new IERC20(new Address(reserve)).transfer(new Address(user), u256.fromU64(amount));
+    new IERC20(new Address(reserve)).transfer(new Address(user), amount);
   }
 
 }
@@ -445,10 +445,10 @@ export function getUserCurrentBorrowRateMode(binaryArgs: StaticArray<u8>): Stati
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
   if (userArgs.principalBorrowBalance == 0) {
-    return u32ToBytes(InterestRateMode.NONE);
+    return u8toByte(InterestRateMode.NONE);
   }
 
-  return userArgs.stableBorrowRate > 0 ? u32ToBytes(InterestRateMode.STABLE) : u32ToBytes(InterestRateMode.VARIABLE);
+  return userArgs.stableBorrowRate > 0 ? u8toByte(InterestRateMode.STABLE) : u8toByte(InterestRateMode.VARIABLE);
 }
 
 export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
@@ -532,7 +532,7 @@ function updateReserveStateOnRepayInternal(reserve: string, user: string, paybac
   const userData = getUserReserve(new Args().add(user).add(reserve).serialize());
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-  const borrowRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
+  const borrowRateMode: InterestRateMode = byteToU8(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   //update the indexes
   updateCumulativeIndexes(reserve);
@@ -632,7 +632,7 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
 // }
 
 function updateReserveTotalBorrowsByRateModeInternal(reserve: string, user: string, principalBalance: u64, balanceIncrease: u64, amountBorrowed: u64, newBorrowRateMode: InterestRateMode): void {
-  const previousRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
+  const previousRateMode: InterestRateMode = byteToU8(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
