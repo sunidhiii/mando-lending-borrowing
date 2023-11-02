@@ -1,4 +1,4 @@
-import { Args, boolToByte, u64ToBytes } from '@massalabs/as-types';
+import { Args, boolToByte, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
@@ -65,6 +65,13 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
 
   for (let i = 0; i < reserves.length; i++) {
     let currentReserve = reserves[i];
+
+    const storageKey = `USER_KEY_${user}_${currentReserve}`;
+    // check reserve must already exist
+    const userExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
+    if(!userExists) {
+      continue;
+    }
 
     let userBasicReservedata = core.getUserBasicReserveData(currentReserve, user);
     let compoundedLiquidityBalance = userBasicReservedata[0];
@@ -286,6 +293,13 @@ export function calculateUserData(binaryArgs: StaticArray<u8>): StaticArray<u8> 
 
   for (let i = 0; i < reserves.length; i++) {
     let currentReserve = reserves[i];
+    
+    const storageKey = `USER_KEY_${user}_${currentReserve}`;
+    // check reserve must already exist
+    const userExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
+    if(!userExists) {
+      continue;
+    }
 
     let userBasicReservedata = core.getUserBasicReserveData(currentReserve, user);
     let compoundedLiquidityBalance = userBasicReservedata[0];

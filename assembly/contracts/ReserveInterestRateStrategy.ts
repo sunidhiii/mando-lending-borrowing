@@ -25,7 +25,7 @@ export const reserveKey = stringToBytes('RESERVE');
 export function constructor(binaryArgs: StaticArray<u8>): void {
     // This line is important. It ensures that this function can't be called in the future.
     // If you remove this check, someone could call your constructor function and reset your smart contract.
-    assert(callerHasWriteAccess());
+    assert(callerHasWriteAccess(), 'Caller is not allowed');
 
     const args = new Args(binaryArgs);
     // const provider = args.nextString().unwrap();
@@ -191,7 +191,7 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
     // interestData.push(currentStableBorrowRate);
     // interestData.push(currentVariableBorrowRate);
 
-    generateEvent(`Data ${totalBorrows}, ${overAllBorrow}, ${utilizationRate}, ${OPTIMAL_UTILIZATION_RATE}, ${availableLiquidity}, ${baseVariableBorrowRate},  ${stableRateSlope1},  ${variableRateSlope2}, ${currentLiquidityRate}, ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
+    generateEvent(`Interest Rate Data ${totalBorrows}, ${overAllBorrow}, ${utilizationRate}, ${OPTIMAL_UTILIZATION_RATE}, ${availableLiquidity}, ${baseVariableBorrowRate},  ${stableRateSlope1},  ${variableRateSlope2}, ${currentLiquidityRate}, ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
 
     return new Args().add<Array<u64>>([currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]).serialize();
 }

@@ -1,4 +1,4 @@
-import { Address, generateEvent } from "@massalabs/massa-as-sdk";
+import { Address, Context, generateEvent } from "@massalabs/massa-as-sdk";
 import { u256 } from 'as-bignum/assembly';
 import { timestamp } from "@massalabs/massa-as-sdk/assembly/std/context";
 import { onlyOwner, ownerAddress } from "../helpers/ownership";
@@ -6,6 +6,9 @@ import { ONE_UNIT } from "./FeeProvider";
 import { ILendingCore } from "../interfaces/ILendingCore";
 import { ILendingAddressProvider } from "../interfaces/ILendingAddressProvider";
 import { Args, bytesToString } from "@massalabs/as-types";
+import { IRouter } from "../interfaces/IRouter";
+import { IERC20 } from "../interfaces/IERC20";
+import { IFactory } from "../interfaces/IFactory";
 
 export function constructor(_: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
@@ -99,24 +102,72 @@ export function constructor(_: StaticArray<u8>): void {
   // const owner = new ILendingAddressProvider(new Address('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp')).getOwner();
   // const owner = bytesToString(ownerAddress(new Args().serialize()));
 
-  const arr = cumulateBalanceInternal();
+  // const arr = cumulateBalanceInternal();
 
-  const previousBalance: u64 = arr[1];
-  const currentBalance: u64 = arr[1];
-  const balanceIncrease: u64 = arr[2];
-
-  generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
-}
-
-function cumulateBalanceInternal(): Array<u64> { 
-  const balanceOf: u256 = new u256(3074008113407);
-  const previousPrincipalBal: u256 = new u256(3073999999969);
-  const balanceIncrease = u64.parse(balanceOf.toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf.toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  // const previousBalance: u64 = arr[1];
+  // const currentBalance: u64 = arr[1];
+  // const balanceIncrease: u64 = arr[2];
   
-  generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
+    const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+    const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+    const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+    const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+    
+    let amount: u64 = 1;
+    const binStep: u64 = 20;
+    const router = new IRouter(ROUTER);
+    const factory = new IFactory(FACTORY);
+    const wmas = new IERC20(WMAS);
+    const usdc = new IERC20(USDC);
+    const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+    const wmas_is_y = pair.getTokenY()._origin == usdc._origin;
+    const swapForY = wmas_is_y;
+    const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+    // const path = [wmas, usdc];
+    // const deadline = Context.timestamp() + 5000;
 
-  return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
+    // router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+    generateEvent(`DEBUG: Bought ${wmas_is_y} ${pair._origin} WMAS for ${amountIn} USDC`);
+
+  // generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
 }
+
+export function swapping(): void {  // Worked
+    
+  const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+  const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+  const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+  const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+  
+  let amount: u64 = 1;
+  const binStep: u64 = 20;
+  const router = new IRouter(ROUTER);
+  const factory = new IFactory(FACTORY);
+  const wmas = new IERC20(WMAS);
+  const usdc = new IERC20(USDC);
+  const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+  const usdc_is_y = pair.getTokenY()._origin == usdc._origin;
+  const swapForY = usdc_is_y;
+  const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+  const path = [wmas, usdc];
+  const deadline = Context.timestamp() + 5000;
+  new IERC20(WMAS).transferFrom(Context.caller(), Context.callee(), amountIn);
+  new IERC20(WMAS).increaseAllowance(router._origin, amountIn);
+
+  router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+  generateEvent(`DEBUG: Bought ${usdc_is_y} ${pair._origin} ${amount} ${swapForY} WMAS for ${amountIn} USDC`);
+
+}
+
+// function cumulateBalanceInternal(): Array<u64> { 
+//   const balanceOf: u256 = new u256(3074008113407);
+//   const previousPrincipalBal: u256 = new u256(3073999999969);
+//   const balanceIncrease = u64.parse(balanceOf.toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf.toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  
+//   generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
+
+//   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
+// }
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked
 //     const num: u64 = 1;

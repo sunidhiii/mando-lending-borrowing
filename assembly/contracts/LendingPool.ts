@@ -1,6 +1,6 @@
 
 import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args } from '@massalabs/as-types';
+import { Args, stringToBytes } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { IERC20 } from '../interfaces/IERC20';
@@ -8,6 +8,7 @@ import UserReserve from '../helpers/UserReserve';
 import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
+import { u256 } from 'as-bignum/assembly';
 
 // const ONE_UNIT = 10 ** 9;
 
@@ -130,28 +131,6 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 
 }
 
-export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
-  const args = new Args(binaryArgs);
-  const reserve = args.nextString().expect('No reserve address provided');
-  const user = args.nextString().expect('No reserve address provided');
-  const amount = args.nextU64().expect('No amount provided');
-  const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
-
-  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(new Address(addressProvider.getCore()));
-
-  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
-
-  assert(availableLiq >= amount, 'Not enough liquidity');
-
-  // update State On Redeem
-  core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
-  core.transferToUser(new Address(reserve), new Address(user), amount);
-
-  generateEvent(`Redeemed ${amount} tokens from the pool`);
-
-}
-
 export function repay(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
@@ -202,6 +181,59 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   
 }
 
+export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No reserve address provided');
+  const amount = args.nextU64().expect('No amount provided');
+  const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
+  
+  onlyOverlyingAsset(reserve);
+
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
+
+  assert(availableLiq >= amount, 'Not enough liquidity');
+
+  // update State On Redeem
+  core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
+  core.transferToUser(new Address(reserve), new Address(user), amount);
+
+  generateEvent(`Redeemed ${amount} tokens from the pool`);
+
+}
+
+export function depositRewards(binaryArgs: StaticArray<u8>): void {
+  
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No user address provided');
+  const amount = args.nextU64().expect('No amount provided');
+
+  // onlyOverlyingAsset(reserve);
+  // onlyOverlyingAssetOrBaseToken();
+
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  core.updateStateOnDeposit(reserve, amount);
+  
+  const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
+  core.initUser(userReserve, new Address(reserve));
+  
+  const storageKey = `RESERVE_KEY_${reserve}`;
+  const reserveExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
+  assert(reserveExists, "Base token reserve doesn't exist!")
+
+  const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
+  mToken.mint(new Address(user), u256.fromU64(amount));
+
+  generateEvent(`Deposited ${amount} base tokens to the pool`);
+
+}
+
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
   onlyOwner();
 
@@ -219,4 +251,14 @@ function onlyOwner(): void {
   const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
   
   assert(Context.caller().toString() === owner, 'Caller is not the owner');
+}
+
+function onlyOverlyingAsset(reserve: string): void {
+  
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+
+  assert(Context.caller() === mToken, 'Caller is not the overlying asset');
 }

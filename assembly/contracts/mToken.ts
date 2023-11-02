@@ -12,6 +12,7 @@ import { ONE_UNIT } from './FeeProvider';
 import { IRouter } from '../interfaces/IRouter';
 import { IERC20 } from '../interfaces/IERC20';
 import { onlyOwner } from '../helpers/ownership';
+import UserReserve from '../helpers/UserReserve';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -54,7 +55,7 @@ export const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr7
 export function constructor(stringifyArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
-  assert(callerHasWriteAccess());
+  assert(callerHasWriteAccess(), 'Caller is not allowed');
 
   const args = new Args(stringifyArgs);
 
@@ -388,7 +389,7 @@ export function transferFrom(binaryArgs: StaticArray<u8>): void {
 * - the amount of tokens to mint (u256).
 */
 export function mint(binaryArgs: StaticArray<u8>): void {
-  // onlyOwner();
+  onlyLendingPool();
 
   _mint(binaryArgs);
 }
@@ -499,6 +500,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
 }
 
 export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
 
@@ -520,6 +522,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 }
 
 export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
   const user = new Address(args.nextString().expect('user argument is missing or invalid'));
@@ -541,6 +544,8 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
 }
 
 export function transferOnLiquidation(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
+
   const args = new Args(binaryArgs);
   const from = new Address(
     args.nextString().expect('from argument is missing or invalid'));
@@ -686,15 +691,15 @@ function sendFuturOperation(user: string): void {
   const address = Context.callee();
   const validityStartPeriod = Context.currentPeriod();
   const validityStartThread = Context.currentThread();
-  let validityEndPeriod = validityStartThread + 1;
-  let validityEndThread = validityStartPeriod;
+  let validityEndPeriod = validityStartPeriod + 5;
+  let validityEndThread = validityStartThread + 1;
   const msg = new Args().add(user).serialize();
   const filterAddress: Address = new Address();
   const filterKey: StaticArray<u8> = new StaticArray<u8>(0);
 
-  if (validityEndPeriod >= 32) {
-    ++validityEndThread;
-    validityEndPeriod = 0;
+  if (validityEndThread >= 32) {
+    ++validityEndPeriod;
+    validityEndThread = 0;
   }
   const maxGas = 1_000_000_000; // gas for smart contract execution
   const rawFee = 0;
@@ -722,29 +727,43 @@ function sendFuturOperation(user: string): void {
 }
 
 function swapTokensAndAddDeposit(user: string): void {
-  const binStep: u64 = 100;
+  const binStep: u64 = 20;
   const router = new IRouter(ROUTER);
   const wmas = new IERC20(WMAS);
-  const usdc = new IERC20(USDC);
+  // const usdc = new IERC20(USDC);
+  const underLyingAsset = new Address(bytesToString(Storage.get(UNDERLYINGASSET_KEY)));
   const deadline = Context.timestamp() + 5000;
-  const callee = Context.callee();
-  const path = [usdc, wmas];
-
+  const path = [new IERC20(underLyingAsset), wmas];
+  
   const previousPrincipalBal = _balance(new Address(user));
   const amount = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString());
-
-  const amountIn = amount;
-  const amountOut = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, callee, deadline);
-
+  
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+  const amountIn = amount;
+  core.transferToUser(underLyingAsset, Context.callee(), amountIn);
 
-  pool.deposit(underLyingAsset, Context.caller().toString(), amountOut);
+  // new IERC20(USDC).transferFrom(Context.caller(), Context.callee(), amountIn);
+  new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
+
+  const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+
+  new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
+  core.transferToReserve(wmas._origin, Context.callee(), amountOut);
+  pool.depositRewards((wmas._origin).toString(), user, amountOut);
 
   sendFuturOperation(user);
+  generateEvent(`Received ${amountOut} WMAS for ${amountIn} ${underLyingAsset} and deposited in the pool.`);
 
+}
+
+function onlyLendingPool(): void {
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const pool = new Address(addressProvider.getLendingPool());
+
+  assert(Context.caller() === pool, 'Caller is not Lending pool');
 }
 
 // function swapTokens(amount: u64): void {

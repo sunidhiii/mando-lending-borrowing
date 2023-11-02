@@ -7,6 +7,7 @@ import { u256 } from 'as-bignum/assembly';
 import { timestamp } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { IReserveInterestRateStrategy } from '../interfaces/IReserveInterestStrategy';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
+import { ILendingCore } from '../interfaces/ILendingCore';
 
 const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
@@ -85,7 +86,7 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
 
   generateEvent(
     'ReserveCreated: ' +
-    'addr:' +
+    'addr: ' +
     reserve.addr.toString() +
     ', name: ' +
     reserve.name.toString() +
@@ -150,7 +151,7 @@ export function deleteReserve(binaryArgs: StaticArray<u8>): void {
 
 export function initUser(binaryArgs: StaticArray<u8>): void {
 
-  // onlyOwner();  // onlyLendingPool
+  onlyLendingPool();
 
   // convert the binary input to Args
   const args: Args = new Args(binaryArgs);
@@ -171,7 +172,7 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
 
     generateEvent(
       'UserReserveCreated: ' +
-      'addr:' +
+      'addr: ' +
       userReserve.addr.toString() +
       ', principalBorrowBalance: ' +
       userReserve.principalBorrowBalance.toString() +
@@ -208,26 +209,6 @@ export function getUserReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // return new Args(data).nextSerializable<UserReserve>().unwrap();
 }
 
-function addReserveToList(reserve: string): void {
-
-  if (!Storage.has(stringToBytes('ALL_RESERVES'))) {
-    Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>([]).serialize());
-  }
-
-  // const storageKey = `${RESERVE_KEY}_${reserve.toString()}`;
-  // if (!Storage.has(storageKey)) {
-  // let reserveArr = Storage.get('ALL_RESERVES');
-  // var array_data: string[] = reserveArr.split(',');
-  // array_data.push(reserve.toString());
-  // Storage.set('ALL_RESERVES', array_data.toString());
-
-  let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
-  reserveArr.push(reserve);
-  Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>(reserveArr).serialize());
-  // }
-
-}
-
 export function viewAllReserves(): StaticArray<u8> {
   // let reserveArr = Storage.get('ALL_RESERVES');
   // var array_data: string[] = reserveArr.split(',');
@@ -245,6 +226,8 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
   const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
+  // onlyLendingPoolOrOverlyingAsset(reserve);
+
   if (reserve == MAS) {
     assert(Context.transferredCoins() >= amount, "Not enough sent coins");
     transferCoins(Context.callee(), amount);
@@ -255,6 +238,7 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
 }
 
 export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
 
@@ -277,12 +261,13 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
 }
 
 export function transferToUser(binaryArgs: StaticArray<u8>): void {
-  // onlyLendingPool
   const args = new Args(binaryArgs);
 
   const reserve = args.nextString().unwrap();
   const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
+
+  onlyLendingPoolOrOverlyingAsset(reserve);
 
   if (reserve == MAS) {
     transferCoins(new Address(user), amount);
@@ -293,6 +278,7 @@ export function transferToUser(binaryArgs: StaticArray<u8>): void {
 }
 
 export function updateStateOnBorrow(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
@@ -314,6 +300,7 @@ export function updateStateOnBorrow(binaryArgs: StaticArray<u8>): void {
 }
 
 export function updateStateOnRepay(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
@@ -331,6 +318,7 @@ export function updateStateOnRepay(binaryArgs: StaticArray<u8>): void {
 }
 
 export function updateStateOnRedeem(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
@@ -348,6 +336,7 @@ export function updateStateOnRedeem(binaryArgs: StaticArray<u8>): void {
 }
 
 export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
 
@@ -369,7 +358,7 @@ export function getReserveAvailableLiquidity(binaryArgs: StaticArray<u8>): Stati
     bal = balance();
   } else {
     const amount = new IERC20(new Address(reserve)).balanceOf(Context.callee());
-    bal = u64.parse(amount.toString());
+    bal = amount;
   }
 
   return u64ToBytes(bal);
@@ -398,7 +387,7 @@ export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): StaticArra
 
   generateEvent(`User basic reserve data: ${underlyingBalance}, ${compoundedBal} and ${userArgs.originationFee}`);
 
-  return new Args().add(userReserveData).serialize(); 
+  return new Args().add(userReserveData).serialize();
 
 }
 
@@ -440,31 +429,30 @@ export function getUserCurrentBorrowRateMode(binaryArgs: StaticArray<u8>): Stati
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
   const user = args.nextString().unwrap();
-  
+
   const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
   if (userArgs.principalBorrowBalance == 0) {
-    return u8toByte(InterestRateMode.NONE);
+    return u32ToBytes(InterestRateMode.NONE);
   }
 
-  return userArgs.stableBorrowRate > 0 ? u8toByte(InterestRateMode.STABLE) : u8toByte(InterestRateMode.VARIABLE);
+  return userArgs.stableBorrowRate > 0 ? u32ToBytes(InterestRateMode.STABLE) : u32ToBytes(InterestRateMode.VARIABLE);
 }
 
 export function setUserAutonomousRewardStrategy(binaryArgs: StaticArray<u8>): void {
   // onlyUser
   const args = new Args(binaryArgs);
   const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
   const autonomousRewardStrategy = args.nextBool().unwrap();
 
-  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
+  const userData = getUserReserve(new Args().add(Context.caller().toString()).add(reserve).serialize())
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
   const updatedAutonomousRewardStrategyEnabled = autonomousRewardStrategy;
 
-  const storageKey = `${USER_KEY}_${user}_${reserve}`;
-  const updatedUserReserve = new UserReserve(user, userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, userArgs.useAsCollateral, updatedAutonomousRewardStrategyEnabled);
+  const storageKey = `${USER_KEY}_${Context.caller().toString()}_${reserve}`;
+  const updatedUserReserve = new UserReserve(Context.caller().toString(), userArgs.principalBorrowBalance, userArgs.lastVariableBorrowCumulativeIndex, userArgs.originationFee, userArgs.stableBorrowRate, userArgs.lastUpdateTimestamp, userArgs.useAsCollateral, updatedAutonomousRewardStrategyEnabled);
 
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 }
@@ -491,12 +479,32 @@ export function setMTokenContractCode(binaryArgs: StaticArray<u8>): void {
 
 }
 
+function addReserveToList(reserve: string): void {
+
+  if (!Storage.has(stringToBytes('ALL_RESERVES'))) {
+    Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>([]).serialize());
+  }
+
+  // const storageKey = `${RESERVE_KEY}_${reserve.toString()}`;
+  // if (!Storage.has(storageKey)) {
+  // let reserveArr = Storage.get('ALL_RESERVES');
+  // var array_data: string[] = reserveArr.split(',');
+  // array_data.push(reserve.toString());
+  // Storage.set('ALL_RESERVES', array_data.toString());
+
+  let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
+  reserveArr.push(reserve);
+  Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>(reserveArr).serialize());
+  // }
+
+}
+
 function getUserUnderlyingAssetBalance(reserve: string, user: string): u64 {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
 
   const mTokenAddr = new IERC20(new Address(reserveArgs.mTokenAddress));
-  return u64.parse(mTokenAddr.balanceOf(new Address(user)).toString());
+  return mTokenAddr.balanceOf(new Address(user));
 }
 
 /**
@@ -532,7 +540,7 @@ function updateReserveStateOnRepayInternal(reserve: string, user: string, paybac
   const userData = getUserReserve(new Args().add(user).add(reserve).serialize());
   const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-  const borrowRateMode: InterestRateMode = byteToU8(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
+  const borrowRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   //update the indexes
   updateCumulativeIndexes(reserve);
@@ -632,7 +640,7 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
 // }
 
 function updateReserveTotalBorrowsByRateModeInternal(reserve: string, user: string, principalBalance: u64, balanceIncrease: u64, amountBorrowed: u64, newBorrowRateMode: InterestRateMode): void {
-  const previousRateMode: InterestRateMode = byteToU8(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
+  const previousRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
 
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
@@ -891,6 +899,23 @@ function onlyOwner(): void {
   const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
 
   assert(Context.caller().toString() === owner, 'Caller is not the owner');
+}
+
+function onlyLendingPool(): void {
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const pool = new Address(addressProvider.getLendingPool());
+
+  assert(Context.caller() === pool, 'Caller is not lending pool');
+}
+
+function onlyLendingPoolOrOverlyingAsset(reserve: string): void {
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const pool = new Address(addressProvider.getLendingPool());
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+
+  assert(Context.caller() === pool || Context.caller() === mToken, 'Caller is not lending pool or overlying asset');
 }
 
 // function calculatePow(x: u64, n: u64): u256 {
