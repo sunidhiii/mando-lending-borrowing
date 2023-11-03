@@ -1,8 +1,5 @@
-import { Amount, Args, Result, Serializable, byteToBool, bytesToU256, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
-import Reserve from '../helpers/Reserve';
-import UserReserve from '../helpers/UserReserve';
-import { u256 } from 'as-bignum/assembly';
+import { Args } from "@massalabs/as-types";
+import { Address, call } from "@massalabs/massa-as-sdk";
 
 export class ILendingPool {
 

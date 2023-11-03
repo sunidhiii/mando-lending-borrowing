@@ -1,4 +1,4 @@
-import { bytesToString, NoArg, bytesToU64, Args } from "@massalabs/as-types";
+import { bytesToString, NoArg, bytesToU64, Args, byteToU8 } from "@massalabs/as-types";
 import { Address, call } from "@massalabs/massa-as-sdk";
 import { u256 } from 'as-bignum/assembly';
 
@@ -53,6 +53,17 @@ export class TokenWrapper {
      */
     symbol(): string {
         return bytesToString(call(this._origin, "symbol", NoArg, 0));
+    }
+
+    /**
+     * Returns the total token supply.
+     *
+     * The number of tokens that were initially minted.
+     *
+     * @returns number of minted tokens.
+     */
+    decimals(): u8 {
+        return byteToU8(call(this._origin, "decimals", NoArg, 0));
     }
 
     /**

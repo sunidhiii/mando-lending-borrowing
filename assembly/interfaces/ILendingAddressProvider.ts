@@ -1,5 +1,5 @@
-import { Args, Result, Serializable, bytesToString, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, Storage, call } from "@massalabs/massa-as-sdk";
+import { Args, NoArg, bytesToString } from "@massalabs/as-types";
+import { Address, Storage, call } from "@massalabs/massa-as-sdk";
 
 export class ILendingAddressProvider {
 
@@ -14,49 +14,49 @@ export class ILendingAddressProvider {
         this._origin = at;
     }
 
-    setCore(coreAddress: StaticArray<u8>): void {
-        const arg = new Args(coreAddress);
+    setCore(coreAddress: string): void {
+        const arg = new Args().add(coreAddress);
         call(this._origin, "setCore", arg, 0);
     }
 
     getCore(): string {
-        return bytesToString(call(this._origin, "getCore", new Args(), 0));
+        return bytesToString(call(this._origin, "getCore", NoArg, 0));
     }
 
-    setLendingPool(poolAddress: StaticArray<u8>): void {
-        const arg = new Args(poolAddress);
+    setLendingPool(poolAddress: string): void {
+        const arg = new Args().add(poolAddress);
         call(this._origin, "setLendingPool", arg, 0);
     }
 
     getLendingPool(): string {
-        return bytesToString(call(this._origin, "getLendingPool", new Args(), 0));
+        return bytesToString(call(this._origin, "getLendingPool", NoArg, 0));
     }
     
-    setConfigurator(configuratorAddress: StaticArray<u8>): void {
-        const arg = new Args(configuratorAddress);
+    setConfigurator(configuratorAddress: string): void {
+        const arg = new Args().add(configuratorAddress);
         call(this._origin, "setConfigurator", arg, 0);
     }
 
     getConfigurator(): string {
-        return bytesToString(call(this._origin, "getConfigurator", new Args(), 0));
+        return bytesToString(call(this._origin, "getConfigurator", NoArg, 0));
     }
 
-    setDataProvider(dataProviderAddress: StaticArray<u8>): void {
-        const arg = new Args(dataProviderAddress);
+    setDataProvider(dataProviderAddress: string): void {
+        const arg = new Args().add(dataProviderAddress);
         call(this._origin, "setDataProvider", arg, 0);
     }
 
     getDataProvider(): string {
-        return bytesToString(call(this._origin, "getDataProvider", new Args(), 0));
+        return bytesToString(call(this._origin, "getDataProvider", NoArg, 0));
     }
 
-    setFeeProvider(feeProviderAddress: StaticArray<u8>): void {
-        const arg = new Args(feeProviderAddress);
+    setFeeProvider(feeProviderAddress: string): void {
+        const arg = new Args().add(feeProviderAddress);
         call(this._origin, "setConfigurator", arg, 0);
     }
 
     getFeeProvider(): string {
-        return bytesToString(call(this._origin, "getFeeProvider", new Args(), 0));
+        return bytesToString(call(this._origin, "getFeeProvider", NoArg, 0));
     }
 
     getOwner(): string {

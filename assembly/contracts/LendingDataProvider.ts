@@ -133,7 +133,7 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: ${reserves}, ${reserves.length} and ${totalBorrowBalanceUSD}`);
+  generateEvent(`User global data: Total reserves: ${reserves.length}`);
 
   return new Args().add(userGlobalData).serialize();
 }
@@ -355,7 +355,7 @@ export function calculateUserData(binaryArgs: StaticArray<u8>): StaticArray<u8> 
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: ${reserves}, ${reserves.length} and ${totalBorrowBalance}`);
+  generateEvent(`User global data: Total reserves: ${reserves.length}`);
 
   return new Args().add(userGlobalData).serialize();
 }
