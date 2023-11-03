@@ -1,6 +1,5 @@
 import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
-import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
-import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
+import { Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { setOwner, onlyOwner } from '../helpers/ownership';
 
 export const ONE_UNIT: f64 = 1000000000.0;
@@ -191,7 +190,7 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
     // interestData.push(currentStableBorrowRate);
     // interestData.push(currentVariableBorrowRate);
 
-    generateEvent(`Interest Rate Data ${totalBorrows}, ${overAllBorrow}, ${utilizationRate}, ${OPTIMAL_UTILIZATION_RATE}, ${availableLiquidity}, ${baseVariableBorrowRate},  ${stableRateSlope1},  ${variableRateSlope2}, ${currentLiquidityRate}, ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
+    generateEvent(`Interest Rate Data: ${totalBorrows}, ${overAllBorrow}, ${utilizationRate}, ${OPTIMAL_UTILIZATION_RATE}, ${availableLiquidity}, ${baseVariableBorrowRate},  ${stableRateSlope1},  ${variableRateSlope2}, ${currentLiquidityRate}, ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
 
     return new Args().add<Array<u64>>([currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]).serialize();
 }

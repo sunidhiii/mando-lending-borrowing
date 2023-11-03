@@ -1,5 +1,5 @@
 import { call, Context, createSC, Storage, Address, transferCoins, balance, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, byteToU8, bytesToString, bytesToU32, bytesToU64, stringToBytes, u32ToBytes, u64ToBytes, u8toByte } from '@massalabs/as-types';
+import { Args, bytesToU32, bytesToU64, stringToBytes, u32ToBytes, u64ToBytes } from '@massalabs/as-types';
 import { IERC20 } from '../interfaces/IERC20';
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
@@ -19,7 +19,6 @@ export const MAS = 'EeeEeeEeeeeEeeeeeEeeeeeeEeeeeeeEEeeeeeeEeeeEeeeeeeEee';
 
 export enum InterestRateMode { NONE, STABLE, VARIABLE }
 
-// getReserveTotalLiquidity
 // getReserveCurrentVariableBorrowRate
 // getReserveCurrentStableBorrowRate
 // getReserveUtilizationRate
@@ -63,11 +62,26 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
 
   let mToken_contract_code = Storage.get(stringToBytes('mToken_contract_code'));
   let mToken_addr = createSC(mToken_contract_code);
+
   const provider = Storage.get('ADDRESS_PROVIDER_ADDR');
-  call(mToken_addr, 'constructor', new Args().add('mToken').add('MTOKEN').add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 10 * ONE_UNIT);
+  const name = 'Mando Interest bearing '.concat(new IERC20(new Address(reserve.addr)).name());
+  const symbol = 'm' + new IERC20(new Address(reserve.addr)).symbol();
+
+  call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 10 * ONE_UNIT);
   // call(mToken_addr, 'constructor', new Args().add(Context.caller().toString()), 10 * ONE_UNIT);
 
+  reserve.name = new IERC20(new Address(reserve.addr)).name();
+  reserve.symbol = new IERC20(new Address(reserve.addr)).symbol();
+  reserve.decimals = new IERC20(new Address(reserve.addr)).decimals();
+  // reserve.decimals = byteToU8(Storage.getOf(new Address(reserve.addr), stringToBytes('DECIMALS')));
   reserve.mTokenAddress = mToken_addr.toString();
+
+  if(reserve.lastLiquidityCumulativeIndex == 0) {
+    reserve.lastLiquidityCumulativeIndex = ONE_UNIT;
+  }
+  if(reserve.lastVariableBorrowCumulativeIndex == 0) {
+    reserve.lastVariableBorrowCumulativeIndex = ONE_UNIT;
+  }
 
   // let mToken_contract_code = args.nextUint8Array().unwrap();
   // reserve.mTokenAddress = createSC(new Args().add(mToken_contract_code).serialize());
@@ -103,7 +117,25 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
     ', LiquidationThreshold: ' +
     reserve.LiquidationThreshold.toString() +
     ', LiquidationBonus: ' +
-    reserve.LiquidationBonus.toString(),
+    reserve.LiquidationBonus.toString() +
+    ', lastUpdateTimestamp: ' +
+    reserve.lastUpdateTimestamp.toString() +
+    ', lastLiquidityCumulativeIndex: ' +
+    reserve.lastLiquidityCumulativeIndex.toString() +
+    ', currentLiquidityRate: ' +
+    reserve.currentLiquidityRate.toString() +
+    ', totalBorrowsStable: ' +
+    reserve.totalBorrowsStable.toString() +
+    ', totalBorrowsVariable: ' +
+    reserve.totalBorrowsVariable.toString() +
+    ', currentVariableBorrowRate: ' +
+    reserve.currentVariableBorrowRate.toString() +
+    ', currentStableBorrowRate: ' +
+    reserve.currentStableBorrowRate.toString() +
+    ', currentAverageStableBorrowRate: ' +
+    reserve.currentAverageStableBorrowRate.toString() +
+    ', lastVariableBorrowCumulativeIndex: ' +
+    reserve.lastVariableBorrowCumulativeIndex.toString(),
   );
 
 }
@@ -174,6 +206,8 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
       'UserReserveCreated: ' +
       'addr: ' +
       userReserve.addr.toString() +
+      ', reserve: ' +
+      reserve.toString() + 
       ', principalBorrowBalance: ' +
       userReserve.principalBorrowBalance.toString() +
       ', lastVariableBorrowCumulativeIndex: ' +
@@ -185,7 +219,9 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
       ', lastUpdateTimestamp: ' +
       userReserve.lastUpdateTimestamp.toString() +
       ', useAsCollateral: ' +
-      userReserve.useAsCollateral.toString(),
+      userReserve.useAsCollateral.toString() + 
+      ', autonomousRewardStrategyEnabled: ' + 
+      userReserve.autonomousRewardStrategyEnabled.toString(),
     );
   }
 
@@ -362,6 +398,20 @@ export function getReserveAvailableLiquidity(binaryArgs: StaticArray<u8>): Stati
   }
 
   return u64ToBytes(bal);
+}
+
+export function getReserveTotalLiquidity(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().unwrap();
+
+  const reserveData = getReserve(new Args().add(reserve).serialize());
+  const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
+
+  const reserveAvailableLiq = bytesToU64(getReserveAvailableLiquidity(new Args().add(reserve).serialize()));
+  const reserveTotalBorrows = getTotalBorrows(reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable);
+  
+  const reserveTotalLiquidity = reserveAvailableLiq + reserveTotalBorrows;
+  return u64ToBytes(reserveTotalLiquidity);
 }
 
 export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): StaticArray<u8> {

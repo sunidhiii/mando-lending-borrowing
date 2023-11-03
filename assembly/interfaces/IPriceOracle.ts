@@ -1,7 +1,5 @@
-import { Amount, Args, Result, Serializable, byteToBool, bytesToU256, bytesToU64, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
-import Reserve from '../helpers/Reserve';
-import UserReserve from '../helpers/UserReserve';
+import { Args, bytesToU64 } from "@massalabs/as-types";
+import { Address, call } from "@massalabs/massa-as-sdk";
 export class IPriceOracle {
 
   _origin: Address;

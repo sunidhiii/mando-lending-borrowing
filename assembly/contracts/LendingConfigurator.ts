@@ -1,8 +1,7 @@
 import { generateEvent, Context, callerHasWriteAccess, Storage, Address, call } from '@massalabs/massa-as-sdk';
-import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
+import { Args } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
-import Reserve from '../helpers/Reserve';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.

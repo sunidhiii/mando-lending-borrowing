@@ -1,8 +1,7 @@
-import { Amount, Args, Result, Serializable, byteToBool, bytesToFixedSizeArray, bytesToU256, bytesToU64, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
+import { Args, NoArg, bytesToU64 } from "@massalabs/as-types";
+import { Address, call } from "@massalabs/massa-as-sdk";
 import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
-import { u256 } from 'as-bignum/assembly';
 
 const ONE_UNIT = 10 ** 9;
 export class ILendingCore {
@@ -18,9 +17,9 @@ export class ILendingCore {
     this._origin = at;
   }
 
-  initReserve(reserve: StaticArray<u8>): void {
+  initReserve(reserve: Reserve): void {
     // const arg = new Args().add(reserve);
-    call(this._origin, "initReserve", new Args(reserve), 0);
+    call(this._origin, "initReserve", new Args().add(reserve), 0);
   }
 
   getReserve(reserve: Address): Reserve {
@@ -61,7 +60,7 @@ export class ILendingCore {
   }
 
   viewAllReserves(): string[] {
-    let reserves = call(this._origin, "viewAllReserves", new Args(), 0);
+    let reserves = call(this._origin, "viewAllReserves", NoArg, 0);
     // let reservesData: string[] = reserves.toString().split(',');
     let reservesData = new Args(reserves).nextStringArray().unwrap();
     return reservesData;

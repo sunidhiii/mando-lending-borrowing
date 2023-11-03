@@ -133,7 +133,7 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: ${reserves}, ${reserves.length} and ${totalBorrowBalanceUSD}`);
+  generateEvent(`User global data: Total reserves: ${reserves.length}`);
 
   return new Args().add(userGlobalData).serialize();
 }
@@ -178,7 +178,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
   const usageAsCollateralEnabled: bool = userData.useAsCollateral;
 
   if (!reserveUsageAsCollateralEnabled || !usageAsCollateralEnabled) {
-    return boolToByte(true); //if reserve is not used as collateral, no reasons to block the transfer
+    return boolToByte(true); // if reserve is not used as collateral, no reasons to block the transfer
   }
 
   const userGolbalData: Array<u64> = new Args(calculateUserGlobalData(new Args().add(user).serialize())).nextFixedSizeArray<u64>().unwrap();
@@ -355,7 +355,7 @@ export function calculateUserData(binaryArgs: StaticArray<u8>): StaticArray<u8> 
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: ${reserves}, ${reserves.length} and ${totalBorrowBalance}`);
+  generateEvent(`User global data: Total reserves: ${reserves.length}`);
 
   return new Args().add(userGlobalData).serialize();
 }

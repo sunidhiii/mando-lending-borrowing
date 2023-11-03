@@ -1,5 +1,5 @@
 import { Args, Result, Serializable } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
+import { Address, call } from "@massalabs/massa-as-sdk";
 import { TokenWrapper } from "../helpers/TokenWrapper";
 import { u256 } from 'as-bignum/assembly';
 

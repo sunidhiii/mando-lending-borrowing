@@ -1,8 +1,5 @@
-import { Amount, Args, bytesToU64 } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
-import Reserve from '../helpers/Reserve';
-import UserReserve from '../helpers/UserReserve';
-import { u256 } from 'as-bignum/assembly';
+import { Args, bytesToU64 } from "@massalabs/as-types";
+import { Address, call } from "@massalabs/massa-as-sdk";
 
 export class IFeeProvider {
 
@@ -28,7 +25,6 @@ export class IFeeProvider {
   // }
 
   calculateLoanOriginationFee(amount: u64): u64 {
-    // const arg = new Args().add(reserve);
     return bytesToU64(call(this._origin, "calculateLoanOriginationFee", new Args().add(amount), 0));
   }
 

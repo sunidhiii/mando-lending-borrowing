@@ -1,5 +1,4 @@
 import { Serializable, Args, Result } from '@massalabs/as-types';
-import { u256 } from 'as-bignum/assembly';
 
 export default class UserReserve implements Serializable {
     constructor(

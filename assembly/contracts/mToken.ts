@@ -12,7 +12,6 @@ import { ONE_UNIT } from './FeeProvider';
 import { IRouter } from '../interfaces/IRouter';
 import { IERC20 } from '../interfaces/IERC20';
 import { onlyOwner } from '../helpers/ownership';
-import UserReserve from '../helpers/UserReserve';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -28,6 +27,7 @@ export const ADDRESS_PROVIDER_KEY = stringToBytes('ADDRPROVIDER');
 export const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
 export const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
 export const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+export const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
 
 /**
  * Initialize the ERC20 contract
@@ -460,7 +460,6 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   const arr = cumulateBalanceInternal(Context.caller());
 
   const currentBalance: u64 = arr[1];
-  const balanceIncrease: u64 = arr[2];
 
   let amountToRedeem: u64 = amount;
 
@@ -495,7 +494,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after mint ${amountToRedeem} increased to ${balanceIncrease}`)
+  generateEvent(`Balance redeemed after mint ${amountToRedeem} tokens and left ${mTokenBalanceAfterRedeem} tokens`)
 
 }
 
@@ -667,9 +666,11 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const isAutoRewardEnabled = core.getUserReserve(user, new Address(underLyingAsset)).autonomousRewardStrategyEnabled;
-
+  
+  const symbol = new IERC20(new Address(underLyingAsset)).symbol();
+  
   if (balanceIncrease > 0) {
-    if (isAutoRewardEnabled) {
+    if (isAutoRewardEnabled && (symbol == 'USDC' || symbol == 'WETH')) {
       swapTokensAndAddDeposit(user.toString());
     } else {
       _mint(new Args().add(user.toString()).add(u256.fromU64(balanceIncrease)).serialize());
@@ -681,7 +682,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u64ToBytes(index));
 
-  generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
+  generateEvent(`Balance ${previousPrincipalBal} increased to ${u64.parse(previousPrincipalBal.toString()) + balanceIncrease} tokens`)
 
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
@@ -729,27 +730,39 @@ function sendFuturOperation(user: string): void {
 }
 
 function swapTokensAndAddDeposit(user: string): void {
-  const binStep: u64 = 20;
+  let binStep: u64 = 0;
+
   const router = new IRouter(ROUTER);
+  // const factory = new IFactory(FACTORY);
   const wmas = new IERC20(WMAS);
   // const usdc = new IERC20(USDC);
   const underLyingAsset = new Address(bytesToString(Storage.get(UNDERLYINGASSET_KEY)));
   const deadline = Context.timestamp() + 5000;
   const path = [new IERC20(underLyingAsset), wmas];
-  
+
+  const symbol = new IERC20(underLyingAsset).symbol();
+  if (symbol.toUpperCase() == 'USDC') {
+    binStep = 20;
+  } else if (symbol.toUpperCase() == 'WETH') {
+    binStep = 15;
+  } else {
+    return;
+  }
+
   const previousPrincipalBal = _balance(new Address(user));
   const amount = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString());
-  
+
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const amountIn = amount;
-  core.transferToUser(underLyingAsset, Context.callee(), amountIn);
 
   // new IERC20(USDC).transferFrom(Context.caller(), Context.callee(), amountIn);
-  new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
+  // const pair = factory.getLBPairInformation(underLyingAsset, wmas._origin, binStep).pair;
 
+  core.transferToUser(underLyingAsset, Context.callee(), amountIn);
+  new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
   const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
 
   new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
@@ -757,9 +770,7 @@ function swapTokensAndAddDeposit(user: string): void {
   pool.depositRewards((wmas._origin).toString(), user, amountOut);
 
   sendFuturOperation(user);
-
-  generateEvent(`Received ${amountOut} WMAS for ${amountIn} ${underLyingAsset} and deposited in the pool.`);
-
+  generateEvent(`Received ${amountOut} ${(wmas._origin).toString()} for ${amountIn} ${underLyingAsset} and deposited in the pool.`);
 
 }
 

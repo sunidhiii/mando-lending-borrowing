@@ -1,7 +1,5 @@
-import { Amount, Args, Result, Serializable, byteToBool, bytesToFixedSizeArray, bytesToSerializableObjectArray, bytesToU256, bytesToU64, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
-import Reserve from '../helpers/Reserve';
-import { u256 } from 'as-bignum/assembly';
+import { Args, byteToBool, bytesToU64 } from "@massalabs/as-types";
+import { Address, call } from "@massalabs/massa-as-sdk";
 
 export class ILendingDataProvider {
 

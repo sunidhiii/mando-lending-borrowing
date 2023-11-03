@@ -1,5 +1,5 @@
-import { Args, Result, Serializable, bytesToFixedSizeArray, bytesToU64, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, Storage, call } from "@massalabs/massa-as-sdk";
+import { Args, bytesToU64, stringToBytes } from "@massalabs/as-types";
+import { Address, Storage, call } from "@massalabs/massa-as-sdk";
 
 const baseVariableBorrowRateKey = stringToBytes('BASE_VARIABLE_BORROW_RATE'); // 0
 

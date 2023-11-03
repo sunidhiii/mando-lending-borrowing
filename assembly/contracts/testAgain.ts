@@ -109,56 +109,112 @@ export function constructor(_: StaticArray<u8>): void {
   // const currentBalance: u64 = arr[1];
   // const balanceIncrease: u64 = arr[2];
   
-    const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
-    const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
-    const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
-    const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+    // const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+    // const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+    // const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+    // const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+    // const WETH = new Address("AS1SVGodhgXdRXrjrPURBRk3ay4sHLgYWzDC3PXAjvTxjzraLaQ8");
+    // const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
     
-    let amount: u64 = 1;
-    const binStep: u64 = 20;
-    const router = new IRouter(ROUTER);
-    const factory = new IFactory(FACTORY);
-    const wmas = new IERC20(WMAS);
-    const usdc = new IERC20(USDC);
-    const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
-    const wmas_is_y = pair.getTokenY()._origin == usdc._origin;
-    const swapForY = wmas_is_y;
-    const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+    // let amount: u64 = 1;
+    // const binStep: u64 = 20;
+    // const router = new IRouter(ROUTER);
+    // const factory = new IFactory(FACTORY);
+    // const wmas = new IERC20(WMAS);
+    // const usdc = new IERC20(USDC);
+    // const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+    // const wmas_is_y = pair.getTokenY()._origin == usdc._origin;
+    // const swapForY = wmas_is_y;
+    // const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
     // const path = [wmas, usdc];
     // const deadline = Context.timestamp() + 5000;
 
-    // router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
-    generateEvent(`DEBUG: Bought ${wmas_is_y} ${pair._origin} WMAS for ${amountIn} USDC`);
+  // const name2 = 'Mando Interest bearing ' + new IERC20(WMAS).name();
+  // const symbol2 = 'm'.concat(new IERC20(WMAS).symbol());
+
+  // const name1 = 'Mando Interest bearing '.concat(new IERC20(WMAS).name());
+  // const symbol1 = 'm' + new IERC20(WMAS).symbol();
+  // let binStep: u64 = 0;
+  
+  // const symbol = new IERC20(WMAS).symbol();
+  // const name = new IERC20(new Address('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9')).name();
+  // const symbol1 = new IERC20(new Address('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9')).symbol();
+  // if (symbol == 'USDC') {
+  //   binStep = 20;
+  // } else if (symbol == 'WETH') {
+  //   binStep = 15;
+  // } else {
+  //   binStep = 10;
+  // }
+  
+  // let aas: bool = false;
+  // let test : number = 0;
+
+  // if(pair) {
+    //   aas = true;
+    //   test = 10;
+    // }
+
+  // const createdByOwner = factory.getLBPairInformation(new Address('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'), WMAS, 10).createdByOwner;
+  // const ignoredForRouting = factory.getLBPairInformation(new Address('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'), WMAS, 10).ignoredForRouting;
+
+  // const name = new IERC20(WMASt).name();
+  // const symbol = new IERC20(WMASt).symbol();
+  // const name1 = new IERC20(WETHt).name();
+  // const symbol1 = new IERC20(WETHt).symbol();
+  // const name2 = new IERC20(USDCt).name();
+  // const symbol2 = new IERC20(USDCt).symbol();
+  //   // router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+  //   generateEvent(`${name} ${symbol} ${name1} ${symbol1} ${name2} ${symbol2}`);
 
   // generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
 }
 
-export function swapping(): void {  // Worked
-    
-  const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
-  const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
-  const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
-  const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
-  
-  let amount: u64 = 1;
-  const binStep: u64 = 20;
-  const router = new IRouter(ROUTER);
-  const factory = new IFactory(FACTORY);
-  const wmas = new IERC20(WMAS);
-  const usdc = new IERC20(USDC);
-  const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
-  const usdc_is_y = pair.getTokenY()._origin == usdc._origin;
-  const swapForY = usdc_is_y;
-  const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
-  const path = [wmas, usdc];
-  const deadline = Context.timestamp() + 5000;
-  new IERC20(WMAS).transferFrom(Context.caller(), Context.callee(), amountIn);
-  new IERC20(WMAS).increaseAllowance(router._origin, amountIn);
+export function test(): void {
+  let abcd = 3;
+  testing();
+  abcd = 4;
+  generateEvent(`${abcd}`);
+}
 
-  router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
-  generateEvent(`DEBUG: Bought ${usdc_is_y} ${pair._origin} ${amount} ${swapForY} WMAS for ${amountIn} USDC`);
+function testing(): void {
+  let abc: u64 = 0;
+  if(abc == 1) {
+    abc = 1;
+  } else {
+    return;
+  }
+
+  abc = 2;
 
 }
+
+// export function swapping(): void {  // Worked
+    
+//   const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+//   const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+//   const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+//   const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+  
+//   let amount: u64 = 1;
+//   const binStep: u64 = 20;
+//   const router = new IRouter(ROUTER);
+//   const factory = new IFactory(FACTORY);
+//   const wmas = new IERC20(WMAS);
+//   const usdc = new IERC20(USDC);
+//   const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+//   const usdc_is_y = pair.getTokenY()._origin == usdc._origin;
+//   const swapForY = usdc_is_y;
+//   const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+//   const path = [wmas, usdc];
+//   const deadline = Context.timestamp() + 5000;
+//   new IERC20(WMAS).transferFrom(Context.caller(), Context.callee(), amountIn);
+//   new IERC20(WMAS).increaseAllowance(router._origin, amountIn);
+
+//   router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+//   generateEvent(`DEBUG: Bought ${usdc_is_y} ${pair._origin} ${amount} ${swapForY} WMAS for ${amountIn} USDC`);
+
+// }
 
 // function cumulateBalanceInternal(): Array<u64> { 
 //   const balanceOf: u256 = new u256(3074008113407);
@@ -172,13 +228,14 @@ export function swapping(): void {  // Worked
 
 //     data: 'data 9189004056, 8051890150321.562, 8050000000000'
 
-const reserveDecimals = 9;
-const reserveDecimals1 = 18;
-const tokenUnit = 10 ** reserveDecimals;
-const tokenUnit1 = 10 ** reserveDecimals1;
+// const reserveDecimals = 9;
+// const reserveDecimals1 = 18;
+// const tokenUnit = 10 ** reserveDecimals;
+// const tokenUnit1 = 10 ** reserveDecimals1;
 
-  generateEvent(`data ${tokenUnit}, ${tokenUnit1}`);
-}
+//   generateEvent(`data ${tokenUnit}, ${tokenUnit1}`);
+// }
+
 
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked
