@@ -1,5 +1,6 @@
 import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, fromMAS } from "@massalabs/massa-web3";
 
+
 // create a base account for signing transactions
 const baseAccount = {
     address: "AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8",
@@ -30,7 +31,6 @@ class Reserve implements ISerializable<Reserve> {
         public currentStableBorrowRate: number = 0,
         public currentAverageStableBorrowRate: number = 0,
         public lastVariableBorrowCumulativeIndex: number = 1000000000,
-
     ) { }
 
     serialize(): Uint8Array {
@@ -53,12 +53,12 @@ class Reserve implements ISerializable<Reserve> {
         args.addU64(BigInt(this.currentStableBorrowRate));
         args.addU64(BigInt(this.currentAverageStableBorrowRate));
         args.addU64(BigInt(this.lastVariableBorrowCumulativeIndex));
+
         return new Uint8Array(args.serialize());
     }
 
     deserialize(data: Uint8Array, offset: number): IDeserializedResult<Reserve> {
         const args = new Args(data, offset);
-
         this.addr = args.nextString();
         this.name = args.nextString();
         this.symbol = args.nextString();
@@ -92,7 +92,6 @@ async function createClient() {
         false,
         account
     );
-
     return client;
 }
 
@@ -111,6 +110,7 @@ async function getCurrentAPY() {
                         .serialize(),
                 })
             const reserveData = new Reserve(reserveArgs.returnValue.toString()).deserialize(reserveArgs.returnValue, 0)
+
             const currentLiquidityRate = reserveData.instance.currentLiquidityRate;
             const currentVariableBorrowRate = reserveData.instance.currentVariableBorrowRate;
 

@@ -83,6 +83,7 @@ export function constructor(_: StaticArray<u8>): void {
   // const totalSupply2 = u64(f64.parse(currentSupplyPrincipal.toString()) * (f64.parse(normalizedIncome.toString()) / f64(ONE_UNIT)));
 
   // cumulatedBal1 = u64((f64.parse(_balance.toString()) * f64(normalizedIncome1)) / f64(userIndex1));
+
   //     data: 'data 9189004056, 8051890150321.562, 8050000000000'
 
   // const reserveDecimals = 9;
@@ -168,6 +169,17 @@ export function swapping(): void {  // Worked
 
 //   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 // }
+
+//     data: 'data 9189004056, 8051890150321.562, 8050000000000'
+
+const reserveDecimals = 9;
+const reserveDecimals1 = 18;
+const tokenUnit = 10 ** reserveDecimals;
+const tokenUnit1 = 10 ** reserveDecimals1;
+
+  generateEvent(`data ${tokenUnit}, ${tokenUnit1}`);
+}
+
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked
 //     const num: u64 = 1;

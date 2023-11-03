@@ -691,8 +691,10 @@ function sendFuturOperation(user: string): void {
   const address = Context.callee();
   const validityStartPeriod = Context.currentPeriod();
   const validityStartThread = Context.currentThread();
+
   let validityEndPeriod = validityStartPeriod + 5;
   let validityEndThread = validityStartThread + 1;
+  
   const msg = new Args().add(user).serialize();
   const filterAddress: Address = new Address();
   const filterKey: StaticArray<u8> = new StaticArray<u8>(0);
@@ -755,7 +757,9 @@ function swapTokensAndAddDeposit(user: string): void {
   pool.depositRewards((wmas._origin).toString(), user, amountOut);
 
   sendFuturOperation(user);
+
   generateEvent(`Received ${amountOut} WMAS for ${amountIn} ${underLyingAsset} and deposited in the pool.`);
+
 
 }
 
