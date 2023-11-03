@@ -1,8 +1,14 @@
-import { generateEvent } from "@massalabs/massa-as-sdk";
+import { Address, Context, generateEvent } from "@massalabs/massa-as-sdk";
 import { u256 } from 'as-bignum/assembly';
 import { timestamp } from "@massalabs/massa-as-sdk/assembly/std/context";
-import { onlyOwner } from "../helpers/ownership";
+import { onlyOwner, ownerAddress } from "../helpers/ownership";
 import { ONE_UNIT } from "./FeeProvider";
+import { ILendingCore } from "../interfaces/ILendingCore";
+import { ILendingAddressProvider } from "../interfaces/ILendingAddressProvider";
+import { Args, bytesToString } from "@massalabs/as-types";
+import { IRouter } from "../interfaces/IRouter";
+import { IERC20 } from "../interfaces/IERC20";
+import { IFactory } from "../interfaces/IFactory";
 
 export function constructor(_: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
@@ -77,6 +83,93 @@ export function constructor(_: StaticArray<u8>): void {
   // const totalSupply2 = u64(f64.parse(currentSupplyPrincipal.toString()) * (f64.parse(normalizedIncome.toString()) / f64(ONE_UNIT)));
 
   // cumulatedBal1 = u64((f64.parse(_balance.toString()) * f64(normalizedIncome1)) / f64(userIndex1));
+
+  //     data: 'data 9189004056, 8051890150321.562, 8050000000000'
+
+  // const reserveDecimals = 9;
+  // const reserveDecimals1 = 18;
+  // const tokenUnit = 10 ** reserveDecimals;
+  // const tokenUnit1 = 10 ** reserveDecimals1;
+
+  // const ONE_UNIT = 1000000000;
+  // const cumulatedLiquidityInterest: f64 = 1289733654621123.0;
+  // const cumulatedLiquidityInterest1 = 128923733654698;
+
+  // const updatedLastLiquidityCumulativeIndex = u64(cumulatedLiquidityInterest) * u64(f64(cumulatedLiquidityInterest1) / f64(ONE_UNIT));
+  // const updatedLastLiquidityCumulativeIndex1 = u64((cumulatedLiquidityInterest * f64(cumulatedLiquidityInterest1)) / f64(ONE_UNIT));
+
+  // const core = new ILendingCore(new Address('AS12mPMppiXh1RNWLLxpgexDZPhjGTukaeovjvrMzUPsexFXnbM2y'));
+  // const isAutoRewardEnabled = core.getUserReserve(new Address('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8'), new Address('AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva')).autonomousRewardStrategyEnabled;
+  // const owner = new ILendingAddressProvider(new Address('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp')).getOwner();
+  // const owner = bytesToString(ownerAddress(new Args().serialize()));
+
+  // const arr = cumulateBalanceInternal();
+
+  // const previousBalance: u64 = arr[1];
+  // const currentBalance: u64 = arr[1];
+  // const balanceIncrease: u64 = arr[2];
+  
+    const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+    const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+    const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+    const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+    
+    let amount: u64 = 1;
+    const binStep: u64 = 20;
+    const router = new IRouter(ROUTER);
+    const factory = new IFactory(FACTORY);
+    const wmas = new IERC20(WMAS);
+    const usdc = new IERC20(USDC);
+    const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+    const wmas_is_y = pair.getTokenY()._origin == usdc._origin;
+    const swapForY = wmas_is_y;
+    const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+    // const path = [wmas, usdc];
+    // const deadline = Context.timestamp() + 5000;
+
+    // router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+    generateEvent(`DEBUG: Bought ${wmas_is_y} ${pair._origin} WMAS for ${amountIn} USDC`);
+
+  // generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
+}
+
+export function swapping(): void {  // Worked
+    
+  const FACTORY = new Address("AS1pLmABmGWUTBoaMPwThauUy75PQi8WW29zVYMHbU54ep1o9Hbf");
+  const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr76W3VL3Dk");
+  const USDC = new Address("AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9");
+  const WMAS = new Address("AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ");
+  
+  let amount: u64 = 1;
+  const binStep: u64 = 20;
+  const router = new IRouter(ROUTER);
+  const factory = new IFactory(FACTORY);
+  const wmas = new IERC20(WMAS);
+  const usdc = new IERC20(USDC);
+  const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
+  const usdc_is_y = pair.getTokenY()._origin == usdc._origin;
+  const swapForY = usdc_is_y;
+  const amountIn = router.getSwapIn(pair._origin, amount * ONE_UNIT, swapForY).amountIn;
+  const path = [wmas, usdc];
+  const deadline = Context.timestamp() + 5000;
+  new IERC20(WMAS).transferFrom(Context.caller(), Context.callee(), amountIn);
+  new IERC20(WMAS).increaseAllowance(router._origin, amountIn);
+
+  router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+  generateEvent(`DEBUG: Bought ${usdc_is_y} ${pair._origin} ${amount} ${swapForY} WMAS for ${amountIn} USDC`);
+
+}
+
+// function cumulateBalanceInternal(): Array<u64> { 
+//   const balanceOf: u256 = new u256(3074008113407);
+//   const previousPrincipalBal: u256 = new u256(3073999999969);
+//   const balanceIncrease = u64.parse(balanceOf.toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf.toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  
+//   generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
+
+//   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
+// }
+
 //     data: 'data 9189004056, 8051890150321.562, 8050000000000'
 
 const reserveDecimals = 9;
@@ -86,6 +179,7 @@ const tokenUnit1 = 10 ** reserveDecimals1;
 
   generateEvent(`data ${tokenUnit}, ${tokenUnit1}`);
 }
+
 
 // export function arrU64Again12(): StaticArray<u8> {  // Worked
 //     const num: u64 = 1;
@@ -333,4 +427,27 @@ OpId:  {
     useAsCollateral: true
   },
   offset: 218
-}*/
+}
+
+User data: [
+  5046483899999n,
+  5046483899999n,
+  931552346630n,
+  0n,
+  60n,
+  75n,
+  4062963223n
+]
+User global data: [
+  5096948738998n,
+  5096948738998n,
+  940867870096n,
+  0n,
+  60n,
+  75n,
+  4062963223n
+]
+User Borrow balances: [ 931400435837n, 931692418470n, 291982633n ]
+Available borrows USD: 2112008119869n
+User Basic Reserve Data:  [ 5050328630000n, 931692418470n, 0n ]
+Available borrows: 2091097148386n*/

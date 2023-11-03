@@ -1,14 +1,5 @@
-import {
-  Address,
-  Context,
-  generateEvent,
-  Storage,
-  createEvent,
-  callerHasWriteAccess,
-  sendMessage,
-  unsafeRandom,
-} from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, bytesToU256, stringToBytes, u256ToBytes } from '@massalabs/as-types';
+import { Address, Context, generateEvent, Storage, createEvent, callerHasWriteAccess, sendMessage } from '@massalabs/massa-as-sdk';
+import { Args, bytesToString, bytesToU256, bytesToU64, stringToBytes, u256ToBytes, u64ToBytes } from '@massalabs/as-types';
 import { _balance, _setBalance, _approve, _allowance } from '../helpers/token-internals';
 import { u256 } from 'as-bignum/assembly';
 import { _mint } from '../helpers/mint-internals';
@@ -20,6 +11,8 @@ import { ILendingPool } from '../interfaces/ILendingPool';
 import { ONE_UNIT } from './FeeProvider';
 import { IRouter } from '../interfaces/IRouter';
 import { IERC20 } from '../interfaces/IERC20';
+import { onlyOwner } from '../helpers/ownership';
+import UserReserve from '../helpers/UserReserve';
 
 const TRANSFER_EVENT_NAME = 'TRANSFER';
 const APPROVAL_EVENT_NAME = 'APPROVAL';
@@ -62,7 +55,7 @@ export const ROUTER = new Address("AS12ZhJYEffSWWyp7XvCoEMKFBnbXw5uwp6S3cY2xbEr7
 export function constructor(stringifyArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
-  assert(callerHasWriteAccess());
+  assert(callerHasWriteAccess(), 'Caller is not allowed');
 
   const args = new Args(stringifyArgs);
 
@@ -396,7 +389,8 @@ export function transferFrom(binaryArgs: StaticArray<u8>): void {
 * - the amount of tokens to mint (u256).
 */
 export function mint(binaryArgs: StaticArray<u8>): void {
-  // onlyOwner();
+  onlyLendingPool();
+
   _mint(binaryArgs);
 }
 
@@ -458,24 +452,24 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
   const amount =
-    args.nextU256().expect('Amount argument is missing or invalid');
+    args.nextU64().expect('Amount argument is missing or invalid');
 
-  assert(u64.parse(amount.toString()) > 0, "Amount to redeem needs to be > 0");
+  assert(amount > 0, "Amount to redeem needs to be > 0");
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(Context.caller());
 
-  const currentBalance = arr[1];
-  const balanceIncrease = arr[2];
+  const currentBalance: u64 = arr[1];
+  const balanceIncrease: u64 = arr[2];
 
-  let amountToRedeem: u256 = amount;
+  let amountToRedeem: u64 = amount;
 
   //if amount is greater than current balance, the user wants to redeem everything
-  if (amount > u256.fromU64(currentBalance)) {
-    amountToRedeem = u256.fromU64(currentBalance);
+  if (amount > currentBalance) {
+    amountToRedeem = currentBalance;
   }
 
-  assert(amountToRedeem <= u256.fromU64(currentBalance), "User cannot redeem more than the available balance");
+  assert(amountToRedeem <= currentBalance, "User cannot redeem more than the available balance");
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
 
@@ -487,12 +481,12 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   assert(isTransferAllowed, "Transfer cannot be allowed.");
 
   // burns tokens equivalent to the amount requested
-  _burn(Context.caller(), amountToRedeem);
+  _burn(Context.caller(), u256.fromU64(amountToRedeem));
 
   // executes redeem of the underlying asset
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
 
-  const mTokenBalanceAfterRedeem = u64.parse(currentBalance.toString()) > u64.parse(amountToRedeem.toString()) ? u64.parse(currentBalance.toString()) - u64.parse(amountToRedeem.toString()) : 0;
+  const mTokenBalanceAfterRedeem = currentBalance > amountToRedeem ? currentBalance - amountToRedeem : 0;
 
   pool.redeemUnderlying(
     underLyingAsset,
@@ -501,63 +495,66 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after mint ${amountToRedeem} incresed to ${balanceIncrease}`)
+  generateEvent(`Balance redeemed after mint ${amountToRedeem} increased to ${balanceIncrease}`)
 
 }
 
 export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
 
   const user = new Address(args.nextString().expect('user argument is missing or invalid'));
   const amount =
-    args.nextU256().expect('mintOnDeposit amount argument is missing or invalid');
+    args.nextU64().expect('mintOnDeposit amount argument is missing or invalid');
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(user);
 
-  const balanceIncrease = arr[2];
+  const balanceIncrease: u64 = arr[2];
   // const index = arr[2];
 
   //mint an equivalent amount of tokens to cover the new deposit
-  _mint(new Args().add(user.toString()).add(amount).serialize());
+  _mint(new Args().add(user.toString()).add(u256.fromU64(amount)).serialize());
 
   generateEvent(`Balance increased after mint ${balanceIncrease} tokens`)
 
 }
 
 export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
 
   const args = new Args(binaryArgs);
   const user = new Address(args.nextString().expect('user argument is missing or invalid'));
 
   const amount =
-    args.nextU256().expect('burnOnLiquidation amount argument is missing or invalid');
+    args.nextU64().expect('burnOnLiquidation amount argument is missing or invalid');
 
   //cumulates the balance of the user
   const arr = cumulateBalanceInternal(user);
 
   const currentBalance = arr[1];
   const balanceIncrease = arr[2];
-  // const index = arr[2];
 
   //burns the requested amount of tokens
-  _burn(user, amount);
+  _burn(user, u256.fromU64(amount));
 
   generateEvent(`Balance decreased after mint from ${currentBalance} tokens to ${balanceIncrease} tokens`)
 
 }
 
 export function transferOnLiquidation(binaryArgs: StaticArray<u8>): void {
+  onlyLendingPool();
+
   const args = new Args(binaryArgs);
   const from = new Address(
     args.nextString().expect('from argument is missing or invalid'));
   const to = new Address(
     args.nextString().expect('to argument is missing or invalid'));
   const amount =
-    args.nextU256().expect('transferOnLiquidation amount argument is missing or invalid');
+    args.nextU64().expect('transferOnLiquidation amount argument is missing or invalid');
 
-  _transfer(from, to, amount);
+  _transfer(from, to, u256.fromU64(amount));
 }
 
 export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -603,8 +600,10 @@ export function totalSupply(): StaticArray<u8> {
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY))
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
-  const totalSupply = u256.fromU64(u64.parse(currentSupplyPrincipal.toString()) * u64.parse(core.getNormalizedIncome(underLyingAsset).toString()) / ONE_UNIT);
-  return u256ToBytes(totalSupply);
+
+  const totalSupply = f64.parse(currentSupplyPrincipal.toString()) * (f64(core.getNormalizedIncome(underLyingAsset)) / f64(ONE_UNIT));
+
+  return u256ToBytes(u256.fromF64(totalSupply));
 }
 
 export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -613,7 +612,7 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const storageKey = `USER_INDEX_${user}`;
 
   if (!Storage.has(stringToBytes(storageKey))) {
-    Storage.set(stringToBytes(storageKey), u256ToBytes(u256.Zero));
+    Storage.set(stringToBytes(storageKey), u64ToBytes(0));
   }
 
   return Storage.get(stringToBytes(storageKey));
@@ -644,15 +643,15 @@ function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 
   const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
 
   const storageKey = `USER_INDEX_${_user}`;
-  const userIndex = bytesToU256(Storage.get(stringToBytes(storageKey)));
+  const userIndex = bytesToU64(Storage.get(stringToBytes(storageKey)));
   // const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
 
-  let cumulatedBal: u256 = u256.Zero;
-  if (userIndex > u256.Zero) {
-    cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * (u64.parse(normalizedIncome.toString()) / u64.parse(userIndex.toString())));
+  let cumulatedBal: f64 = 0;
+  if (userIndex > 0) {
+    cumulatedBal = f64.parse(_balance.toString()) * (f64(normalizedIncome) / f64(userIndex));
   }
   // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
-  return cumulatedBal;
+  return u256.fromF64(cumulatedBal);
 }
 
 function cumulateBalanceInternal(user: Address): Array<u64> {
@@ -661,7 +660,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   // const user = new Address(args.nextString().unwrap());
 
   const previousPrincipalBal = _balance(user);
-  const balanceIncrease = u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(balanceOf(new Args().add(user.toString()).serialize()).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
+  const balanceIncrease = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
 
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -680,7 +679,9 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const index = core.getNormalizedIncome(underLyingAsset)
 
   const storageKey = `USER_INDEX_${user.toString()}`;
-  Storage.set(stringToBytes(storageKey), u256ToBytes(index));
+  Storage.set(stringToBytes(storageKey), u64ToBytes(index));
+
+  generateEvent(`Balance ${previousPrincipalBal} increased to ${balanceIncrease} tokens`)
 
   return [u64.parse(previousPrincipalBal.toString()), (u64.parse(previousPrincipalBal.toString()) + balanceIncrease), (balanceIncrease)];
 }
@@ -690,15 +691,17 @@ function sendFuturOperation(user: string): void {
   const address = Context.callee();
   const validityStartPeriod = Context.currentPeriod();
   const validityStartThread = Context.currentThread();
-  let validityEndPeriod = validityStartThread + 1;
-  let validityEndThread = validityStartPeriod;
+
+  let validityEndPeriod = validityStartPeriod + 5;
+  let validityEndThread = validityStartThread + 1;
+  
   const msg = new Args().add(user).serialize();
   const filterAddress: Address = new Address();
   const filterKey: StaticArray<u8> = new StaticArray<u8>(0);
 
-  if (validityEndPeriod >= 32) {
-    ++validityEndThread;
-    validityEndPeriod = 0;
+  if (validityEndThread >= 32) {
+    ++validityEndPeriod;
+    validityEndThread = 0;
   }
   const maxGas = 1_000_000_000; // gas for smart contract execution
   const rawFee = 0;
@@ -726,29 +729,45 @@ function sendFuturOperation(user: string): void {
 }
 
 function swapTokensAndAddDeposit(user: string): void {
-  const binStep: u64 = 100;
+  const binStep: u64 = 20;
   const router = new IRouter(ROUTER);
   const wmas = new IERC20(WMAS);
-  const usdc = new IERC20(USDC);
+  // const usdc = new IERC20(USDC);
+  const underLyingAsset = new Address(bytesToString(Storage.get(UNDERLYINGASSET_KEY)));
   const deadline = Context.timestamp() + 5000;
-  const callee = Context.callee();
-  const path = [wmas, usdc];
-
+  const path = [new IERC20(underLyingAsset), wmas];
+  
   const previousPrincipalBal = _balance(new Address(user));
-  const amount = u64.parse(balanceOf(new Args().add(user).serialize()).toString()) - u64.parse(previousPrincipalBal.toString());
-
-  const amountIn = amount;
-  const amountOut = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, callee, deadline);
-
+  const amount = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString());
+  
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
+  const amountIn = amount;
+  core.transferToUser(underLyingAsset, Context.callee(), amountIn);
 
-  pool.deposit(underLyingAsset, Context.caller().toString(), u256.fromU64(amountOut));
+  // new IERC20(USDC).transferFrom(Context.caller(), Context.callee(), amountIn);
+  new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
+
+  const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
+
+  new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
+  core.transferToReserve(wmas._origin, Context.callee(), amountOut);
+  pool.depositRewards((wmas._origin).toString(), user, amountOut);
 
   sendFuturOperation(user);
 
+  generateEvent(`Received ${amountOut} WMAS for ${amountIn} ${underLyingAsset} and deposited in the pool.`);
+
+
+}
+
+function onlyLendingPool(): void {
+  const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
+  const pool = new Address(addressProvider.getLendingPool());
+
+  assert(Context.caller() === pool, 'Caller is not Lending pool');
 }
 
 // function swapTokens(amount: u64): void {
@@ -766,4 +785,3 @@ function swapTokensAndAddDeposit(user: string): void {
 //     router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
 //     generateEvent(`DEBUG: Bought ${amount} WMAS for ${amountIn} USDC`);
 // }
-

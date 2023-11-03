@@ -30,4 +30,5 @@ export class IERC20 extends TokenWrapper implements Serializable {
     equals(other: IERC20): bool {
         return this._origin.equals(other._origin);
     }
+    
 }

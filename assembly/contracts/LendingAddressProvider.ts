@@ -1,6 +1,5 @@
 import { Args, stringToBytes } from '@massalabs/as-types';
-import { Address, Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
-import { caller, isDeployingContract } from '@massalabs/massa-as-sdk/assembly/std/context';
+import { Context, Storage, callerHasWriteAccess, generateEvent } from '@massalabs/massa-as-sdk';
 import { setOwner, onlyOwner } from '../helpers/ownership';
 
 /**
@@ -21,32 +20,6 @@ export function constructor(_: StaticArray<u8>): void {
   // }
 
   setOwner(new Args().add(Context.caller()).serialize());
-  // const args = new Args(binaryArgs);  // First we deserialize our arguments.
-
-  // Storage.set(
-  //   'CORE_ADDR',
-  //   args.nextString().unwrap(),
-  // );
-
-  // Storage.set(
-  //   'POOL_ADDR',
-  //   args.nextString().unwrap(),
-  // );
-
-  // Storage.set(
-  //   'CONFIGURATOR_ADDR',
-  //   args.nextString().unwrap(),
-  // );
-
-  // Storage.set(
-  //   'DATA_PROVIDER_ADDR',
-  //   args.nextString().unwrap(),
-  // );
-
-  // Storage.set(
-  //   'FEE_PROVIDER_ADDR',
-  //   args.nextString().unwrap(),
-  // );
   
   generateEvent(`Address Provider called with owner ${Context.caller()}`);
 

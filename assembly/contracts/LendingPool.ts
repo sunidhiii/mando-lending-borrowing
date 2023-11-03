@@ -1,15 +1,14 @@
 
-import { call, Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, Result, Serializable, bytesToString, stringToBytes, u256ToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
+import { Args, stringToBytes } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { IERC20 } from '../interfaces/IERC20';
-import Reserve from '../helpers/Reserve';
 import UserReserve from '../helpers/UserReserve';
-import { u256 } from 'as-bignum/assembly';
 import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
+import { u256 } from 'as-bignum/assembly';
 
 // const ONE_UNIT = 10 ** 9;
 
@@ -53,8 +52,8 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 export function deposit(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
-  const user = args.nextString().expect('No reserve address provided');
-  const amount = args.nextU256().expect('No amount provided');
+  const user = args.nextString().expect('No user address provided');
+  const amount = args.nextU64().expect('No amount provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -68,7 +67,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
-  const userReserve = new UserReserve(user, u256.Zero, u256.Zero, 0, u256.Zero, 0, true, false);
+  const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, new Address(reserve));
 
@@ -82,7 +81,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
 export function borrow(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
-  const amount = args.nextU256().expect('No amount provided');
+  const amount = args.nextU64().expect('No amount provided');
   const interestRateMode = args.nextU8().expect('No interest rate mode provided');
 
   assert(interestRateMode == 1 || interestRateMode == 2, "Invalid interest rate mode selected");
@@ -95,32 +94,32 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
 
   const dataProvider = new ILendingDataProvider(new Address(addressProvider.getDataProvider()));
   const userData = dataProvider.calculateUserGlobalData(Context.caller().toString());
-  const userCollateralBalanceETH = userData[1];
-  const userBorrowBalanceETH = userData[2];
-  const userTotalFeesETH = userData[3];
+  const userCollateralBalanceUSD = userData[1];
+  const userBorrowBalanceUSD = userData[2];
+  const userTotalFeesUSD = userData[3];
   const currentLtv = userData[4];
   const currentLiquidationThreshold = userData[5];
 
-  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(u256.fromU64(userCollateralBalanceETH), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u8(currentLiquidationThreshold));
+  const healthFactorBelowThreshold = dataProvider.calculateUserHealthFactorBelowThresh(userCollateralBalanceUSD, userBorrowBalanceUSD, userTotalFeesUSD, u8(currentLiquidationThreshold));
 
-  assert(userCollateralBalanceETH > 0, "The collateral balance is 0");
+  assert(userCollateralBalanceUSD > 0, "The collateral balance is 0");
   assert(!healthFactorBelowThreshold, "The borrower can already be liquidated so he cannot borrow more");
 
   const feeProvider = new IFeeProvider(new Address(addressProvider.getFeeProvider()))
 
-  const borrowFee = u64.parse(feeProvider.calculateLoanOriginationFee(amount).toString());
+  const borrowFee = feeProvider.calculateLoanOriginationFee(amount);
   assert(borrowFee > 0, "The amount to borrow is too small");
 
-  const amountOfCollateralNeededETH = dataProvider.calculateCollateralNeededInETH(reserve, amount, u256.fromU64(borrowFee), u256.fromU64(userBorrowBalanceETH), u256.fromU64(userTotalFeesETH), u8(currentLtv));
-  assert(u64.parse(amountOfCollateralNeededETH.toString()) <= u64.parse(userCollateralBalanceETH.toString()), "There is not enough collateral to cover a new borrow");
+  const amountOfCollateralNeededUSD = dataProvider.calculateCollateralNeededInUSD(reserve, amount, borrowFee, userBorrowBalanceUSD, userTotalFeesUSD, u8(currentLtv));
+  assert(amountOfCollateralNeededUSD <= userCollateralBalanceUSD, "There is not enough collateral to cover a new borrow");
 
   if (interestRateMode == InterestRateMode.STABLE) {
     // assert(core.isUserAllowedToBorrowAtStable(reserve, Context.caller(), amount), "User cannot borrow the selected amount with a stable rate");
 
     // const maxLoanPercent = parametersProvider.getMaxStableRateBorrowSizePercent();
-    const maxLoanSizeStable = (u64.parse(availableLiquidity.toString()) * (25)) / 100;
+    const maxLoanSizeStable = u64((f64(availableLiquidity) * f64(25)) / f64(100));
 
-    assert(u64.parse(amount.toString()) <= maxLoanSizeStable, "User is trying to borrow too much liquidity at a stable rate");
+    assert(amount <= maxLoanSizeStable, "User is trying to borrow too much liquidity at a stable rate");
   }
 
   //all conditions passed - borrow is accepted (vars.finalUserBorrowRate, vars.borrowBalanceIncrease)
@@ -129,28 +128,6 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   core.transferToUser(new Address(reserve), Context.caller(), amount);
 
   generateEvent(`Borrowed ${amount} tokens from the pool`);
-
-}
-
-export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
-  const args = new Args(binaryArgs);
-  const reserve = args.nextString().expect('No reserve address provided');
-  const user = args.nextString().expect('No reserve address provided');
-  const amount = args.nextU256().expect('No amount provided');
-  const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
-
-  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
-  const core = new ILendingCore(new Address(addressProvider.getCore()));
-
-  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
-
-  assert(availableLiq >= amount, 'Not enough liquidity');
-
-  // update State On Redeem
-  core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
-  core.transferToUser(new Address(reserve), new Address(user), amount);
-
-  generateEvent(`Redeemed ${amount} tokens from the pool`);
 
 }
 
@@ -179,24 +156,24 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   }
 
   if (paybackAmount <= userOriginationFee) {
-    core.updateStateOnRepay(reserve, Context.caller().toString(), u256.Zero, paybackAmount, u256.fromU64(borrowBalanceIncrease), false);
-    core.transferFeeToOwner(new Address(reserve), Context.caller(), u256.fromU64(paybackAmount))
+    core.updateStateOnRepay(reserve, Context.caller().toString(), 0, paybackAmount, borrowBalanceIncrease, false);
+    core.transferFeeToOwner(new Address(reserve), Context.caller(), paybackAmount)
 
     generateEvent(`Repayed ${amount} tokens to the pool`);
     // return;
   } 
   else {
-    let paybackAmountMinusFees = u256.fromU64(paybackAmount - userOriginationFee);
-    core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, u256.fromU64(borrowBalanceIncrease), u256.fromU64(compoundedBorrowBalance) == paybackAmountMinusFees);
+    let paybackAmountMinusFees = paybackAmount - userOriginationFee;
+    core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, borrowBalanceIncrease, (compoundedBorrowBalance == paybackAmountMinusFees));
   
     // if the user didn't repay the origination fee, transfer the fee to the fee collection address
     if (userOriginationFee > 0) {
-      core.transferFeeToOwner(new Address(reserve), Context.caller(), u256.fromU64(userOriginationFee))
+      core.transferFeeToOwner(new Address(reserve), Context.caller(), userOriginationFee)
     }
   
-    //sending the total msg.value if the transfer is ETH.
+    //sending the total msg.value if the transfer is USD.
     //the transferToReserve() function will take care of sending the
-    //excess ETH back to the caller
+    //excess USD back to the caller
     core.transferToReserve(new Address(reserve), Context.caller(), paybackAmountMinusFees);
   
     generateEvent(`Repayed ${amount} tokens to the pool`);
@@ -204,7 +181,62 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   
 }
 
+export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No reserve address provided');
+  const amount = args.nextU64().expect('No amount provided');
+  const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
+  
+  onlyOverlyingAsset(reserve);
+
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
+
+  assert(availableLiq >= amount, 'Not enough liquidity');
+
+  // update State On Redeem
+  core.updateStateOnRedeem(reserve, user, amount, mTokenBalanceAfterRedeem == 0);
+  core.transferToUser(new Address(reserve), new Address(user), amount);
+
+  generateEvent(`Redeemed ${amount} tokens from the pool`);
+
+}
+
+export function depositRewards(binaryArgs: StaticArray<u8>): void {
+  
+  const args = new Args(binaryArgs);
+  const reserve = args.nextString().expect('No reserve address provided');
+  const user = args.nextString().expect('No user address provided');
+  const amount = args.nextU64().expect('No amount provided');
+
+  // onlyOverlyingAsset(reserve);
+  // onlyOverlyingAssetOrBaseToken();
+
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  core.updateStateOnDeposit(reserve, amount);
+  
+  const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
+  core.initUser(userReserve, new Address(reserve));
+  
+  const storageKey = `RESERVE_KEY_${reserve}`;
+  const reserveExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
+  assert(reserveExists, "Base token reserve doesn't exist!")
+
+  const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
+  mToken.mint(new Address(user), u256.fromU64(amount));
+
+  generateEvent(`Deposited ${amount} base tokens to the pool`);
+
+}
+
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
   const args = new Args(binaryArgs);
   const provider = args.nextString().expect('Provider Address argument is missing or invalid');
 
@@ -212,4 +244,21 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
     'ADDRESS_PROVIDER_ADDR',
     provider,
   );
+}
+
+function onlyOwner(): void {
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+  
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
+}
+
+function onlyOverlyingAsset(reserve: string): void {
+  
+  const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
+  const core = new ILendingCore(new Address(addressProvider.getCore()));
+
+  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+
+  assert(Context.caller() === mToken, 'Caller is not the overlying asset');
 }

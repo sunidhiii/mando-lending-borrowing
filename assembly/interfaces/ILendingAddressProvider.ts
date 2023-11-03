@@ -1,5 +1,5 @@
 import { Args, Result, Serializable, bytesToString, stringToBytes } from "@massalabs/as-types";
-import { Address, Context, call } from "@massalabs/massa-as-sdk";
+import { Address, Context, Storage, call } from "@massalabs/massa-as-sdk";
 
 export class ILendingAddressProvider {
 
@@ -57,6 +57,10 @@ export class ILendingAddressProvider {
 
     getFeeProvider(): string {
         return bytesToString(call(this._origin, "getFeeProvider", new Args(), 0));
+    }
+
+    getOwner(): string {
+        return Storage.getOf(this._origin, 'OWNER');
     }
 
 }

@@ -17,13 +17,17 @@ export class ILendingPool {
     this._origin = at;
   }
 
-  deposit(reserve: string, user: string, amount: u256): void {
+  deposit(reserve: string, user: string, amount: u64): void {
     call(this._origin, "deposit", new Args().add(reserve).add(user).add(amount), 0);
   }
 
-  redeemUnderlying(reserve: string, user: string, amount: u256, mTokenBalanceAfterRedeem: u64): void {
+  depositRewards(reserve: string, user: string, amount: u64): void {
+    call(this._origin, "depositRewards", new Args().add(reserve).add(user).add(amount), 2);
+  }
+
+  redeemUnderlying(reserve: string, user: string, amount: u64, mTokenBalanceAfterRedeem: u64): void {
     // const arg = new Args().add(reserve);
-    call(this._origin, "redeemUnderlying", new Args().add(reserve).add(user).add(amount).add(mTokenBalanceAfterRedeem), 0);
+    call(this._origin, "redeemUnderlying", new Args().add(reserve).add(user).add(amount).add(mTokenBalanceAfterRedeem), 2);
   }
 
 }

@@ -30,7 +30,7 @@ function sendFuturOperation(): void {
   const address = Context.callee();
   const validityStartPeriod = currentPeriod() + 1;
   const validityStartThread = 0 as u8;
-  const validityEndPeriod = validityStartPeriod;
+  const validityEndPeriod = validityStartPeriod + 5;
   const validityEndThread = 31 as u8;
   const maxGas = 1_000_000_000; // gas for smart contract execution
   const rawFee = 0;

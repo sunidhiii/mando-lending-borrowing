@@ -27,7 +27,7 @@ export class IFeeProvider {
   //   return bytesToU64(call(this._origin, "getLoanOriginationFeePercentage", new Args(), 0));
   // }
 
-  calculateLoanOriginationFee(amount: u256): u64 {
+  calculateLoanOriginationFee(amount: u64): u64 {
     // const arg = new Args().add(reserve);
     return bytesToU64(call(this._origin, "calculateLoanOriginationFee", new Args().add(amount), 0));
   }

@@ -13,14 +13,14 @@ export default class Reserve implements Serializable {
       public LiquidationThreshold: u8 = 0,          // 80
       public LiquidationBonus: u8 = 0,              // 105
       public lastUpdateTimestamp: u64 = 0,
-      public lastLiquidityCumulativeIndex: u256 = new u256(1000000000),
-      public currentLiquidityRate: u256 = new u256(0),
-      public totalBorrowsStable: u256 = new u256(0),
-      public totalBorrowsVariable: u256 = new u256(0),
-      public currentVariableBorrowRate: u256 = new u256(0),
-      public currentStableBorrowRate: u256 = new u256(0),
-      public currentAverageStableBorrowRate: u256 = new u256(0),
-      public lastVariableBorrowCumulativeIndex: u256 = new u256(1000000000),
+      public lastLiquidityCumulativeIndex: u64 = 1000000000,
+      public currentLiquidityRate: u64 = 0,
+      public totalBorrowsStable: u64 = 0,
+      public totalBorrowsVariable: u64 = 0,
+      public currentVariableBorrowRate: u64 = 0,
+      public currentStableBorrowRate: u64 = 0,
+      public currentAverageStableBorrowRate: u64 = 0,
+      public lastVariableBorrowCumulativeIndex: u64 = 1000000000,
     ) { }
   
     public serialize(): StaticArray<u8> {
@@ -109,49 +109,49 @@ export default class Reserve implements Serializable {
       }
       this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
 
-      const lastLiquidityCumulativeIndex = args.nextU256();
+      const lastLiquidityCumulativeIndex = args.nextU64();
       if (lastLiquidityCumulativeIndex.isErr()) {
         return new Result(0, "Can't deserialize the lastLiquidityCumulativeIndex");
       }
       this.lastLiquidityCumulativeIndex = lastLiquidityCumulativeIndex.unwrap();
 
-      const currentLiquidityRate = args.nextU256();
+      const currentLiquidityRate = args.nextU64();
       if (currentLiquidityRate.isErr()) {
         return new Result(0, "Can't deserialize the currentLiquidityRate");
       }
       this.currentLiquidityRate = currentLiquidityRate.unwrap();
   
-      const totalBorrowsStable = args.nextU256();
+      const totalBorrowsStable = args.nextU64();
       if (totalBorrowsStable.isErr()) {
         return new Result(0, "Can't deserialize the totalBorrowsStable");
       }
       this.totalBorrowsStable = totalBorrowsStable.unwrap();
   
-      const totalBorrowsVariable = args.nextU256();
+      const totalBorrowsVariable = args.nextU64();
       if (totalBorrowsVariable.isErr()) {
         return new Result(0, "Can't deserialize the totalBorrowsVariable");
       }
       this.totalBorrowsVariable = totalBorrowsVariable.unwrap();
 
-      const currentVariableBorrowRate = args.nextU256();
+      const currentVariableBorrowRate = args.nextU64();
       if (currentVariableBorrowRate.isErr()) {
         return new Result(0, "Can't deserialize the currentVariableBorrowRate");
       }
       this.currentVariableBorrowRate = currentVariableBorrowRate.unwrap();
   
-      const currentStableBorrowRate = args.nextU256();
+      const currentStableBorrowRate = args.nextU64();
       if (currentStableBorrowRate.isErr()) {
         return new Result(0, "Can't deserialize the currentStableBorrowRate");
       }
       this.currentStableBorrowRate = currentStableBorrowRate.unwrap();
       
-      const currentAverageStableBorrowRate = args.nextU256();
+      const currentAverageStableBorrowRate = args.nextU64();
       if (currentAverageStableBorrowRate.isErr()) {
         return new Result(0, "Can't deserialize the currentAverageStableBorrowRate");
       }
       this.currentAverageStableBorrowRate = currentAverageStableBorrowRate.unwrap();
   
-      const lastVariableBorrowCumulativeIndex = args.nextU256();
+      const lastVariableBorrowCumulativeIndex = args.nextU64();
       if (lastVariableBorrowCumulativeIndex.isErr()) {
         return new Result(0, "Can't deserialize the lastVariableBorrowCumulativeIndex");
       }

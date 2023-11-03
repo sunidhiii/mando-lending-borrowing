@@ -4,10 +4,10 @@ import { u256 } from 'as-bignum/assembly';
 export default class UserReserve implements Serializable {
     constructor(
       public addr: string = '',
-      public principalBorrowBalance: u256 = new u256(0),
-      public lastVariableBorrowCumulativeIndex: u256 = new u256(0),
+      public principalBorrowBalance: u64 = 0,
+      public lastVariableBorrowCumulativeIndex: u64 = 0,
       public originationFee: u64 = 0,
-      public stableBorrowRate: u256 = new u256(0),
+      public stableBorrowRate: u64 = 0,
       public lastUpdateTimestamp: u64 = 0,
       public useAsCollateral: bool = false,
       public autonomousRewardStrategyEnabled: bool = false,
@@ -35,13 +35,13 @@ export default class UserReserve implements Serializable {
       }
       this.addr = addr.unwrap();
   
-      const principalBorrowBalance = args.nextU256();
+      const principalBorrowBalance = args.nextU64();
       if (principalBorrowBalance.isErr()) {
         return new Result(0, "Can't deserialize the principalBorrowBalance");
       }
       this.principalBorrowBalance = principalBorrowBalance.unwrap();
   
-      const lastVariableBorrowCumulativeIndex = args.nextU256();
+      const lastVariableBorrowCumulativeIndex = args.nextU64();
       if (lastVariableBorrowCumulativeIndex.isErr()) {
         return new Result(0, "Can't deserialize the lastVariableBorrowCumulativeIndex");
       }
@@ -53,7 +53,7 @@ export default class UserReserve implements Serializable {
       }
       this.originationFee = originationFee.unwrap();
   
-      const stableBorrowRate = args.nextU256();
+      const stableBorrowRate = args.nextU64();
       if (stableBorrowRate.isErr()) {
         return new Result(0, "Can't deserialize the stableBorrowRate");
       }

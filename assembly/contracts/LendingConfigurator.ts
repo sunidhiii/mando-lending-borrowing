@@ -1,6 +1,5 @@
 import { generateEvent, Context, callerHasWriteAccess, Storage, Address, call } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
-import { onlyOwner } from '../helpers/ownership';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import Reserve from '../helpers/Reserve';
@@ -89,5 +88,12 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
     'ADDRESS_PROVIDER_ADDR',
     provider,
   );
+}
+
+function onlyOwner(): void {
+  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
+  
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }
 
