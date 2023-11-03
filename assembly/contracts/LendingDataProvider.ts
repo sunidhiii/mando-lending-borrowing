@@ -178,7 +178,7 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
   const usageAsCollateralEnabled: bool = userData.useAsCollateral;
 
   if (!reserveUsageAsCollateralEnabled || !usageAsCollateralEnabled) {
-    return boolToByte(true); //if reserve is not used as collateral, no reasons to block the transfer
+    return boolToByte(true); // if reserve is not used as collateral, no reasons to block the transfer
   }
 
   const userGolbalData: Array<u64> = new Args(calculateUserGlobalData(new Args().add(user).serialize())).nextFixedSizeArray<u64>().unwrap();

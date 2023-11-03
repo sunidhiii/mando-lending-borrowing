@@ -1655,7 +1655,7 @@ async function setUserAutonomousRewardStrategy() {
                     targetAddress: CORE_ADDRESS,
                     functionName: "setUserAutonomousRewardStrategy",
                     parameter: new Args()
-                        .addString(RESERVE_ADDRESS).addBool(true)
+                        .addString(RESERVE_ADDRESS).addBool(false)
                         .serialize(),
                     coins: fromMAS(1),
                     fee: BigInt(0),
@@ -1830,13 +1830,13 @@ async function test1() {
 // calculateAvailableBorrowsUSD();
 // calculateAvailableBorrows();
 // getUserBorrowBalances();
-getReserveAvailableLiquiditySupply(); // Reserve available liquidity 1673927292n
-getReserveTotalLiquidity();
+// getReserveAvailableLiquiditySupply(); // Reserve available liquidity 1673927292n
+// getReserveTotalLiquidity();
 // getNormalizedIncome();
 // getUserBasicReserveData();
 // transferToReserve()
 // borrow(RESERVE_ADDRESS, 2, 1);
-// repay(RESERVE_ADDRESS, 19);
+// repay(RESERVE_ADDRESS, 7);
 // getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS); 
 
@@ -1855,8 +1855,8 @@ getReserveTotalLiquidity();
 
 // getVariableRateSlope1()
 
-// getUserReserve();
-// redeemUnderlying(1);
+getUserReserve();
+// redeemUnderlying(6);
 // getMTokenBalance(baseAccount.address);
 // getTokenSymbol();
 // getMTokenTotalSupply();

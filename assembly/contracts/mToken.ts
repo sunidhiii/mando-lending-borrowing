@@ -460,7 +460,6 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   const arr = cumulateBalanceInternal(Context.caller());
 
   const currentBalance: u64 = arr[1];
-  const balanceIncrease: u64 = arr[2];
 
   let amountToRedeem: u64 = amount;
 
@@ -495,7 +494,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after mint ${amountToRedeem} tokens and increased to ${u64.parse(amountToRedeem.toString()) + balanceIncrease} tokens`)
+  generateEvent(`Balance redeemed after mint ${amountToRedeem} tokens and left ${mTokenBalanceAfterRedeem} tokens`)
 
 }
 
