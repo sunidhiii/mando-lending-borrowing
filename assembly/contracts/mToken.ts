@@ -161,7 +161,7 @@ export function decimals(_: StaticArray<u8>): StaticArray<u8> {
 // ==================================================== //
 
 
-// function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
+// export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 //   const args = new Args(binaryArgs);
 
 //   const addr = new Address(
@@ -480,7 +480,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
   assert(isTransferAllowed, "Transfer cannot be allowed.");
 
   // burns tokens equivalent to the amount requested
-  _burn(Context.caller(), u256.fromU64(amountToRedeem));
+  burn(new Args().add(u256.fromU64(amountToRedeem)).serialize());
 
   // executes redeem of the underlying asset
   const pool = new ILendingPool(new Address(addressProvider.getLendingPool()));
@@ -494,7 +494,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after mint ${amountToRedeem} tokens and left ${mTokenBalanceAfterRedeem} tokens`)
+  generateEvent(`Balance redeemed after redeem: ${amountToRedeem} tokens left to ${mTokenBalanceAfterRedeem} tokens`)
 
 }
 
@@ -520,6 +520,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 
 }
 
+// to-do
 export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
   onlyLendingPool();
 
@@ -536,7 +537,7 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
   const balanceIncrease = arr[2];
 
   //burns the requested amount of tokens
-  _burn(user, u256.fromU64(amount));
+  burnFrom(new Args().add(user).add(u256.fromU64(amount)).serialize());
 
   generateEvent(`Balance decreased after mint from ${currentBalance} tokens to ${balanceIncrease} tokens`)
 
@@ -641,9 +642,9 @@ function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
 
-  const storageKey = `USER_INDEX_${_user}`;
-  const userIndex = bytesToU64(Storage.get(stringToBytes(storageKey)));
-  // const userIndex = bytesToU256(getUserIndex(new Args().add(_user.toString()).serialize()));
+  // const storageKey = `USER_INDEX_${_user}`;
+  // const userIndex = bytesToU64(Storage.get(stringToBytes(storageKey)));
+  const userIndex = bytesToU64(getUserIndex(new Args().add(_user.toString()).serialize()));
 
   let cumulatedBal: f64 = 0;
   if (userIndex > 0) {
@@ -678,7 +679,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   }
 
   const index = core.getNormalizedIncome(underLyingAsset)
-
+  
   const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u64ToBytes(index));
 

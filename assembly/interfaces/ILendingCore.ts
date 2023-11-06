@@ -75,8 +75,8 @@ export class ILendingCore {
     return new Args(call(this._origin, "getUserBorrowBalances", new Args().add(reserve).add(user), 0)).nextFixedSizeArray<u64>().unwrap();
   }
   
-  updateStateOnDeposit(reserve: string, amount: u64): void {
-    call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(amount), 1);
+  updateStateOnDeposit(reserve: string, user: string, amount: u64): void {
+    call(this._origin, "updateStateOnDeposit", new Args().add(reserve).add(user).add(amount), 1);
   }
 
   updateStateOnBorrow(reserve: string, user: string, amount: u64, borrowFee: u64, rateMode: u8): void {

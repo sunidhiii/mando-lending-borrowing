@@ -1,6 +1,6 @@
 
 import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
-import { Args, stringToBytes } from '@massalabs/as-types';
+import { Args, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
 import { IERC20 } from '../interfaces/IERC20';
@@ -9,6 +9,7 @@ import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
 import { u256 } from 'as-bignum/assembly';
+import { u64 } from 'assemblyscript/std/assembly/builtins';
 
 // const ONE_UNIT = 10 ** 9;
 
@@ -52,27 +53,25 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 export function deposit(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
-  const user = args.nextString().expect('No user address provided');
   const amount = args.nextU64().expect('No amount provided');
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
-  // const core = new ILendingCore(new Address('AS12CDMGZYvpNEf5VD27icxPr7Rji66qFHaf3H2rhQf6ZcR69XGt2'));
+  
+  const userReserve = new UserReserve(Context.caller().toString(), 0, 0, 0, 0, 0, true, false);
+  // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
+  core.initUser(userReserve, new Address(reserve));
 
   // to-do Update states for deposit
-  core.updateStateOnDeposit(reserve, amount);
+  core.updateStateOnDeposit(reserve, Context.caller().toString(), amount);
 
   // const mTokenData = call(new Address(Storage.get('CORE_ADDR')), "getReserve", new Args().add(reserve), 10 * ONE_UNIT);
   // const mTokenAddr = new Args(mTokenData).nextSerializable<Reserve>().unwrap();
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
   const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
-  const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
-  // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
-  core.initUser(userReserve, new Address(reserve));
-
-  mToken.mintOnDeposit(new Address(user), amount);
-  core.transferToReserve(new Address(reserve), new Address(user), amount);
+  mToken.mintOnDeposit(Context.caller(), amount);
+  core.transferToReserve(new Address(reserve), Context.caller(), amount);
 
   generateEvent(`Deposited ${amount} tokens to the pool`);
 
@@ -218,21 +217,49 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  core.updateStateOnDeposit(reserve, amount);
-  
   const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
   core.initUser(userReserve, new Address(reserve));
+
+  core.updateStateOnDeposit(reserve, user, amount);
   
   const storageKey = `RESERVE_KEY_${reserve}`;
   const reserveExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
   assert(reserveExists, "Base token reserve doesn't exist!")
 
-  const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
-  mToken.mint(new Address(user), u256.fromU64(amount));
+  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+  new IERC20(mToken).mint(new Address(user), u256.fromU64(amount));
+
+  const index = core.getNormalizedIncome(reserve)
+  const userIndexStorageKey = `USER_INDEX_${user}`;
+  Storage.setOf(mToken, stringToBytes(userIndexStorageKey), u64ToBytes(index));
 
   generateEvent(`Deposited ${amount} base tokens to the pool`);
 
 }
+
+// function setUserUseReserveAsCollateral(address _reserve, bool _useAsCollateral)
+// external
+// nonReentrant
+// onlyActiveReserve(_reserve)
+// onlyUnfreezedReserve(_reserve)
+// {
+// uint256 underlyingBalance = core.getUserUnderlyingAssetBalance(_reserve, msg.sender);
+
+// require(underlyingBalance > 0, "User does not have any liquidity deposited");
+
+// require(
+//     dataProvider.balanceDecreaseAllowed(_reserve, msg.sender, underlyingBalance),
+//     "User deposit is already being used as collateral"
+// );
+
+// core.setUserUseReserveAsCollateral(_reserve, msg.sender, _useAsCollateral);
+
+// if (_useAsCollateral) {
+//     emit ReserveUsedAsCollateralEnabled(_reserve, msg.sender);
+// } else {
+//     emit ReserveUsedAsCollateralDisabled(_reserve, msg.sender);
+// }
+// }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
   onlyOwner();

@@ -67,7 +67,7 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const name = 'Mando Interest bearing '.concat(new IERC20(new Address(reserve.addr)).name());
   const symbol = 'm' + new IERC20(new Address(reserve.addr)).symbol();
 
-  call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 10 * ONE_UNIT);
+  call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 18*ONE_UNIT);
   // call(mToken_addr, 'constructor', new Args().add(Context.caller().toString()), 10 * ONE_UNIT);
 
   reserve.name = new IERC20(new Address(reserve.addr)).name();
@@ -76,10 +76,10 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   // reserve.decimals = byteToU8(Storage.getOf(new Address(reserve.addr), stringToBytes('DECIMALS')));
   reserve.mTokenAddress = mToken_addr.toString();
 
-  if(reserve.lastLiquidityCumulativeIndex == 0) {
+  if (reserve.lastLiquidityCumulativeIndex == 0) {
     reserve.lastLiquidityCumulativeIndex = ONE_UNIT;
   }
-  if(reserve.lastVariableBorrowCumulativeIndex == 0) {
+  if (reserve.lastVariableBorrowCumulativeIndex == 0) {
     reserve.lastVariableBorrowCumulativeIndex = ONE_UNIT;
   }
 
@@ -207,7 +207,7 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
       'addr: ' +
       userReserve.addr.toString() +
       ', reserve: ' +
-      reserve.toString() + 
+      reserve.toString() +
       ', principalBorrowBalance: ' +
       userReserve.principalBorrowBalance.toString() +
       ', lastVariableBorrowCumulativeIndex: ' +
@@ -219,8 +219,8 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
       ', lastUpdateTimestamp: ' +
       userReserve.lastUpdateTimestamp.toString() +
       ', useAsCollateral: ' +
-      userReserve.useAsCollateral.toString() + 
-      ', autonomousRewardStrategyEnabled: ' + 
+      userReserve.useAsCollateral.toString() +
+      ', autonomousRewardStrategyEnabled: ' +
       userReserve.autonomousRewardStrategyEnabled.toString(),
     );
   }
@@ -377,10 +377,18 @@ export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
   const reserve = args.nextString().unwrap();
+  const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
 
   updateCumulativeIndexes(reserve);
   updateReserveInterestRatesAndTimestampInternal(reserve, amount, 0);
+
+  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
+  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+
+  if (!userArgs.useAsCollateral) {
+    setUserUseReserveAsCollateral(reserve, user, true);
+  }
 
 }
 
@@ -409,7 +417,7 @@ export function getReserveTotalLiquidity(binaryArgs: StaticArray<u8>): StaticArr
 
   const reserveAvailableLiq = bytesToU64(getReserveAvailableLiquidity(new Args().add(reserve).serialize()));
   const reserveTotalBorrows = getTotalBorrows(reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable);
-  
+
   const reserveTotalLiquidity = reserveAvailableLiq + reserveTotalBorrows;
   return u64ToBytes(reserveTotalLiquidity);
 }

@@ -1,5 +1,5 @@
 // import MessageResponse from "./interfaces/MessageResponse";
-import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32, byteToU8 } from "@massalabs/massa-web3";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32, byteToU8, toMAS } from "@massalabs/massa-web3";
 import pollAsyncEvents from './pollAsyncEvent';
 
 // create a base account for signing transactions
@@ -22,10 +22,10 @@ let DATA_PROVIDER = 'AS1C1oBKxq1nKZeHKGs8AbjNH2yF3pyEMh1iCPAVuSuaKJBj2P4r'      
 // let INTEREST_ADDRESS = 'AS19jFaWTJbfUzYQ4Bi76AWQnDMhJYmA75ZzBFFHMjyV17aJhBbT';
 let INTEREST_ADDRESS = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';   // usdc
 // let INTEREST_ADDRESS = 'AS12PQk5GWRYgfo2RpWpJWuRNT3gY7izqB6m5b2x5YsfiNjDwvSr';   // wmas
-let CORE_ADDRESS = 'AS122LRndttwCSHjhQhiQYhLvbL1e8vLzKkMtQPgLXFamXmmXn6MM'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
-let RESERVE_ADDRESS = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'   // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
-const mToken = 'AS16wBB8tVNpgfM5yp4odCZfzy3rr4X9xaoEqTQy1tRftyi6RXod'      // AS1x5QZVeHdTrNjKscAbQZYV8j8esQYc7ZqSeV9Mv9vkGXFZNCF2'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
-const POOL_ADDRESS = 'AS12Y48HSdP3xLqCQay5TQQHinhMsHt9Pwkyi6Dd6zZ7JP1hyJFo1'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
+let CORE_ADDRESS = 'AS19rMy7hLAEQdaZ7Zxa4jv3FWX8m3o6xL1C6G1EyBGTatkkLqDT'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
+let RESERVE_ADDRESS = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'  // AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
+const mToken = 'AS1Xi5t9oXbj6soUTXGhLB2nSBHJU16LAX189auknPqC1tqthQWw'      // AS1x5QZVeHdTrNjKscAbQZYV8j8esQYc7ZqSeV9Mv9vkGXFZNCF2'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
+const POOL_ADDRESS = 'AS12oqaNnQcfu4QiwabEtEeiXAmDD8eTRctfpnWDzB4enpWrF3MJA'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
 
@@ -465,7 +465,7 @@ async function addReserveData() {
                         ))
                         .serialize(),
                     maxGas: 4_294_967_295n,
-                    coins: fromMAS(75),
+                    coins: fromMAS(85),
                     fee: fromMAS(0),
                 })
                 .then((res) => {
@@ -689,10 +689,10 @@ async function testt() {
                 .smartContracts()
                 .readSmartContract({
                     maxGas: fromMAS(1),
-                    targetAddress: DATA_PROVIDER,
-                    targetFunction: "getUserUnderlyingAssetBalance",
+                    targetAddress: 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ',
+                    targetFunction: "balanceOf",
                     parameter: new Args()
-                        .addString(RESERVE_ADDRESS)
+                        // .addString(RESERVE_ADDRESS)
                         .addString(baseAccount.address)
                         // .addU256(10000n)
                         // .addU64(22530503454n).addU64(16177956n).addU64(0n).addU64(75n)
@@ -700,7 +700,7 @@ async function testt() {
                         // .addU256(1n).addU256(200n).addU256(1153772431n).addU256(2519950n).addU8(60)
                         .serialize(),
                 }).then((res) => {
-                    let reservesData = bytesToU64(res.returnValue, ArrayType.U64);
+                    let reservesData = bytesToU256(res.returnValue);
                     // let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
                     console.log("Contrat balance", reservesData);
                     // console.log("Contrat balance", byteToBool(res.returnValue));
@@ -1176,7 +1176,6 @@ async function deposit(amount: number) {
                     functionName: "deposit",
                     parameter: new Args()
                         .addString(RESERVE_ADDRESS)
-                        .addString(baseAccount.address)
                         .addU64(BigInt(fromMAS(amount)))
                         .serialize(),
                     maxGas: 4_294_967_295n,
@@ -1526,16 +1525,10 @@ async function getMasBalance(account: string) {
     const client = await createClient();
     try {
         if (client) {
-            await client
-                .smartContracts()
-                .readSmartContract({
-                    maxGas: fromMAS(0.001),
-                    targetAddress: RESERVE_ADDRESS,
-                    targetFunction: "balanceOf",
-                    parameter: new Args().addString(account).serialize(),
-                }).then((res) => {
-                    console.log("OpId: ", res);
-                });
+            const balance = await client
+                .wallet()
+                .getAccountBalance(account)
+                console.log('balance', balance?.final);
         }
     } catch (error) {
         console.error(error);
@@ -1655,7 +1648,7 @@ async function setUserAutonomousRewardStrategy() {
                     targetAddress: CORE_ADDRESS,
                     functionName: "setUserAutonomousRewardStrategy",
                     parameter: new Args()
-                        .addString(RESERVE_ADDRESS).addBool(false)
+                        .addString(RESERVE_ADDRESS).addBool(true)
                         .serialize(),
                     coins: fromMAS(1),
                     fee: BigInt(0),
@@ -1786,9 +1779,9 @@ async function test1() {
                 .smartContracts()
                 .callSmartContract({
                     maxGas: 4_294_967_295n,
-                    targetAddress: 'AS12S1kEU49JDfAk7WpU2EvZqpCArNeWJpJmyruqCmUJcDCu34Rsn',
-                    functionName: "test",
-                    parameter: new Args().serialize(),
+                    targetAddress: 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ',
+                    functionName: "burnOnLiquidation",
+                    parameter: new Args().addString(baseAccount.address).addU64(1n).serialize(),
                     coins: fromMAS(0.01),
                     fee: BigInt(0),
                 })
@@ -1818,7 +1811,7 @@ async function test1() {
 // checkAllowance();
 // approveMToken()
 // approve();
-// deposit(1);
+// deposit(11);
 // test();
 // testt();
 // calculateUserGlobalData();
@@ -1835,10 +1828,10 @@ async function test1() {
 // getNormalizedIncome();
 // getUserBasicReserveData();
 // transferToReserve()
-// borrow(RESERVE_ADDRESS, 2, 1);
+// borrow(RESERVE_ADDRESS, 1, 1);
 // repay(RESERVE_ADDRESS, 7);
 // getBalance(baseAccount.address);
-// getBalance(CORE_ADDRESS); 
+// getBalance(CORE_ADDRESS);
 
 // User Available Borrows: 617687446322n
 // User Available Borrows: 617721077528n
@@ -1855,18 +1848,19 @@ async function test1() {
 
 // getVariableRateSlope1()
 
-getUserReserve();
-// redeemUnderlying(6);
+// getUserReserve();
+// redeemUnderlying(7);
 // getMTokenBalance(baseAccount.address);
 // getTokenSymbol();
 // getMTokenTotalSupply();
 // checkUserExists();
 // getUserAvailableBorrows();
 // getUtilizationRate();
-// calculateUserCollateralNeededInUSD(1000000);
+// calculateUserCollateralNeededInUSD(1);
 // setUserAutonomousRewardStrategy();
 // getUserCurrentBorrowRateMode();
 
 // getStatus('O12iAg6UBDJEP58EwLkZuk4dyT5ZpPUPpR1vc8v83JHhDXKG48pz');
 
+// getMasBalance('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8');
 // test1();

@@ -1,16 +1,16 @@
-import { Address, Context, generateEvent } from "@massalabs/massa-as-sdk";
+import { Address, Context, Storage, call, createSC, generateEvent } from "@massalabs/massa-as-sdk";
 import { u256 } from 'as-bignum/assembly';
 import { timestamp } from "@massalabs/massa-as-sdk/assembly/std/context";
 import { onlyOwner, ownerAddress } from "../helpers/ownership";
 import { ONE_UNIT } from "./FeeProvider";
 import { ILendingCore } from "../interfaces/ILendingCore";
 import { ILendingAddressProvider } from "../interfaces/ILendingAddressProvider";
-import { Args, bytesToString } from "@massalabs/as-types";
+import { Args, bytesToString, stringToBytes } from "@massalabs/as-types";
 import { IRouter } from "../interfaces/IRouter";
 import { IERC20 } from "../interfaces/IERC20";
 import { IFactory } from "../interfaces/IFactory";
 
-export function constructor(_: StaticArray<u8>): void {
+export function constructor(binaryArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
   // If you remove this check, someone could call your constructor function and reset your smart contract.
   // const ONE_UNIT = 1000000000;
@@ -167,27 +167,34 @@ export function constructor(_: StaticArray<u8>): void {
   //   // router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
   //   generateEvent(`${name} ${symbol} ${name1} ${symbol1} ${name2} ${symbol2}`);
 
-  // generateEvent(`data ${previousBalance} ${currentBalance} ${balanceIncrease}`);
+  const mToken_contract_code = new Args(binaryArgs).nextFixedSizeArray<u8>().unwrap();
+  Storage.set(stringToBytes('mToken_contract_code'), StaticArray.fromArray(mToken_contract_code));
+
+  // call(mToken_addr, 'constructor', new Args().add('name').add('symbol').add(u8(9)).add(u256.Zero).add('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9').add('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp'), ONE_UNIT);
+
+  // generateEvent(`data ${mToken_addr}`);
 }
 
 export function test(): void {
-  let abcd = 3;
-  testing();
-  abcd = 4;
-  generateEvent(`${abcd}`);
+  let mToken_contract_code = Storage.get(stringToBytes('mToken_contract_code'));
+  let mToken_addr = createSC(mToken_contract_code);
+
+  call(mToken_addr, 'constructor', new Args().add('name').add('symbol').add(u8(9)).add(u256.Zero).add('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9').add('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp'), ONE_UNIT);
+
+  generateEvent(`data ${mToken_addr}`);
 }
 
-function testing(): void {
-  let abc: u64 = 0;
-  if(abc == 1) {
-    abc = 1;
-  } else {
-    return;
-  }
+// function testing(): void {
+//   let abc: u64 = 0;
+//   if(abc == 1) {
+//     abc = 1;
+//   } else {
+//     return;
+//   }
 
-  abc = 2;
+//   abc = 2;
 
-}
+// }
 
 // export function swapping(): void {  // Worked
     
