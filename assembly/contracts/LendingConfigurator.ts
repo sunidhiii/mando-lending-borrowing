@@ -73,7 +73,7 @@ export function removeReserve(binaryArgs: StaticArray<u8>): void {
   const core = new ILendingCore(new Address(provider.getCore()));
   
   const args: Args = new Args(binaryArgs);
-  const reserveAddr = new Address(args.nextString().unwrap());
+  const reserveAddr = args.nextString().unwrap();
 
   core.deleteReserve(reserveAddr);
 }

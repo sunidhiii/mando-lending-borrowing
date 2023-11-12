@@ -1,5 +1,5 @@
 
-import { Address, Context, Storage, generateEvent } from '@massalabs/massa-as-sdk';
+import { Address, Context, Storage, call, generateEvent } from '@massalabs/massa-as-sdk';
 import { Args, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider'
 import { ILendingCore } from '../interfaces/ILendingCore';
@@ -57,23 +57,25 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
-  
+
   const userReserve = new UserReserve(Context.caller().toString(), 0, 0, 0, 0, 0, true, false);
   // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
-  core.initUser(userReserve, new Address(reserve));
+  core.initUser(userReserve, reserve);
+
+  const mToken = new IERC20(new Address(core.getReserve(reserve).mTokenAddress));
+  const isFirstDeposit: bool = mToken.balanceOf(Context.caller()) == 0;
 
   // to-do Update states for deposit
-  core.updateStateOnDeposit(reserve, Context.caller().toString(), amount);
+  core.updateStateOnDeposit(reserve, Context.caller().toString(), amount, isFirstDeposit);
 
   // const mTokenData = call(new Address(Storage.get('CORE_ADDR')), "getReserve", new Args().add(reserve), 10 * ONE_UNIT);
   // const mTokenAddr = new Args(mTokenData).nextSerializable<Reserve>().unwrap();
   // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
-  const mToken = new IERC20(new Address(core.getReserve(new Address(reserve)).mTokenAddress));
 
   mToken.mintOnDeposit(Context.caller(), amount);
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
 
-  generateEvent(`Deposited ${amount} tokens to the pool`);
+  generateEvent(`Deposited ${amount} tokens to the pool with first deposit ${isFirstDeposit}`);
 
 }
 
@@ -88,7 +90,7 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const availableLiquidity = core.getReserveAvailableLiquidity(new Address(reserve));
+  const availableLiquidity = core.getReserveAvailableLiquidity(reserve);
   assert(availableLiquidity >= amount, 'Not enough liquidity available in this reserve');
 
   const dataProvider = new ILendingDataProvider(new Address(addressProvider.getDataProvider()));
@@ -144,7 +146,7 @@ export function repay(binaryArgs: StaticArray<u8>): void {
   const compoundedBorrowBalance = data[1];
   const borrowBalanceIncrease = data[2];
 
-  const userOriginationFee = core.getUserReserve(Context.caller(), new Address(reserve)).originationFee;
+  const userOriginationFee = core.getUserReserve(Context.caller(), reserve).originationFee;
 
   assert(compoundedBorrowBalance > 0, "The user does not have any borrow pending");
 
@@ -156,28 +158,28 @@ export function repay(binaryArgs: StaticArray<u8>): void {
 
   if (paybackAmount <= userOriginationFee) {
     core.updateStateOnRepay(reserve, Context.caller().toString(), 0, paybackAmount, borrowBalanceIncrease, false);
-    core.transferFeeToOwner(new Address(reserve), Context.caller(), paybackAmount)
+    core.transferFeeToOwner(reserve, Context.caller(), paybackAmount)
 
     generateEvent(`Repayed ${amount} tokens to the pool`);
     // return;
-  } 
+  }
   else {
     let paybackAmountMinusFees = paybackAmount - userOriginationFee;
     core.updateStateOnRepay(reserve, Context.caller().toString(), paybackAmountMinusFees, userOriginationFee, borrowBalanceIncrease, (compoundedBorrowBalance == paybackAmountMinusFees));
-  
+
     // if the user didn't repay the origination fee, transfer the fee to the fee collection address
     if (userOriginationFee > 0) {
-      core.transferFeeToOwner(new Address(reserve), Context.caller(), userOriginationFee)
+      core.transferFeeToOwner(reserve, Context.caller(), userOriginationFee)
     }
-  
+
     //sending the total msg.value if the transfer is USD.
     //the transferToReserve() function will take care of sending the
     //excess USD back to the caller
     core.transferToReserve(new Address(reserve), Context.caller(), paybackAmountMinusFees);
-  
+
     generateEvent(`Repayed ${amount} tokens to the pool`);
   }
-  
+
 }
 
 export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
@@ -186,13 +188,13 @@ export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
   const user = args.nextString().expect('No reserve address provided');
   const amount = args.nextU64().expect('No amount provided');
   const mTokenBalanceAfterRedeem = args.nextU64().expect('No after balance provided');
-  
+
   onlyOverlyingAsset(reserve);
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const availableLiq = core.getReserveAvailableLiquidity(new Address(reserve));
+  const availableLiq = core.getReserveAvailableLiquidity(reserve);
 
   assert(availableLiq >= amount, 'Not enough liquidity');
 
@@ -205,7 +207,7 @@ export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
 }
 
 export function depositRewards(binaryArgs: StaticArray<u8>): void {
-  
+
   const args = new Args(binaryArgs);
   const reserve = args.nextString().expect('No reserve address provided');
   const user = args.nextString().expect('No user address provided');
@@ -218,20 +220,22 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const userReserve = new UserReserve(user, 0, 0, 0, 0, 0, true, false);
-  core.initUser(userReserve, new Address(reserve));
+  core.initUser(userReserve, reserve);
 
-  core.updateStateOnDeposit(reserve, user, amount);
-  
+  const rewardMToken = new Address(core.getReserve(reserve).mTokenAddress);
+  const isFirstDeposit: bool = new IERC20(rewardMToken).balanceOf(Context.caller()) == 0;
+
+  core.updateStateOnDeposit(reserve, user, amount, isFirstDeposit);
+
   const storageKey = `RESERVE_KEY_${reserve}`;
   const reserveExists = Storage.hasOf(core._origin, stringToBytes(storageKey));
   assert(reserveExists, "Base token reserve doesn't exist!")
 
-  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
-  new IERC20(mToken).mint(new Address(user), u256.fromU64(amount));
+  new IERC20(rewardMToken).mint(new Address(user), u256.fromU64(amount));
 
-  const index = core.getNormalizedIncome(reserve)
   const userIndexStorageKey = `USER_INDEX_${user}`;
-  Storage.setOf(mToken, stringToBytes(userIndexStorageKey), u64ToBytes(index));
+  const index = core.getNormalizedIncome(reserve)
+  call(rewardMToken, 'setMyKey', new Args().add(userIndexStorageKey).add(index), 10)
 
   generateEvent(`Deposited ${amount} base tokens to the pool`);
 
@@ -276,16 +280,16 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
 function onlyOwner(): void {
   const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
   const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
-  
+
   assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }
 
 function onlyOverlyingAsset(reserve: string): void {
-  
+
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+  const mToken = new Address(core.getReserve(reserve).mTokenAddress);
 
   assert(Context.caller() === mToken, 'Caller is not the overlying asset');
 }

@@ -24,7 +24,7 @@ let INTEREST_ADDRESS = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';  
 // let INTEREST_ADDRESS = 'AS12PQk5GWRYgfo2RpWpJWuRNT3gY7izqB6m5b2x5YsfiNjDwvSr';   // wmas
 let CORE_ADDRESS = 'AS19rMy7hLAEQdaZ7Zxa4jv3FWX8m3o6xL1C6G1EyBGTatkkLqDT'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
 let RESERVE_ADDRESS = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'  // AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
-const mToken = 'AS1Xi5t9oXbj6soUTXGhLB2nSBHJU16LAX189auknPqC1tqthQWw'      // AS1x5QZVeHdTrNjKscAbQZYV8j8esQYc7ZqSeV9Mv9vkGXFZNCF2'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
+const mToken = 'AS12h6XRntgJinSKERG6UBXaAyEtQik5b5dM6Vve1ABFFDKqvR5it'      // AS12jpq1EC6Cb8TGZwRfftF44yUZNYhEnJ63CghDbPxkakheaT5RC'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
 const POOL_ADDRESS = 'AS12oqaNnQcfu4QiwabEtEeiXAmDD8eTRctfpnWDzB4enpWrF3MJA'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
@@ -465,7 +465,7 @@ async function addReserveData() {
                         ))
                         .serialize(),
                     maxGas: 4_294_967_295n,
-                    coins: fromMAS(85),
+                    coins: fromMAS(80),
                     fee: fromMAS(0),
                 })
                 .then((res) => {
@@ -1811,7 +1811,7 @@ async function test1() {
 // checkAllowance();
 // approveMToken()
 // approve();
-// deposit(11);
+deposit(1);
 // test();
 // testt();
 // calculateUserGlobalData();
@@ -1828,12 +1828,12 @@ async function test1() {
 // getNormalizedIncome();
 // getUserBasicReserveData();
 // transferToReserve()
-// borrow(RESERVE_ADDRESS, 1, 1);
+// borrow(RESERVE_ADDRESS, 2, 2);
 // repay(RESERVE_ADDRESS, 7);
 // getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS);
 
-// User Available Borrows: 617687446322n
+// User Available Borrows: 617687446322
 // User Available Borrows: 617721077528n
 
 // setPrice();
@@ -1849,7 +1849,7 @@ async function test1() {
 // getVariableRateSlope1()
 
 // getUserReserve();
-// redeemUnderlying(7);
+// redeemUnderlying(6);
 // getMTokenBalance(baseAccount.address);
 // getTokenSymbol();
 // getMTokenTotalSupply();

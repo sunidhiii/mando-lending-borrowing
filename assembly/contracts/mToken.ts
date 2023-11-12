@@ -494,7 +494,7 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem
   );
 
-  generateEvent(`Balance redeemed after redeem: ${amountToRedeem} tokens left to ${mTokenBalanceAfterRedeem} tokens`)
+  generateEvent(`Balance redeem: ${amountToRedeem} tokens left to ${mTokenBalanceAfterRedeem} tokens`)
 
 }
 
@@ -635,6 +635,16 @@ export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
   Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
 }
 
+export function setMyKey(binaryArgs: StaticArray<number>) {
+  const args = new Args(binaryArgs);
+  const key = args.nextString().unwrap();
+  const value = args.nextU64().unwrap();
+
+  onlyLendingPool();
+  
+  Storage.set(stringToBytes(key), u64ToBytes(value))
+}
+
 function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 {
   const addressProvider = new ILendingAddressProvider(new Address((bytesToString(Storage.get(ADDRESS_PROVIDER_KEY)))));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
@@ -666,7 +676,7 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
-  const isAutoRewardEnabled = core.getUserReserve(user, new Address(underLyingAsset)).autonomousRewardStrategyEnabled;
+  const isAutoRewardEnabled = core.getUserReserve(user, underLyingAsset).autonomousRewardStrategyEnabled;
   
   const symbol = new IERC20(new Address(underLyingAsset)).symbol();
   
@@ -767,8 +777,8 @@ function swapTokensAndAddDeposit(user: string): void {
   const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
 
   new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
-  core.transferToReserve(wmas._origin, Context.callee(), amountOut);
   pool.depositRewards((wmas._origin).toString(), user, amountOut);
+  core.transferToReserve(wmas._origin, Context.callee(), amountOut);
 
   sendFuturOperation(user);
   generateEvent(`Received ${amountOut} ${(wmas._origin).toString()} for ${amountIn} ${underLyingAsset} and deposited in the pool.`);

@@ -1,4 +1,4 @@
-import { Address, Storage, generateEvent } from '@massalabs/massa-as-sdk';
+import { Address, Storage } from '@massalabs/massa-as-sdk';
 import { _balance, _setBalance } from './token-internals';
 import { u256 } from 'as-bignum/assembly';
 import { bytesToU256, u256ToBytes } from '@massalabs/as-types';

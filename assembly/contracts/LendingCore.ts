@@ -7,7 +7,7 @@ import { u256 } from 'as-bignum/assembly';
 import { timestamp } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { IReserveInterestRateStrategy } from '../interfaces/IReserveInterestStrategy';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
-import { ILendingCore } from '../interfaces/ILendingCore';
+import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 
 const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
@@ -67,7 +67,7 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const name = 'Mando Interest bearing '.concat(new IERC20(new Address(reserve.addr)).name());
   const symbol = 'm' + new IERC20(new Address(reserve.addr)).symbol();
 
-  call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 18*ONE_UNIT);
+  call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 10 * ONE_UNIT);
   // call(mToken_addr, 'constructor', new Args().add(Context.caller().toString()), 10 * ONE_UNIT);
 
   reserve.name = new IERC20(new Address(reserve.addr)).name();
@@ -379,14 +379,12 @@ export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
   const reserve = args.nextString().unwrap();
   const user = args.nextString().unwrap();
   const amount = args.nextU64().unwrap();
+  const isFirstDeposit = args.nextBool().unwrap();
 
   updateCumulativeIndexes(reserve);
   updateReserveInterestRatesAndTimestampInternal(reserve, amount, 0);
 
-  const userData = getUserReserve(new Args().add(user).add(reserve).serialize())
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
-
-  if (!userArgs.useAsCollateral) {
+  if (isFirstDeposit) {
     setUserUseReserveAsCollateral(reserve, user, true);
   }
 
@@ -964,14 +962,15 @@ function onlyLendingPool(): void {
   const pool = new Address(addressProvider.getLendingPool());
 
   assert(Context.caller() === pool, 'Caller is not lending pool');
-}
+}   
 
 function onlyLendingPoolOrOverlyingAsset(reserve: string): void {
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const pool = new Address(addressProvider.getLendingPool());
-  const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const mToken = new Address(core.getReserve(new Address(reserve)).mTokenAddress);
+  const reserveData = getReserve(new Args().add(reserve).serialize());
+  const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
+  const mToken = new Address(reserveArgs.mTokenAddress);
 
   assert(Context.caller() === pool || Context.caller() === mToken, 'Caller is not lending pool or overlying asset');
 }

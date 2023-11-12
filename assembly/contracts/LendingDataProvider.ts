@@ -82,12 +82,12 @@ export function calculateUserGlobalData(binaryArgs: StaticArray<u8>): StaticArra
       continue;
     }
 
-    const reserveData = core.getReserve(new Address(currentReserve));
+    const reserveData = core.getReserve(currentReserve);
     const reserveDecimals = reserveData.decimals;
     const reserveBaseLTV = reserveData.baseLTV;
     const liquidationThreshold = reserveData.LiquidationThreshold;
 
-    const userData = core.getUserReserve(new Address(user), new Address(currentReserve));
+    const userData = core.getUserReserve(new Address(user), currentReserve);
     const usageAsCollateralEnabled = userData.useAsCollateral;
 
     const tokenUnit = 10 ** reserveDecimals;
@@ -169,12 +169,12 @@ export function balanceDecreaseAllowed(binaryArgs: StaticArray<u8>): StaticArray
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const reserveData = core.getReserve(new Address(underlyingAssetAddress));
+  const reserveData = core.getReserve(underlyingAssetAddress);
   const decimals = reserveData.decimals;
   const reserveLiquidationThreshold = reserveData.LiquidationThreshold;
   const reserveUsageAsCollateralEnabled = true;
 
-  const userData = core.getUserReserve(new Address(user), new Address(underlyingAssetAddress));
+  const userData = core.getUserReserve(new Address(user), underlyingAssetAddress);
   const usageAsCollateralEnabled: bool = userData.useAsCollateral;
 
   if (!reserveUsageAsCollateralEnabled || !usageAsCollateralEnabled) {
@@ -229,7 +229,7 @@ export function calculateCollateralNeededInUSD(binaryArgs: StaticArray<u8>): Sta
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
-  const reserveData = core.getReserve(new Address(reserve));
+  const reserveData = core.getReserve(reserve);
   const reserveDecimals = reserveData.decimals;
 
   const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
@@ -310,11 +310,11 @@ export function calculateUserData(binaryArgs: StaticArray<u8>): StaticArray<u8> 
       continue;
     }
 
-    const reserveData = core.getReserve(new Address(currentReserve));
+    const reserveData = core.getReserve(currentReserve);
     const reserveBaseLTV = reserveData.baseLTV;
     const liquidationThreshold = reserveData.LiquidationThreshold;
 
-    const userData = core.getUserReserve(new Address(user), new Address(currentReserve));
+    const userData = core.getUserReserve(new Address(user), currentReserve);
     const usageAsCollateralEnabled = userData.useAsCollateral;
 
     //liquidity and collateral balance
