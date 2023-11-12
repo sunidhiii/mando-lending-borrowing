@@ -1,5 +1,5 @@
 // import MessageResponse from "./interfaces/MessageResponse";
-import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64 } from "@massalabs/massa-web3";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayTypes, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64 } from "@massalabs/massa-web3";
 
 // create a base account for signing transactions
 const baseAccount = {
@@ -135,7 +135,7 @@ async function getCurrentAPY() {
                         .addU64(BigInt(bytesToU64(reserveLiquidity.returnValue))).addU64(BigInt(reserveData.instance.totalBorrowsStable)).addU64(BigInt(reserveData.instance.totalBorrowsVariable)).addU64(BigInt(reserveData.instance.currentAverageStableBorrowRate))
                         .serialize(),
                 })
-            const reserveInterestRates = new Args(reserveInterest.returnValue).nextArray(ArrayType.U64);
+            const reserveInterestRates = new Args(reserveInterest.returnValue).nextArray(ArrayTypes.U64);
             console.log("Current Liquidity rate(APY)", reserveInterestRates[0]);
             return reserveInterestRates[0];
         }

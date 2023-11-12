@@ -635,7 +635,7 @@ export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
   Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
 }
 
-export function setMyKey(binaryArgs: StaticArray<number>) {
+export function setMyKey(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const key = args.nextString().unwrap();
   const value = args.nextU64().unwrap();

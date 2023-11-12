@@ -1,5 +1,5 @@
 // import MessageResponse from "./interfaces/MessageResponse";
-import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayType, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32, byteToU8, toMAS } from "@massalabs/massa-web3";
+import { ClientFactory, WalletClient, IDeserializedResult, ISerializable, DefaultProviderUrls, Args, ArrayTypes, strToBytes, bytesToStr, fromMAS, IProvider, ProviderType, bytesToU256, EOperationStatus, Client, bytesToArray, byteToBool, bytesToU64, bytesToU32, byteToU8, toMAS } from "@massalabs/massa-web3";
 import pollAsyncEvents from './pollAsyncEvent';
 
 // create a base account for signing transactions
@@ -400,7 +400,7 @@ async function viewAllReserves() {
                     targetFunction: "viewAllReserves",
                     parameter: new Args().serialize(),
                 }).then((res) => {
-                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.STRING);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.STRING);
                     console.log("All reserves", reservesData);
                 });
         }
@@ -670,8 +670,8 @@ async function test() {
                     fee: BigInt(0),
                 }).then((res) => {
                     const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
-                    // let reservesData = bytesToArray(res.returnValue, ArrayType.U64);
-                    // let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    // let reservesData = bytesToArray(res.returnValue, ArrayTypes.U64);
+                    // let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     // console.log("Contrat balance", reservesData);
                     console.log("op ID", res);
                 });
@@ -701,7 +701,7 @@ async function testt() {
                         .serialize(),
                 }).then((res) => {
                     let reservesData = bytesToU256(res.returnValue);
-                    // let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    // let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     console.log("Contrat balance", reservesData);
                     // console.log("Contrat balance", byteToBool(res.returnValue));
                 });
@@ -726,7 +726,7 @@ async function calculateUserGlobalData() {
                         .addString(baseAccount.address)
                         .serialize(),
                 }).then((res) => {
-                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     console.log("User global data:", reservesData);
                 });
         } // 
@@ -750,7 +750,7 @@ async function calculateUserData() {
                         .addString(baseAccount.address)
                         .serialize(),
                 }).then((res) => {
-                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     console.log("User data:", reservesData);
                 });
         } // 
@@ -778,8 +778,8 @@ async function getHealthFactor() {
                         // .addU256(1n).addU256(200n).addU256(1153772431n).addU256(2519950n).addU8(60)
                         .serialize(),
                 }).then((res) => {
-                    // let reservesData = bytesToArray(res.returnValue, ArrayType.U64);
-                    // let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    // let reservesData = bytesToArray(res.returnValue, ArrayTypes.U64);
+                    // let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     // console.log("Contrat balance", reservesData);
                     console.log("Health factor below threshold? ", byteToBool(res.returnValue));
                 });
@@ -804,7 +804,7 @@ async function getUserBasicReserveData() {
                         .addString(baseAccount.address)
                         .serialize(),
                 }).then((res) => {
-                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     console.log("User Basic Reserve Data: ", reservesData);
                 });
         }
@@ -894,7 +894,7 @@ async function getUserBorrowBalances() {
                         .addString(baseAccount.address)
                         .serialize(),
                 }).then((res) => {
-                    let reservesData = new Args(res.returnValue).nextArray(ArrayType.U64);
+                    let reservesData = new Args(res.returnValue).nextArray(ArrayTypes.U64);
                     console.log("User Borrow balances:", reservesData);
                 });
         } // User Borrow balances: [ 2099008071911n, 13273547856707n, 11174539784796n ] 9317039828084
@@ -1020,7 +1020,7 @@ async function calculateUserCollateralNeededInUSD(amount: number) {
                         .serialize(),
                 })
 
-            let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayType.U64);
+            let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayTypes.U64);
             // console.log("User Data:", userData[1], userData[2], userData[3], userData[4]);
 
             const fee = await client
@@ -1119,7 +1119,7 @@ async function getUserAvailableBorrows() {
                         .serialize(),
                 })
 
-            let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayType.U64);
+            let userData: Array<number> = new Args(user.returnValue).nextArray(ArrayTypes.U64);
             console.log("User Data:", userData[1], userData[2], userData[3], userData[4]);
 
             const availableBorrows = await client
@@ -1635,45 +1635,45 @@ async function setCore() {
     }
 }
 
-async function setUserAutonomousRewardStrategy() {
+// async function setUserAutonomousRewardStrategy() {
 
-    const client = await createClient();
+//     const client = await createClient();
 
-    try {
-        if (client) {
-            const txId = await client
-                .smartContracts()
-                .callSmartContract({
-                    maxGas: 4_294_967_295n,
-                    targetAddress: CORE_ADDRESS,
-                    functionName: "setUserAutonomousRewardStrategy",
-                    parameter: new Args()
-                        .addString(RESERVE_ADDRESS).addBool(true)
-                        .serialize(),
-                    coins: fromMAS(1),
-                    fee: BigInt(0),
-                })
-            const status = await client
-                .smartContracts()
-                .awaitRequiredOperationStatus(txId, EOperationStatus.FINAL)
-            if (status !== EOperationStatus.FINAL)
-                throw new Error("Transaction failed")
-            await client
-                .smartContracts()
-                .getFilteredScOutputEvents({
-                    emitter_address: null,
-                    start: null,
-                    end: null,
-                    original_caller_address: null,
-                    is_final: null,
-                    original_operation_id: txId,
-                })
-                .then((r) => r.forEach((e) => console.log(e.data)))
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
+//     try {
+//         if (client) {
+//             const txId = await client
+//                 .smartContracts()
+//                 .callSmartContract({
+//                     maxGas: 4_294_967_295n,
+//                     targetAddress: CORE_ADDRESS,
+//                     functionName: "setUserAutonomousRewardStrategy",
+//                     parameter: new Args()
+//                         .addString(RESERVE_ADDRESS).addBool(true)
+//                         .serialize(),
+//                     coins: fromMAS(1),
+//                     fee: BigInt(0),
+//                 })
+//             const status = await client
+//                 .smartContracts()
+//                 .awaitRequiredOperationStatus(txId, EOperationStatus.FINAL)
+//             if (status !== EOperationStatus.FINAL)
+//                 throw new Error("Transaction failed")
+//             await client
+//                 .smartContracts()
+//                 .getFilteredScOutputEvents({
+//                     emitter_address: null,
+//                     start: null,
+//                     end: null,
+//                     original_caller_address: null,
+//                     is_final: null,
+//                     original_operation_id: txId,
+//                 })
+//                 .then((r) => r.forEach((e) => console.log(e.data)))
+//         }
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
 
 async function getCoreAddress() {
 
@@ -1811,7 +1811,7 @@ async function test1() {
 // checkAllowance();
 // approveMToken()
 // approve();
-deposit(1);
+// deposit(1);
 // test();
 // testt();
 // calculateUserGlobalData();
@@ -1850,7 +1850,7 @@ deposit(1);
 
 // getUserReserve();
 // redeemUnderlying(6);
-// getMTokenBalance(baseAccount.address);
+getMTokenBalance(baseAccount.address);
 // getTokenSymbol();
 // getMTokenTotalSupply();
 // checkUserExists();

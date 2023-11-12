@@ -9,7 +9,6 @@ import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
 import { u256 } from 'as-bignum/assembly';
-import { u64 } from 'assemblyscript/std/assembly/builtins';
 
 // const ONE_UNIT = 10 ** 9;
 
