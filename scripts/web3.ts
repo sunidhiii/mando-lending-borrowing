@@ -18,14 +18,14 @@ let FEE_ADDRESS = 'AS1ia2Edh5YihVdwQEx3yh8rwUEGyHeJLw43wW9iLeUbdXcJmYjM';       
 // const token address = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g'; // AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz
 let PRICE_ORACLE = 'AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69';
 let ADDRESS_PROVIDER = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
-let DATA_PROVIDER = 'AS1C1oBKxq1nKZeHKGs8AbjNH2yF3pyEMh1iCPAVuSuaKJBj2P4r'      // 'AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8';
+let DATA_PROVIDER = 'AS1BQyhbAEJefm5ADSPF35ZeyNxWxvgpHZyFK7CBy1GfzQ1ACuYV'      // 'AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8';
 // let INTEREST_ADDRESS = 'AS19jFaWTJbfUzYQ4Bi76AWQnDMhJYmA75ZzBFFHMjyV17aJhBbT';
 let INTEREST_ADDRESS = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';   // usdc
 // let INTEREST_ADDRESS = 'AS12PQk5GWRYgfo2RpWpJWuRNT3gY7izqB6m5b2x5YsfiNjDwvSr';   // wmas
-let CORE_ADDRESS = 'AS19rMy7hLAEQdaZ7Zxa4jv3FWX8m3o6xL1C6G1EyBGTatkkLqDT'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
+let CORE_ADDRESS = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
 let RESERVE_ADDRESS = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'  // AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
 const mToken = 'AS12h6XRntgJinSKERG6UBXaAyEtQik5b5dM6Vve1ABFFDKqvR5it'      // AS12jpq1EC6Cb8TGZwRfftF44yUZNYhEnJ63CghDbPxkakheaT5RC'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
-const POOL_ADDRESS = 'AS12oqaNnQcfu4QiwabEtEeiXAmDD8eTRctfpnWDzB4enpWrF3MJA'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
+const POOL_ADDRESS = 'AS16bskhBwAMmN17ojPhsTgSbQL4peJ6vpwwRumaMuRartFXns7K'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
 
@@ -172,7 +172,7 @@ async function setPrice() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: PRICE_ORACLE,
                     functionName: "setPrice",
                     parameter: new Args()
@@ -242,7 +242,7 @@ async function setLendingPoolAddress() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: ADDRESS_PROVIDER,
                     functionName: "setLendingPool",
                     parameter: new Args()
@@ -269,7 +269,7 @@ async function setCoreAddress() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: ADDRESS_PROVIDER,
                     functionName: "setCore",
                     parameter: new Args()
@@ -297,7 +297,7 @@ async function setDataProviderAddress() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: ADDRESS_PROVIDER,
                     functionName: "setDataProvider",
                     parameter: new Args()
@@ -324,7 +324,7 @@ async function setFeeProviderAddress() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: ADDRESS_PROVIDER,
                     functionName: "setFeeProvider",
                     parameter: new Args()
@@ -362,7 +362,7 @@ async function addUserData() {
                         0,
                         true))
                         .addString(RESERVE_ADDRESS).serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(10),
                     fee: BigInt(0),
                 })
@@ -464,7 +464,7 @@ async function addReserveData() {
                             0
                         ))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(80),
                     fee: fromMAS(0),
                 })
@@ -596,7 +596,7 @@ async function approve() {
                         .addString(CORE_ADDRESS)
                         .addU256(1000000000000000n)
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(1),
                     fee: BigInt(0),
                 })
@@ -629,7 +629,7 @@ async function approveMToken() {
                         .addString(mToken)
                         .addU256(1000000n)
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(1),
                     fee: BigInt(0),
                 })
@@ -1178,7 +1178,7 @@ async function deposit(amount: number) {
                         .addString(RESERVE_ADDRESS)
                         .addU64(BigInt(fromMAS(amount)))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(10),
                     fee: BigInt(0),
                 })
@@ -1233,7 +1233,7 @@ async function getUserCurrentBorrowRate() {
                         .addString(baseAccount.address)
                         .addU64(BigInt(fromMAS(100)))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(10),
                     fee: BigInt(0),
                 })
@@ -1273,7 +1273,7 @@ async function transferToReserve() {
                         .addString('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8')
                         .addU256(BigInt(12))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(0),
                     fee: BigInt(0),
                 })
@@ -1303,7 +1303,7 @@ async function borrow(reserve: string, amount: number, type: number) {
                         .addU64(BigInt(fromMAS(amount)))
                         .addU8(type)
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(10),
                     fee: BigInt(0),
                 })
@@ -1332,7 +1332,7 @@ async function repay(reserve: string, amount: number) {
                         .addString(reserve)
                         .addU64(BigInt(fromMAS(amount)))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(10),
                     fee: fromMAS(0), // 388008570  5101457714250
                 })
@@ -1360,7 +1360,7 @@ async function redeemUnderlying(amount: number) {
                     parameter: new Args()
                         .addU64(BigInt(fromMAS(amount)))
                         .serialize(),
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     coins: fromMAS(20),
                     fee: BigInt(2),
                 })
@@ -1486,7 +1486,7 @@ async function getBalance(account: string) {
             await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.001),
+                    maxGas: fromMAS(0.0021),
                     targetAddress: RESERVE_ADDRESS,
                     targetFunction: "balanceOf",
                     parameter: new Args().addString(account).serialize(),
@@ -1616,7 +1616,7 @@ async function setCore() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: CORE_ADDRESS,
                     functionName: "setCore",
                     parameter: new Args()
@@ -1635,45 +1635,49 @@ async function setCore() {
     }
 }
 
-// async function setUserAutonomousRewardStrategy() {
+async function setUserAutonomousRewardStrategy() {
 
-//     const client = await createClient();
+    const client = await createClient();
 
-//     try {
-//         if (client) {
-//             const txId = await client
-//                 .smartContracts()
-//                 .callSmartContract({
-//                     maxGas: 4_294_967_295n,
-//                     targetAddress: CORE_ADDRESS,
-//                     functionName: "setUserAutonomousRewardStrategy",
-//                     parameter: new Args()
-//                         .addString(RESERVE_ADDRESS).addBool(true)
-//                         .serialize(),
-//                     coins: fromMAS(1),
-//                     fee: BigInt(0),
-//                 })
-//             const status = await client
-//                 .smartContracts()
-//                 .awaitRequiredOperationStatus(txId, EOperationStatus.FINAL)
-//             if (status !== EOperationStatus.FINAL)
-//                 throw new Error("Transaction failed")
-//             await client
-//                 .smartContracts()
-//                 .getFilteredScOutputEvents({
-//                     emitter_address: null,
-//                     start: null,
-//                     end: null,
-//                     original_caller_address: null,
-//                     is_final: null,
-//                     original_operation_id: txId,
-//                 })
-//                 .then((r) => r.forEach((e) => console.log(e.data)))
-//         }
-//     } catch (error) {
-//         console.error(error);
-//     }
-// }
+    try {
+        if (client) {
+            const txId = await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_294_167_295n,
+                    targetAddress: CORE_ADDRESS,
+                    functionName: "setUserAutonomousRewardStrategy",
+                    parameter: new Args()
+                        .addString(RESERVE_ADDRESS).addBool(false)
+                        .serialize(),
+                    coins: fromMAS(1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    // const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+            // const status = await client
+            //     .smartContracts()
+            //     .awaitRequiredOperationStatus(txId, EOperationStatus.FINAL)
+            // if (status !== EOperationStatus.FINAL)
+            //     throw new Error("Transaction failed")
+            // await client
+            //     .smartContracts()
+            //     .getFilteredScOutputEvents({
+            //         emitter_address: null,
+            //         start: null,
+            //         end: null,
+            //         original_caller_address: null,
+            //         is_final: null,
+            //         original_operation_id: txId,
+            //     })
+            // .then((r) => r.forEach((e) => console.log(e.data)))
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 async function getCoreAddress() {
 
@@ -1684,7 +1688,7 @@ async function getCoreAddress() {
             await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.001),
+                    maxGas: fromMAS(0.0021),
                     targetAddress: ADDRESS_PROVIDER,
                     targetFunction: "getCore",
                     parameter: new Args().serialize(),
@@ -1778,7 +1782,7 @@ async function test1() {
             await client
                 .smartContracts()
                 .callSmartContract({
-                    maxGas: 4_294_967_295n,
+                    maxGas: 4_294_167_295n,
                     targetAddress: 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ',
                     functionName: "burnOnLiquidation",
                     parameter: new Args().addString(baseAccount.address).addU64(1n).serialize(),
@@ -1803,7 +1807,7 @@ async function test1() {
 // readContractData();
 // readContractDataPool();
 // addReserveData();
-// viewReserveData();
+viewReserveData();
 // getName();
 // addUserData();
 // viewAllReserves();
@@ -1830,7 +1834,7 @@ async function test1() {
 // transferToReserve()
 // borrow(RESERVE_ADDRESS, 2, 2);
 // repay(RESERVE_ADDRESS, 7);
-// getBalance(baseAccount.address);
+getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS);
 
 // User Available Borrows: 617687446322
@@ -1850,7 +1854,7 @@ async function test1() {
 
 // getUserReserve();
 // redeemUnderlying(6);
-getMTokenBalance(baseAccount.address);
+// getMTokenBalance(baseAccount.address);
 // getTokenSymbol();
 // getMTokenTotalSupply();
 // checkUserExists();

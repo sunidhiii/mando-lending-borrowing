@@ -90,18 +90,18 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   coins: fromMAS(0.1), // coins for deployment
     //   args: new Args(), // arguments for deployment   
     // };
-    const DataProviderContract: ISCData = {     // AS1C1oBKxq1nKZeHKGs8AbjNH2yF3pyEMh1iCPAVuSuaKJBj2P4r       // AS17fkjQMzwBtBPMUJLVH1g2YhMmYK5uArwjoYqDeu2z4g59nbdX   // AS12ui9SXJSEVgnovXidY741tLxrnt6QALL6zkkoLuKVgKctf2mrE   // AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8
+    const DataProviderContract: ISCData = {     // AS1BQyhbAEJefm5ADSPF35ZeyNxWxvgpHZyFK7CBy1GfzQ1ACuYV       // AS17fkjQMzwBtBPMUJLVH1g2YhMmYK5uArwjoYqDeu2z4g59nbdX   // AS12ui9SXJSEVgnovXidY741tLxrnt6QALL6zkkoLuKVgKctf2mrE   // AS12nQVHGDUS7hCVAi125AdjUHcrHQA4Mo6XAMSbcLd28J6TJXqC8
       data: readFileSync(path.join(__dirname, "build", "LendingDataProvider.wasm")),
       coins: fromMAS(0.63), // coins for deployment
       args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp').addString('AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69'), // arguments for deployment   
     };
-    const PoolContract: ISCData = {      // AS12oqaNnQcfu4QiwabEtEeiXAmDD8eTRctfpnWDzB4enpWrF3MJA               // AS1j2cS3rxUku66RdfEegjS1XR9faHpMDQKimPBseMkhu6UNsMW9           // AS177n5fut3EfvN4LaXbebrqSBUVXHAvTWG84YN51wcN658KQb2F       // AS1Z7UjqsSNqe6HwwtnNWDpuCCTXX7M4gP8ygeqNa1hjefojv9nL
+    const PoolContract: ISCData = {      // AS16bskhBwAMmN17ojPhsTgSbQL4peJ6vpwwRumaMuRartFXns7K               // AS1j2cS3rxUku66RdfEegjS1XR9faHpMDQKimPBseMkhu6UNsMW9           // AS177n5fut3EfvN4LaXbebrqSBUVXHAvTWG84YN51wcN658KQb2F       // AS1Z7UjqsSNqe6HwwtnNWDpuCCTXX7M4gP8ygeqNa1hjefojv9nL
       data: readFileSync(path.join(__dirname, 'build', 'LendingPool.wasm')), // smart contract bytecode
       coins: fromMAS(0.68), // coins for deployment 63000000
       args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp'), // core smart contract address
       protoPaths: [], // proto files for deployment
     };
-    const CoreContract: ISCData = {      //AS19rMy7hLAEQdaZ7Zxa4jv3FWX8m3o6xL1C6G1EyBGTatkkLqDT                // AS13x3KS3GmmxCyvuX8zsxxyf3vYRHgK2yM9v6rwWHHmJsP2R73o   // AS1nSbi3hRQneZxU91WFfNRMAdXsdHN65YssmDiN7ZSmZzxRxjkc  // AS123Ejj5mLZdsy6guKtZaKusi6GmF61gcD2aDBKNFsiCVZCCaZnb    // AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd       // AS18gnDx3UYsr7D3bd2XMzn1R2XjQBWcQnUMHFkpmW6nYcchjKZ3
+    const CoreContract: ISCData = {      //AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9                // AS13x3KS3GmmxCyvuX8zsxxyf3vYRHgK2yM9v6rwWHHmJsP2R73o   // AS1nSbi3hRQneZxU91WFfNRMAdXsdHN65YssmDiN7ZSmZzxRxjkc  // AS123Ejj5mLZdsy6guKtZaKusi6GmF61gcD2aDBKNFsiCVZCCaZnb    // AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd       // AS18gnDx3UYsr7D3bd2XMzn1R2XjQBWcQnUMHFkpmW6nYcchjKZ3
       data: readFileSync(path.join(__dirname, 'build', 'LendingCore.wasm')), // smart contract bytecode
       coins: fromMAS(69), // coins for deployment 63000000
       args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp').addArray([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))], ArrayTypes.U8), // arguments for deployment
@@ -124,7 +124,7 @@ const __dirname = path.dirname(path.dirname(__filename));
     //   args: new Args().addString('name').addString('symbol').addU8(9).addU256(0n).addString('AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9').addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp'), // arguments for deployment
     // };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [testAgain], BigInt(100), BigInt(4_200_000_000), true);
+    await deploySC(publicApi, deployerAccount, [testAgain], BigInt(100), BigInt(3_980_167_295), true);
   }
   process.exit(0); // terminate the process after deployment(s) (526.812910514
 })();
