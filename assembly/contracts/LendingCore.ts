@@ -7,7 +7,6 @@ import { u256 } from 'as-bignum/assembly';
 import { timestamp } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { IReserveInterestRateStrategy } from '../interfaces/IReserveInterestStrategy';
 import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
-import { ILendingDataProvider } from '../interfaces/ILendingDataProvider';
 
 const ONE_UNIT = 10 ** 9;
 const RESERVE_KEY = 'RESERVE_KEY';
@@ -19,15 +18,10 @@ export const MAS = 'EeeEeeEeeeeEeeeeeEeeeeeeEeeeeeeEEeeeeeeEeeeEeeeeeeEee';
 
 export enum InterestRateMode { NONE, STABLE, VARIABLE }
 
-// getReserveCurrentVariableBorrowRate
-// getReserveCurrentStableBorrowRate
-// getReserveUtilizationRate
-// getUserCurrentBorrowRate
-
 /**
  * This function is meant to be called only one time: when the contract is deployed.
  *
- * @param providerAddress - Arguments serialized with Args
+ * @param binaryArgs - Arguments serialized with Args
  */
 export function constructor(binaryArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
@@ -68,12 +62,10 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const symbol = 'm' + new IERC20(new Address(reserve.addr)).symbol();
 
   call(mToken_addr, 'constructor', new Args().add(name).add(symbol).add(u8(9)).add(u256.Zero).add(reserve.addr).add(provider), 10 * ONE_UNIT);
-  // call(mToken_addr, 'constructor', new Args().add(Context.caller().toString()), 10 * ONE_UNIT);
 
   reserve.name = new IERC20(new Address(reserve.addr)).name();
   reserve.symbol = new IERC20(new Address(reserve.addr)).symbol();
   reserve.decimals = new IERC20(new Address(reserve.addr)).decimals();
-  // reserve.decimals = byteToU8(Storage.getOf(new Address(reserve.addr), stringToBytes('DECIMALS')));
   reserve.mTokenAddress = mToken_addr.toString();
 
   if (reserve.lastLiquidityCumulativeIndex == 0) {
@@ -82,9 +74,6 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   if (reserve.lastVariableBorrowCumulativeIndex == 0) {
     reserve.lastVariableBorrowCumulativeIndex = ONE_UNIT;
   }
-
-  // let mToken_contract_code = args.nextUint8Array().unwrap();
-  // reserve.mTokenAddress = createSC(new Args().add(mToken_contract_code).serialize());
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserve.addr}`;
@@ -156,8 +145,6 @@ export function getReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // get the serialized reserve info
   return Storage.get(stringToBytes(storageKey));
-
-  // return new Args(data).nextSerializable<Reserve>().unwrap();
 }
 
 export function deleteReserve(binaryArgs: StaticArray<u8>): void {
@@ -241,15 +228,9 @@ export function getUserReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // get the serialized reserve info
   return Storage.get(stringToBytes(storageKey));
-
-  // return new Args(data).nextSerializable<UserReserve>().unwrap();
 }
 
 export function viewAllReserves(): StaticArray<u8> {
-  // let reserveArr = Storage.get('ALL_RESERVES');
-  // var array_data: string[] = reserveArr.split(',');
-
-  // let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
   let reserveArr = Storage.get(stringToBytes('ALL_RESERVES'));
   return reserveArr;
 }
@@ -283,7 +264,6 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
   const amount = args.nextU64().unwrap();
 
   const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
-  // const owner = bytesToString(ownerAddress(new Args().serialize()));
   const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
 
   if (reserve == MAS) {
@@ -433,10 +413,6 @@ export function getUserBasicReserveData(binaryArgs: StaticArray<u8>): StaticArra
   let userReserveData: Array<u64> = new Array(3)
   userReserveData[0] = underlyingBalance;
 
-  // if (u64.parse(userArgs.principalBorrowBalance.toString()) == 0) {
-  //   return fixedSizeArrayToBytes(userReserveData);
-  // }
-
   const compoundedBal = getCompoundedBorrowBalance(reserve, user);
   userReserveData[1] = compoundedBal;
   userReserveData[2] = userArgs.originationFee;
@@ -541,17 +517,9 @@ function addReserveToList(reserve: string): void {
     Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>([]).serialize());
   }
 
-  // const storageKey = `${RESERVE_KEY}_${reserve.toString()}`;
-  // if (!Storage.has(storageKey)) {
-  // let reserveArr = Storage.get('ALL_RESERVES');
-  // var array_data: string[] = reserveArr.split(',');
-  // array_data.push(reserve.toString());
-  // Storage.set('ALL_RESERVES', array_data.toString());
-
   let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES'))).nextStringArray().unwrap();
   reserveArr.push(reserve);
   Storage.set(stringToBytes('ALL_RESERVES'), new Args().add<Array<string>>(reserveArr).serialize());
-  // }
 
 }
 
@@ -633,7 +601,6 @@ function updateUserStateOnRepayInternal(reserve: string, user: string, paybackAm
   }
   const updatedOriginationFee: u64 = userArgs.originationFee > originationFeeRepaid ? userArgs.originationFee - originationFeeRepaid : 0;
 
-  //solium-disable-next-line
   const updatedLastUpdateTimestamp = timestamp();
 
   const storageKey = `${USER_KEY}_${user}_${reserve}`;
@@ -671,7 +638,6 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
   const updatedPrincipalBorrowBalance = userArgs.principalBorrowBalance + amountBorrowed + balanceIncrease;
   const updatedOriginationFee = userArgs.originationFee + fee;
 
-  //solium-disable-next-line
   const updatedLastUpdateTimestamp = timestamp();
 
   const storageKey = `${USER_KEY}_${user}_${reserve}`;
@@ -680,20 +646,6 @@ function updateUserStateOnBorrowInternal(reserve: string, user: string, amountBo
   Storage.set(stringToBytes(storageKey), updatedUserReserve.serialize());
 
 }
-
-// function cumulateToLiquidityIndex(reserve: Address, totalLiquidity: u256, amount: u256): void {
-//   const amountToLiquidityRatio = u64.parse(amount.toString()) / u64.parse(totalLiquidity.toString());
-//   const cumulatedLiquidity = amountToLiquidityRatio + 1;
-
-//   const reserveData = getReserve(new Args().add(reserve.toString()).serialize());
-//   const reserveArgs = new Args(reserveData).nextSerializable<Reserve>().unwrap();
-
-//   const updatedLastLiquidityCumulativeIndex = new u256(cumulatedLiquidity * u64.parse(reserveArgs.lastLiquidityCumulativeIndex.toString()));
-
-//   const storageKey = `${RESERVE_KEY}_${reserve.toString()}`;
-//   const updatedReserve = new Reserve(reserve.toString(), reserveArgs.name, reserveArgs.symbol, reserveArgs.decimals, reserveArgs.mTokenAddress, reserveArgs.interestCalcAddress, reserveArgs.baseLTV, reserveArgs.LiquidationThreshold, reserveArgs.LiquidationBonus, reserveArgs.lastUpdateTimestamp, reserveArgs.lastUpdateTimelastLiquidityCumulativeIndexstamp, updatedLastLiquidityCumulativeIndex, reserveArgs.currentLiquidityRate, reserveArgs.totalBorrowsStable, reserveArgs.totalBorrowsVariable, reserveArgs.currentVariableBorrowRate, reserveArgs.currentStableBorrowRate, reserveArgs.currentAverageStableBorrowRate, reserveArgs.lastVariableBorrowCumulativeIndex);
-//   Storage.set(stringToBytes(storageKey), updatedReserve.serialize());
-// }
 
 function updateReserveTotalBorrowsByRateModeInternal(reserve: string, user: string, principalBalance: u64, balanceIncrease: u64, amountBorrowed: u64, newBorrowRateMode: InterestRateMode): void {
   const previousRateMode: InterestRateMode = bytesToU32(getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()));
@@ -725,8 +677,6 @@ function updateReserveStateOnBorrowInternal(reserve: string, user: string, princ
   updateCumulativeIndexes(reserve);
 
   //increasing reserve total borrows to account for the new borrow balance of the user
-  //NOTE: Depending on the previous borrow mode, the borrows might need to be switched from variable to stable or vice versa
-
   updateReserveTotalBorrowsByRateModeInternal(reserve, user, principalBorrowBalance, balanceIncrease, amountBorrowed, rateMode);
 }
 
@@ -760,10 +710,7 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u64 {
   compoundedBalance = u64((f64(principalBorrowBalanceRay) * cumulatedInterest) / f64(ONE_UNIT));
 
   if (compoundedBalance == userArgs.principalBorrowBalance) {
-    //solium-disable-next-line
     if (userArgs.lastUpdateTimestamp != timestamp()) {
-      //no interest cumulation because of the rounding - we add 1 wei
-      //as symbolic cumulated interest to avoid interest free loans.
 
       return userArgs.principalBorrowBalance;
     }
@@ -870,12 +817,6 @@ function calculateLinearInterest(rate: u64, lastUpdateTimestamp: u64): f64 {
 }
 
 function calculateCompoundedInterest(rate: u64, lastUpdateTimestamp: u64): f64 {
-  // const timeDifference = timestamp() - lastUpdateTimestamp;
-  // const ratePerSecond = (u64.parse(rate.toString()) * ONE_UNIT) / SECONDS_PER_YEAR;
-  // const rate = (ratePerSecond + ONE_UNIT) / ONE_UNIT;
-  // const interest = calculatePow(rate, timeDifference);
-  // return interest;
-  // return u256.fromU64(((ratePerSecond + ONE_UNIT) / ONE_UNIT) ** (timeDifference));
 
   const exp = timestamp() - lastUpdateTimestamp;
   if (exp == 0) {
@@ -906,7 +847,6 @@ function updateReserveInterestRatesAndTimestampInternal(reserve: string, liquidi
 
   const interestRateStrategyAddress = new IReserveInterestRateStrategy(new Address(reserveArgs.interestCalcAddress));
 
-  // (const newLiquidityRate, uint256 newStableRate, uint256 newVariableRate) = interestRateStrategyAddress().calculateInterestRates(,
   const reserveLiq = bytesToU64(getReserveAvailableLiquidity(new Args().add(reserve).serialize()));
 
   const totalLiq: u64 = (reserveLiq + liquidityAdded) > liquidityTaken ? (reserveLiq + liquidityAdded) - liquidityTaken : 0;
@@ -921,15 +861,11 @@ function updateReserveInterestRatesAndTimestampInternal(reserve: string, liquidi
   const newLiquidityRate = res[0];
   const newStableRate = res[1];
   const newVariableRate = res[2];
-  // const newLiquidityRate = new Args(res).nextU64().unwrap();
-  // const newStableRate = new Args(res).nextU64().unwrap();
-  // const newVariableRate = new Args(res).nextU64().unwrap();
 
   const updatedCurrentLiquidityRate = newLiquidityRate;
   const updatedCurrentStableBorrowRate = newStableRate;
   const updatedCurrentVariableBorrowRate = newVariableRate;
 
-  //solium-disable-next-line
   const updatedLastUpdateTimestamp = timestamp();
 
   const storageKey = `${RESERVE_KEY}_${reserve}`;
@@ -974,14 +910,3 @@ function onlyLendingPoolOrOverlyingAsset(reserve: string): void {
 
   assert(Context.caller() === pool || Context.caller() === mToken, 'Caller is not lending pool or overlying asset');
 }
-
-// function calculatePow(x: u64, n: u64): u256 {
-//   var z = n % 2 != 0 ? x : ONE_UNIT;
-//   for (n /= 2; n != 0; n /= 2) {
-//     x = (x * x) / ONE_UNIT;
-//     if (n % 2 != 0) {
-//       z = (z * x) / ONE_UNIT;
-//     }
-//   }
-//   return u256.fromU64(z);
-// }

@@ -16,7 +16,7 @@ export const reserveKey = stringToBytes('RESERVE');
 /**
  * This function is the constructor, it is always called once on contract deployment.
  *
- * @param args - The serialized arguments (unused).
+ * @param binaryArgs - The serialized arguments (unused).
  *
  * @returns none
  *
@@ -27,19 +27,6 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     assert(callerHasWriteAccess(), 'Caller is not allowed');
 
     const args = new Args(binaryArgs);
-    // const provider = args.nextString().unwrap();
-
-    // Storage.set(
-    //     'PROVIDER_ADDR',
-    //     provider
-    // );
-
-    //   const core = provider.getCore();
-    //   // const core = new Args(call(provider, 'getCore', new Args(), 0))
-    //   Storage.set(
-    //     'CORE_ADDR',
-    //     core.toString(),
-    //   );
 
     const baseVariableBorrowRate = args.nextU64().expect('baseVariableBorrowRate argument is missing or invalid');
     const variableRateSlope1 = args.nextU64().expect('variableRateSlope1 argument is missing or invalid');
@@ -59,31 +46,6 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 
     generateEvent(`Interest Rate Strategy constructor called with all details.`);
 }
-
-// export function getBaseVariableBorrowRate(): StaticArray<u8> {
-//     const baseVariableBorrowRate = Storage.get(baseVariableBorrowRateKey);
-//     return baseVariableBorrowRate;
-// }
-
-// export function getVariableRateSlope1(): StaticArray<u8> {
-//     const variableRateSlope1 = Storage.get(variableRateSlope1Key);
-//     return variableRateSlope1;
-// }
-
-// export function getVariableRateSlope2(): StaticArray<u8> {
-//     const variableRateSlope2 = Storage.get(variableRateSlope2Key);
-//     return variableRateSlope2;
-// }
-
-// export function getStableRateSlope1(): StaticArray<u8> {
-//     const stableRateSlope1 = Storage.get(stableRateSlope1Key);
-//     return stableRateSlope1;
-// }
-
-// export function getStableRateSlope2(): StaticArray<u8> {
-//     const stableRateSlope2 = Storage.get(stableRateSlope2Key);
-//     return stableRateSlope2;
-// }
 
 export function setBaseVariableBorrowRate(binaryArgs: StaticArray<u8>): void {
     onlyOwner();
@@ -142,7 +104,6 @@ export function setReserve(binaryArgs: StaticArray<u8>): void {
 export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
     const args = new Args(binaryArgs);
-    // const reserve = new Address(args.nextString().unwrap());
     const availableLiquidity = args.nextU64().unwrap();
     const totalBorrowsStable = args.nextU64().unwrap();
     const totalBorrowsVariable = args.nextU64().unwrap();
@@ -184,12 +145,6 @@ export function calculateInterestRates(binaryArgs: StaticArray<u8>): StaticArray
 
     const currentLiquidityRate: u64 = u64(overAllBorrow * f64(utilizationRate / ONE_UNIT));
 
-    // let interestData: Array<u64> = new Array(3)
-
-    // interestData.push(currentLiquidityRate);
-    // interestData.push(currentStableBorrowRate);
-    // interestData.push(currentVariableBorrowRate);
-
     generateEvent(`Interest Rate Data: ${totalBorrows}, ${overAllBorrow}, ${utilizationRate}, ${OPTIMAL_UTILIZATION_RATE}, ${availableLiquidity}, ${baseVariableBorrowRate},  ${stableRateSlope1},  ${variableRateSlope2}, ${currentLiquidityRate}, ${currentStableBorrowRate}, ${currentVariableBorrowRate}`)
 
     return new Args().add<Array<u64>>([currentLiquidityRate, currentStableBorrowRate, currentVariableBorrowRate]).serialize();
@@ -209,10 +164,3 @@ function getOverallBorrowRateInternal(totalBorrowsStable: u64, totalBorrowsVaria
 
     return overallBorrowRate;
 }
-
-// function onlyOwner(): void {
-//     const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
-//     const owner = new ILendingAddressProvider(new Address(addressProvider)).getOwner();
-    
-//     assert(Context.caller().toString() === owner, 'Caller is not the owner');
-// }

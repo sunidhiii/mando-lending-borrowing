@@ -14,7 +14,7 @@ const baseAccount = {
     publicKey: "P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn",
 };
 
-let FEE_ADDRESS = 'AS1ia2Edh5YihVdwQEx3yh8rwUEGyHeJLw43wW9iLeUbdXcJmYjM';        // 'AS1oehDh1LzsoxLDL4JicSXSimWADvGMJ9kxm8SDLVG7RqMCmup8';
+let FEE_ADDRESS = 'AS12B1DwnrebRVv3CcusrmGsSJKqpqQ372mYS4iS4jBm1LrqkxtT3';        // 'AS1oehDh1LzsoxLDL4JicSXSimWADvGMJ9kxm8SDLVG7RqMCmup8';
 // const token address = 'AS1LGwzLFK3Yj4cHQQerX8iLXDUnLACf9F5reASfFjitVfiVZG6g'; // AS12f7ENiyqABrC4yTeAsKVyneRyG1MJ1w7dy6xFo5tn3xmytBMNz
 let PRICE_ORACLE = 'AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69';
 let ADDRESS_PROVIDER = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
@@ -24,7 +24,7 @@ let INTEREST_ADDRESS = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';  
 // let INTEREST_ADDRESS = 'AS12PQk5GWRYgfo2RpWpJWuRNT3gY7izqB6m5b2x5YsfiNjDwvSr';   // wmas
 let CORE_ADDRESS = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9'        //'AS1NQ9vZdZakpH9Fq7nJaEHMe9VvkzQ4vRMzCwJ9YFVMSMYV7xnd';
 let RESERVE_ADDRESS = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9'  // AS1JKtvk4HDkxoL8XSCF4XFtzXdWsVty7zVu4yjbWAjS58tP9KzJ // 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';   // Sepolia WETH
-const mToken = 'AS12h6XRntgJinSKERG6UBXaAyEtQik5b5dM6Vve1ABFFDKqvR5it'      // AS12jpq1EC6Cb8TGZwRfftF44yUZNYhEnJ63CghDbPxkakheaT5RC'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
+const mToken = 'AS1HWEZPVWsutCRJ4ZggMYz1a4NsLZfUvcWGvAHY4oQz417NgGsG'      // AS12jpq1EC6Cb8TGZwRfftF44yUZNYhEnJ63CghDbPxkakheaT5RC'  // 'AS12ekfV6gxJVmQs5AaGYTTdsbEGckmXrUoegDvMGa5npyt6tvXac' //'AS1vF3vKxN81W6RKUvep6cfu8KpHrYibbEFfVdmxymLMr3TWDV5e'  // 'AS12aSoy5PrWUkbPmTUwTPTgL7RCaoGatwnr7veM5SbuJQhAJoc7G'           // 'AS12N6m2X4njM5AAbgKnahJtYAuHqyd96xRgexzn8P7oh1JBifCSg';
 const POOL_ADDRESS = 'AS16bskhBwAMmN17ojPhsTgSbQL4peJ6vpwwRumaMuRartFXns7K'     // 'AS18f4zBvy5HHAqUGMfhaJpbiKhrM4KEyJRhorkyZpgZVHjtka7a';  
 
 const publicApi = "https://buildnet.massa.net/api/v2:33035";
@@ -1125,7 +1125,7 @@ async function getUserAvailableBorrows() {
             const availableBorrows = await client
                 .smartContracts()
                 .readSmartContract({
-                    maxGas: fromMAS(0.002),
+                    maxGas: fromMAS(0.02),
                     targetAddress: DATA_PROVIDER,
                     targetFunction: "calculateAvailableBorrows",
                     parameter: new Args()
@@ -1135,6 +1135,55 @@ async function getUserAvailableBorrows() {
             const userAvailableBorrows = bytesToU64(availableBorrows.returnValue);
             console.log("User Available Borrows:", userAvailableBorrows);
             // return userAvailableBorrows;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function updateLoanOriginationFee() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .callSmartContract({
+                    maxGas: 4_294_167_295n,
+                    targetAddress: FEE_ADDRESS,
+                    functionName: "updateFee",
+                    parameter: new Args()
+                        .addU64(BigInt(2500000))
+                        .serialize(),
+                    coins: fromMAS(0.1),
+                    fee: BigInt(0),
+                })
+                .then((res) => {
+                    const events = pollAsyncEvents(client, res).then((result) => console.log(result.events[0].data));
+                    console.log("OpId: ", res);
+                });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getLoanOriginationFee() {
+
+    const client = await createClient();
+    try {
+        if (client) {
+            await client
+                .smartContracts()
+                .readSmartContract({
+                    maxGas: fromMAS(1),
+                    targetAddress: FEE_ADDRESS,
+                    targetFunction: 'getLoanOriginationFeePercentage',
+                    parameter: new Args().serialize(),
+                })
+                .then((res) => {
+                    console.log("Loan Origination Fee: ", bytesToU64(res.returnValue));
+                });
         }
     } catch (error) {
         console.error(error);
@@ -1528,7 +1577,7 @@ async function getMasBalance(account: string) {
             const balance = await client
                 .wallet()
                 .getAccountBalance(account)
-                console.log('balance', balance?.final);
+            console.log('balance', balance?.final);
         }
     } catch (error) {
         console.error(error);
@@ -1807,7 +1856,7 @@ async function test1() {
 // readContractData();
 // readContractDataPool();
 // addReserveData();
-viewReserveData();
+// viewReserveData();
 // getName();
 // addUserData();
 // viewAllReserves();
@@ -1834,7 +1883,7 @@ viewReserveData();
 // transferToReserve()
 // borrow(RESERVE_ADDRESS, 2, 2);
 // repay(RESERVE_ADDRESS, 7);
-getBalance(baseAccount.address);
+// getBalance(baseAccount.address);
 // getBalance(CORE_ADDRESS);
 
 // User Available Borrows: 617687446322
@@ -1849,6 +1898,8 @@ getBalance(baseAccount.address);
 // setLendingPoolAddress();
 // setFeeProviderAddress();
 // setDataProviderAddress();
+// updateLoanOriginationFee();
+// getLoanOriginationFee();
 
 // getVariableRateSlope1()
 

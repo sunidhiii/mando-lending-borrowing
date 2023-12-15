@@ -11,10 +11,7 @@ import { ILendingPool } from '../interfaces/ILendingPool';
 import { ONE_UNIT } from './FeeProvider';
 import { IRouter } from '../interfaces/IRouter';
 import { IERC20 } from '../interfaces/IERC20';
-import { onlyOwner } from '../helpers/ownership';
 
-const TRANSFER_EVENT_NAME = 'TRANSFER';
-const APPROVAL_EVENT_NAME = 'APPROVAL';
 const BURN_EVENT = 'BURN';
 
 export const NAME_KEY = stringToBytes('NAME');
@@ -80,10 +77,6 @@ export function constructor(stringifyArgs: StaticArray<u8>): void {
     .nextU256()
     .expect('Error while initializing totalSupply');
   Storage.set(TOTAL_SUPPLY_KEY, u256ToBytes(totalSupply));
-
-  // const user = args.nextString().expect('Error while initializing owner');
-  // setOwner(new Args().add(user).serialize());
-  // _setBalance(new Address(user), totalSupply);
 
   // underlying asset
   const underLyingAsset = args
@@ -157,57 +150,8 @@ export function decimals(_: StaticArray<u8>): StaticArray<u8> {
 }
 
 // ==================================================== //
-// ====                 BALANCE                    ==== //
-// ==================================================== //
-
-
-// export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-//   const args = new Args(binaryArgs);
-
-//   const addr = new Address(
-//     args.nextString().expect('Address argument is missing or invalid'),
-//   );
-
-//   return u256ToBytes(_balance(addr));
-// }
-
-
-// export function totalSupply(_: StaticArray<u8>): StaticArray<u8> {
-//   return Storage.get(TOTAL_SUPPLY_KEY);
-// }
-
-// ==================================================== //
 // ====                 TRANSFER                   ==== //
 // ==================================================== //
-
-/**
- * Transfers tokens from the caller's account to the recipient's account.
- *
- * @param binaryArgs - Args object serialized as a string containing:
- * - the recipient's account (address)
- * - the number of tokens (u256).
- */
-function transferInternal(binaryArgs: StaticArray<u8>): void {
-  const owner = Context.caller();
-
-  const args = new Args(binaryArgs);
-  const toAddress = new Address(
-    args.nextString().expect('receiverAddress argument is missing or invalid'),
-  );
-  const amount = args
-    .nextU256()
-    .expect('transferInternal amount argument is missing or invalid');
-
-  _transfer(owner, toAddress, amount);
-
-  generateEvent(
-    createEvent(TRANSFER_EVENT_NAME, [
-      owner.toString(),
-      toAddress.toString(),
-      amount.toString(),
-    ]),
-  );
-}
 
 /**
  * Transfers tokens from the caller's account to the recipient's account.
@@ -229,155 +173,6 @@ function _transfer(from: Address, to: Address, amount: u256): void {
   // @ts-ignore
   _setBalance(from, currentFromBalance - amount);
   _setBalance(to, newToBalance);
-}
-
-// ==================================================== //
-// ====                 ALLOWANCE                  ==== //
-// ==================================================== //
-
-/**
- * Returns the allowance set on the owner's account for the spender.
- *
- * @param binaryArgs - Args object serialized as a string containing:
- * - the owner's account (address)
- * - the spender's account (address).
- */
-export function allowance(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-  const args = new Args(binaryArgs);
-  const owner = new Address(
-    args.nextString().expect('owner argument is missing or invalid'),
-  );
-  const spenderAddress = new Address(
-    args.nextString().expect('spenderAddress argument is missing or invalid'),
-  );
-
-  return u256ToBytes(_allowance(owner, spenderAddress));
-}
-
-/**
- * Increases the allowance of the spender on the owner's account by the amount.
- *
- * This function can only be called by the owner.
- *
- * @param binaryArgs - Args object serialized as a string containing:
- * - the spender's account (address);
- * - the amount (u256).
- */
-export function increaseAllowance(binaryArgs: StaticArray<u8>): void {
-  const owner = Context.caller();
-
-  const args = new Args(binaryArgs);
-  const spenderAddress = new Address(
-    args.nextString().expect('spenderAddress argument is missing or invalid'),
-  );
-  const amount = args
-    .nextU256()
-    .expect('increaseAllowance amount argument is missing or invalid');
-
-  // @ts-ignore
-  let newAllowance = _allowance(owner, spenderAddress) + amount;
-  if (newAllowance < amount) {
-    newAllowance = u256.Max;
-  }
-
-  _approve(owner, spenderAddress, newAllowance);
-
-  generateEvent(
-    createEvent(APPROVAL_EVENT_NAME, [
-      owner.toString(),
-      spenderAddress.toString(),
-      newAllowance.toString(),
-    ]),
-  );
-}
-
-/**
- * Decreases the allowance of the spender the on owner's account by the amount.
- *
- * This function can only be called by the owner.
- *
- * @param binaryArgs - Args object serialized as a string containing:
- * - the spender's account (address);
- * - the amount (u256).
- */
-export function decreaseAllowance(binaryArgs: StaticArray<u8>): void {
-  const owner = Context.caller();
-
-  const args = new Args(binaryArgs);
-  const spenderAddress = new Address(
-    args.nextString().expect('spenderAddress argument is missing or invalid'),
-  );
-  const amount = args
-    .nextU256()
-    .expect('decreaseAllowance amount argument is missing or invalid');
-
-  const current = _allowance(owner, spenderAddress);
-
-  let newAllowance = u256.Zero;
-
-  if (current > amount) {
-    // @ts-ignore
-    newAllowance = current - amount;
-  }
-
-  _approve(owner, spenderAddress, newAllowance);
-
-  generateEvent(
-    createEvent(APPROVAL_EVENT_NAME, [
-      owner.toString(),
-      spenderAddress.toString(),
-      newAllowance.toString(),
-    ]),
-  );
-}
-
-/**
- * Transfers token ownership from the owner's account to the recipient's account
- * using the spender's allowance.
- *
- * This function can only be called by the spender.
- * This function is atomic:
- * - both allowance and transfer are executed if possible;
- * - or if allowance or transfer is not possible, both are discarded.
- *
- * @param binaryArgs - Args object serialized as a string containing:
- * - the owner's account (address);
- * - the recipient's account (address);
- * - the amount (u256).
- */
-export function transferFrom(binaryArgs: StaticArray<u8>): void {
-  const spenderAddress = Context.caller();
-
-  const args = new Args(binaryArgs);
-  const owner = new Address(
-    args.nextString().expect('ownerAddress argument is missing or invalid'),
-  );
-  const recipient = new Address(
-    args.nextString().expect('recipientAddress argument is missing or invalid'),
-  );
-  const amount = args
-    .nextU256()
-    .expect('transferFrom amount argument is missing or invalid');
-
-  const spenderAllowance = _allowance(owner, spenderAddress);
-
-  assert(
-    spenderAllowance >= amount,
-    'transferFrom failed: insufficient allowance',
-  );
-
-  _transfer(owner, recipient, amount);
-
-  // @ts-ignore
-  _approve(owner, spenderAddress, spenderAllowance - amount);
-
-  generateEvent(
-    createEvent(TRANSFER_EVENT_NAME, [
-      owner.toString(),
-      recipient.toString(),
-      amount.toString(),
-    ]),
-  );
 }
 
 /**
@@ -511,7 +306,6 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
   const arr = cumulateBalanceInternal(user);
 
   const balanceIncrease: u64 = arr[2];
-  // const index = arr[2];
 
   //mint an equivalent amount of tokens to cover the new deposit
   _mint(new Args().add(user.toString()).add(u256.fromU64(amount)).serialize());
@@ -543,6 +337,7 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
 
 }
 
+// to-do
 export function transferOnLiquidation(binaryArgs: StaticArray<u8>): void {
   onlyLendingPool();
 
@@ -618,23 +413,6 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(stringToBytes(storageKey));
 }
 
-export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
-  const args = new Args(binaryArgs);
-  const provider = args.nextString().expect('Provider Address argument is missing or invalid');
-
-  Storage.set(
-    ADDRESS_PROVIDER_KEY,
-    stringToBytes(provider),
-  );
-}
-
-export function setUnderLyingAsset(binaryArgs: StaticArray<u8>): void {
-  const args = new Args(binaryArgs);
-  const underLyingAsset = args.nextString().expect('Error while initializing underlying asset');
-
-  Storage.set(UNDERLYINGASSET_KEY, stringToBytes(underLyingAsset));
-}
-
 export function setMyKey(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
   const key = args.nextString().unwrap();
@@ -652,22 +430,16 @@ function calculateCumulatedBalanceInternal(_user: string, _balance: u256): u256 
   const underLyingAsset = bytesToString(Storage.get(UNDERLYINGASSET_KEY));
   const normalizedIncome = core.getNormalizedIncome(underLyingAsset);
 
-  // const storageKey = `USER_INDEX_${_user}`;
-  // const userIndex = bytesToU64(Storage.get(stringToBytes(storageKey)));
   const userIndex = bytesToU64(getUserIndex(new Args().add(_user.toString()).serialize()));
 
   let cumulatedBal: f64 = 0;
   if (userIndex > 0) {
     cumulatedBal = f64.parse(_balance.toString()) * (f64(normalizedIncome) / f64(userIndex));
   }
-  // const cumulatedBal = u256.fromU64(u64.parse(_balance.toString()) * 10 / 10);
   return u256.fromF64(cumulatedBal);
 }
 
 function cumulateBalanceInternal(user: Address): Array<u64> {
-
-  // const args = new Args(binaryArgs)
-  // const user = new Address(args.nextString().unwrap());
 
   const previousPrincipalBal = _balance(user);
   const balanceIncrease = u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) > u64.parse(previousPrincipalBal.toString()) ? u64.parse(bytesToU256(balanceOf(new Args().add(user.toString()).serialize())).toString()) - u64.parse(previousPrincipalBal.toString()) : 0;
@@ -744,9 +516,7 @@ function swapTokensAndAddDeposit(user: string): void {
   let binStep: u64 = 0;
 
   const router = new IRouter(ROUTER);
-  // const factory = new IFactory(FACTORY);
   const wmas = new IERC20(WMAS);
-  // const usdc = new IERC20(USDC);
   const underLyingAsset = new Address(bytesToString(Storage.get(UNDERLYINGASSET_KEY)));
   const deadline = Context.timestamp() + 5000;
   const path = [new IERC20(underLyingAsset), wmas];
@@ -769,9 +539,6 @@ function swapTokensAndAddDeposit(user: string): void {
 
   const amountIn = amount;
 
-  // new IERC20(USDC).transferFrom(Context.caller(), Context.callee(), amountIn);
-  // const pair = factory.getLBPairInformation(underLyingAsset, wmas._origin, binStep).pair;
-
   core.transferToUser(underLyingAsset, Context.callee(), amountIn);
   new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
   const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
@@ -791,19 +558,3 @@ function onlyLendingPool(): void {
 
   assert(Context.caller() === pool, 'Caller is not Lending pool');
 }
-
-// function swapTokens(amount: u64): void {
-//     const binStep: u64 = 100;
-//     const router = new IRouter(ROUTER);
-//     // const factory = new IFactory(FACTORY);
-//     const wmas = new IERC20(WMAS);
-//     const usdc = new IERC20(USDC);
-//     // const pair = factory.getLBPairInformation(wmas._origin, usdc._origin, binStep).pair;
-//     // const wmas_is_y = pair.getTokenY()._origin == wmas._origin;
-//     // const swapForY = wmas_is_y;
-//     const amountIn = router.getSwapIn(pair, amount * ONE_UNIT, swapForY).amountIn;
-//     const path = [usdc, wmas];
-//     const deadline = Context.timestamp() + 5000;
-//     router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
-//     generateEvent(`DEBUG: Bought ${amount} WMAS for ${amountIn} USDC`);
-// }

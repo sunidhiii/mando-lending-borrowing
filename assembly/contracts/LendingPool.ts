@@ -10,8 +10,6 @@ import { IFeeProvider } from '../interfaces/IFeeProvider';
 import { InterestRateMode } from './LendingCore';
 import { u256 } from 'as-bignum/assembly';
 
-// const ONE_UNIT = 10 ** 9;
-
 /**
  * This function is meant to be called only one time: when the contract is deployed.
  *
@@ -32,19 +30,6 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     provider
   );
 
-  // const core = provider.getCore();
-  // const core = new Args(providerAddress).nextString().unwrap();
-  // Storage.set(
-  //   'CORE_ADDR',
-  //   core.toString(),
-  // );
-
-  // const feeProvider = provider.getFeeProvider();
-  // Storage.set(
-  //     'FEE_PROVIDER',
-  //     feeProvider.toString(),
-  // );
-
   generateEvent(`Pool contract called with address provider.`);
 
 }
@@ -58,18 +43,13 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
   const userReserve = new UserReserve(Context.caller().toString(), 0, 0, 0, 0, 0, true, false);
-  // call(new Address(Storage.get('CORE_ADDR')), "initUser", new Args().add(userReserve).add(reserve), 10 * ONE_UNIT);
   core.initUser(userReserve, reserve);
 
   const mToken = new IERC20(new Address(core.getReserve(reserve).mTokenAddress));
   const isFirstDeposit: bool = mToken.balanceOf(Context.caller()) == 0;
 
-  // to-do Update states for deposit
+  // update states for deposit
   core.updateStateOnDeposit(reserve, Context.caller().toString(), amount, isFirstDeposit);
-
-  // const mTokenData = call(new Address(Storage.get('CORE_ADDR')), "getReserve", new Args().add(reserve), 10 * ONE_UNIT);
-  // const mTokenAddr = new Args(mTokenData).nextSerializable<Reserve>().unwrap();
-  // const mToken = new IERC20(new Address(mTokenAddr.mTokenAddress));
 
   mToken.mintOnDeposit(Context.caller(), amount);
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
@@ -171,9 +151,6 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       core.transferFeeToOwner(reserve, Context.caller(), userOriginationFee)
     }
 
-    //sending the total msg.value if the transfer is USD.
-    //the transferToReserve() function will take care of sending the
-    //excess USD back to the caller
     core.transferToReserve(new Address(reserve), Context.caller(), paybackAmountMinusFees);
 
     generateEvent(`Repayed ${amount} tokens to the pool`);
@@ -212,9 +189,6 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
   const user = args.nextString().expect('No user address provided');
   const amount = args.nextU64().expect('No amount provided');
 
-  // onlyOverlyingAsset(reserve);
-  // onlyOverlyingAssetOrBaseToken();
-
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
 
@@ -239,30 +213,6 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
   generateEvent(`Deposited ${amount} base tokens to the pool`);
 
 }
-
-// function setUserUseReserveAsCollateral(address _reserve, bool _useAsCollateral)
-// external
-// nonReentrant
-// onlyActiveReserve(_reserve)
-// onlyUnfreezedReserve(_reserve)
-// {
-// uint256 underlyingBalance = core.getUserUnderlyingAssetBalance(_reserve, msg.sender);
-
-// require(underlyingBalance > 0, "User does not have any liquidity deposited");
-
-// require(
-//     dataProvider.balanceDecreaseAllowed(_reserve, msg.sender, underlyingBalance),
-//     "User deposit is already being used as collateral"
-// );
-
-// core.setUserUseReserveAsCollateral(_reserve, msg.sender, _useAsCollateral);
-
-// if (_useAsCollateral) {
-//     emit ReserveUsedAsCollateralEnabled(_reserve, msg.sender);
-// } else {
-//     emit ReserveUsedAsCollateralDisabled(_reserve, msg.sender);
-// }
-// }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
   onlyOwner();

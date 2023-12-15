@@ -15,10 +15,6 @@ export function constructor(_: StaticArray<u8>): void {
   // If you remove this check, someone could call your constructor function and reset your smart contract.
   assert(callerHasWriteAccess());
 
-  // if (!isDeployingContract()) {
-  //   return;
-  // }
-
   setOwner(new Args().add(Context.caller()).serialize());
   
   generateEvent(`Address Provider called with owner ${Context.caller()}`);
@@ -34,10 +30,6 @@ export function constructor(_: StaticArray<u8>): void {
  *
  */
 export function setCore(binaryArgs: StaticArray<u8>): void {
-
-  
-  // We use 'next[Type]()' to retrieve the next argument in the serialized arguments.
-  // We use 'expect()' to check if the argument exists, if not we abort the execution.
   
   onlyOwner();
   const args = new Args(binaryArgs);  // First we deserialize our arguments.

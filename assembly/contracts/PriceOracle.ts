@@ -17,8 +17,6 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
   // If you remove this check someone could call your constructor function and reset your SC.
   assert(callerHasWriteAccess(), 'Caller is not allowed');
 
-  // setPrice([]);
-
   generateEvent(`Price oracle constructor called.`);
 
   return [];
@@ -68,8 +66,6 @@ function generateRandomIncrease(base: u64): u64 {
 }
 
 export function setPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-  // assert(callerHasWriteAccess(), 'Caller is not allowed');
-
   const args = new Args(binaryArgs);
   const reserve = args
     .nextString()
