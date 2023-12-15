@@ -18,8 +18,8 @@ export class ILendingPool {
     call(this._origin, "deposit", new Args().add(reserve).add(user).add(amount), 0);
   }
 
-  depositRewards(reserve: string, user: string, amount: u64): void {
-    call(this._origin, "depositRewards", new Args().add(reserve).add(user).add(amount), 2);
+  depositRewards(currentReserve: string, reserve: string, user: string, amount: u64): void {
+    call(this._origin, "depositRewards", new Args().add(currentReserve).add(reserve).add(user).add(amount), 2);
   }
 
   redeemUnderlying(reserve: string, user: string, amount: u64, mTokenBalanceAfterRedeem: u64): void {

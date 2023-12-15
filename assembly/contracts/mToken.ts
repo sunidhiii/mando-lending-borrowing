@@ -544,7 +544,7 @@ function swapTokensAndAddDeposit(user: string): void {
   const amountOut: u64 = router.swapExactTokensForTokens(amountIn, 0, [binStep], path, Context.callee(), deadline);
 
   new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
-  pool.depositRewards((wmas._origin).toString(), user, amountOut);
+  pool.depositRewards(underLyingAsset.toString(), (wmas._origin).toString(), user, amountOut);
   core.transferToReserve(wmas._origin, Context.callee(), amountOut);
 
   sendFuturOperation(user);

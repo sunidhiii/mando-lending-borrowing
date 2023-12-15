@@ -1,6 +1,6 @@
 import { Address, changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
 import { Args, stringToBytes, u8toByte, bytesToU256, u256ToBytes } from '@massalabs/as-types';
-import { deposit, constructor } from '../contracts/LendingPool';
+import { deposit, constructor, borrow } from '../contracts/LendingPool';
 import { u256 } from 'as-bignum/assembly';
 
 import Reserve from '../helpers/Reserve';
@@ -32,12 +32,25 @@ beforeAll(() => {
     );
 });
 
-const mintAmount: u64 = 1000000;
+const amount: u64 = 1000000;
 
 describe('deposit tokens', () => {
 
-    throws('Should fail to deposit tokens because of low balance', () => {
-        deposit(new Args().add(reserve).add(mintAmount).serialize());
+    throws('should fail to deposit tokens because of low balance', () => {
+        deposit(new Args().add(reserve).add(amount).serialize());
     });
-    
+
+});
+
+
+describe('borrow tokens', () => {
+
+    throws('invaid interest rate mode selected', () => {
+        borrow(new Args().add(reserve).add(amount).add(0).serialize());
+    });
+
+    throws('not enough liquidity available in this reserve', () => {
+        borrow(new Args().add(reserve).add(amount).add(u64.MAX_VALUE).serialize());
+    });
+
 });

@@ -63,109 +63,109 @@ describe('core modifiers', () => {
 
 });
 
-// describe('init user', () => {
-//     const amt: u64 = 0;
-//     throws('should fail because the lending pool is not the tx emitter', () => {
-//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
-//         initUser(new Args().add(userReserve).add(reserve).serialize())
-//     });
+describe('init user', () => {
+    const amt: u64 = 0;
+    throws('should fail because the lending pool is not the tx emitter', () => {
+        const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+        initUser(new Args().add(userReserve).add(reserve).serialize())
+    });
 
-//     test('initializing a user reserve from pool', () => {
+    test('initializing a user reserve from pool', () => {
 
-//         // switchUser(user3Address);
-//         mockAdminContext(true);
+        // switchUser(user3Address);
+        mockAdminContext(true);
 
-//         const key = `USER_KEY_${user2Address}_${reserve}`;
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             false,
-//         );
-//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
-//         initUser(new Args().add(userReserve).add(reserve).serialize());
+        const key = `USER_KEY_${user2Address}_${reserve}`;
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            false,
+        );
+        const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+        initUser(new Args().add(userReserve).add(reserve).serialize());
 
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             true,
-//         );
-//     });
-// });
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            true,
+        );
+    });
+});
 
-// describe('update user autonomous reward strategy', () => {
+describe('update user autonomous reward strategy', () => {
 
-//     test('should update autonomous reward strategy', () => {
-//         const amt: u64 = 0;
+    test('should update autonomous reward strategy', () => {
+        const amt: u64 = 0;
 
-//         switchUser(user2Address)
+        switchUser(user2Address)
 
-//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
-//         initUser(new Args().add(userReserve).add(reserve).serialize());
+        const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+        initUser(new Args().add(userReserve).add(reserve).serialize());
 
-//         const userData = getUserReserve(new Args().add(user2Address).add(reserve).serialize())
-//         const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+        const userData = getUserReserve(new Args().add(user2Address).add(reserve).serialize())
+        const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-//         expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
-//             false,
-//         );
+        expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
+            false,
+        );
 
-//         setUserAutonomousRewardStrategy(new Args().add(reserve).add(true).serialize());
+        setUserAutonomousRewardStrategy(new Args().add(reserve).add(true).serialize());
 
-//         expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
-//             true,
-//         );
+        expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
+            true,
+        );
 
-//     });
-// });
+    });
+});
 
-// describe('init reserve', () => {
+describe('init reserve', () => {
 
-//     throws('should fail because the owner is not the tx emitter', () => {
-//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-//         initReserve(new Args().add(reserveObj).serialize())
-//     });
+    throws('should fail because the owner is not the tx emitter', () => {
+        const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        initReserve(new Args().add(reserveObj).serialize())
+    });
 
-//     test('initializing a reserve from owner address', () => {
+    test('initializing a reserve from owner address', () => {
 
-//         switchUser(user1Address);
+        switchUser(user1Address);
 
-//         const key = `RESERVE_KEY_${reserve}`;
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             false,
-//         );
-//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-//         initReserve(new Args().add(reserveObj).serialize())
+        const key = `RESERVE_KEY_${reserve}`;
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            false,
+        );
+        const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        initReserve(new Args().add(reserveObj).serialize())
 
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             true,
-//         );
-//     });
-// });
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            true,
+        );
+    });
+});
 
-// describe('delete reserve', () => {
+describe('delete reserve', () => {
 
-//     throws('should fail because the owner is not the tx emitter', () => {
-//         deleteReserve(new Args().add(reserve).serialize())
-//     });
+    throws('should fail because the owner is not the tx emitter', () => {
+        deleteReserve(new Args().add(reserve).serialize())
+    });
 
-//     test('initializing a reserve from owner address', () => {
+    test('initializing a reserve from owner address', () => {
 
-//         switchUser(user1Address);
+        switchUser(user1Address);
 
-//         const key = `RESERVE_KEY_${reserve}`;
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             false,
-//         );
+        const key = `RESERVE_KEY_${reserve}`;
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            false,
+        );
 
-//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-//         initReserve(new Args().add(reserveObj).serialize())
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             true,
-//         );
+        const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        initReserve(new Args().add(reserveObj).serialize())
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            true,
+        );
 
-//         deleteReserve(new Args().add(reserve).serialize())
+        deleteReserve(new Args().add(reserve).serialize())
 
-//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-//             false,
-//         );
-//     });
-// });
+        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+            false,
+        );
+    });
+});
 
 
 

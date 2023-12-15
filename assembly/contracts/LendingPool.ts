@@ -185,9 +185,12 @@ export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
 export function depositRewards(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
+  const currentReserve = args.nextString().expect('No current reserve address provided');
   const reserve = args.nextString().expect('No reserve address provided');
   const user = args.nextString().expect('No user address provided');
   const amount = args.nextU64().expect('No amount provided');
+
+  onlyOverlyingAsset(currentReserve);
 
   const addressProvider = new ILendingAddressProvider(new Address(Storage.get('ADDRESS_PROVIDER_ADDR')));
   const core = new ILendingCore(new Address(addressProvider.getCore()));
