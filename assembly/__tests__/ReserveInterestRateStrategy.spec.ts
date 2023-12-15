@@ -1,6 +1,7 @@
 import { changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
-import { Args } from '@massalabs/as-types';
-import { constructor, setBaseVariableBorrowRate, setReserve, setStableRateSlope1, setStableRateSlope2, setVariableRateSlope1, setVariableRateSlope2 } from '../contracts/ReserveInterestRateStrategy';
+import { Args, u256ToBytes } from '@massalabs/as-types';
+import { calculateInterestRates, constructor, setBaseVariableBorrowRate, setReserve, setStableRateSlope1, setStableRateSlope2, setVariableRateSlope1, setVariableRateSlope2 } from '../contracts/ReserveInterestRateStrategy';
+import { u256 } from 'as-bignum/assembly';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';
@@ -15,22 +16,25 @@ function switchUser(user: string): void {
 }
 
 beforeAll(() => {
+
+    const amount: u64 = 1000000;
+
     resetStorage();
     setDeployContext(user1Address);
     constructor(
         new Args()
-            .add(0)
-            .add(80000000)
-            .add(1000000000)
-            .add(1000000000)
-            .add(1000000000)
+            .add(amount)
+            .add(amount)
+            .add(amount)
+            .add(amount)
+            .add(amount)
             .add(underlyingAsset)
-            .serialize(),
+            .serialize()
     );
 });
 
 describe('interestRate modifiers', () => {
-    switchUser(user2Address); 
+    switchUser(user2Address);
 
     throws("Tries to invoke setBaseVariableBorrowRate", () => {
         setBaseVariableBorrowRate(new Args().add(100000000).serialize());
@@ -59,4 +63,14 @@ describe('interestRate modifiers', () => {
     throws("Tries to invoke setReserve", () => {
         setReserve(new Args().add(100000000).serialize());
     });
+});
+
+const amount = new u256(5000, 0, 1);
+
+describe('calculate interest rate', () => {
+
+    throws("sending wrong serialized arguments", () => {
+        calculateInterestRates(new Args().add(amount).add(amount).add(amount).add(amount).serialize());
+    });
+
 });

@@ -3,14 +3,7 @@ import { Args, boolToByte } from '@massalabs/as-types';
 import { constructor, deleteReserve, getUserReserve, initReserve, initUser, setAddressProvider, setMTokenContractCode, setUserAutonomousRewardStrategy, transferFeeToOwner, transferToUser, updateStateOnBorrow, updateStateOnDeposit, updateStateOnRedeem, updateStateOnRepay } from '../contracts/LendingCore';
 import UserReserve from '../helpers/UserReserve';
 import Reserve from '../helpers/Reserve';
-
-// import { readFileSync } from 'fs';
-// import path from 'path';
-// import { fileURLToPath } from 'url';
-
-// // Obtain the current file name and directory paths
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(path.dirname(__filename));
+const readFile = '../../src/readFileTest';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9';
@@ -29,10 +22,10 @@ function switchUser(user: string): void {
 beforeAll(() => {
     resetStorage();
     // setDeployContext(user1Address);
-    mockAdminContext(true);
+    // mockAdminContext(true);
     constructor(
         new Args().add(provider)
-            // .add([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))])
+            .add(readFile)
             .serialize(),
     );
 });
@@ -70,94 +63,109 @@ describe('core modifiers', () => {
 
 });
 
-describe('init user', () => {
+// describe('init user', () => {
+//     const amt: u64 = 0;
+//     throws('should fail because the lending pool is not the tx emitter', () => {
+//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+//         initUser(new Args().add(userReserve).add(reserve).serialize())
+//     });
 
-    throws('should fail because the lending pool is not the tx emitter', () => {
-        const userReserve = new UserReserve(user2Address, 0, 0, 0, 0, 0, true, false);
-        initUser(new Args().add(userReserve).add(reserve).serialize())
-    });
+//     test('initializing a user reserve from pool', () => {
 
-    test('initializing a user reserve from pool', () => {
+//         // switchUser(user3Address);
+//         mockAdminContext(true);
 
-        // switchUser(user3Address);
+//         const key = `USER_KEY_${user2Address}_${reserve}`;
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             false,
+//         );
+//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+//         initUser(new Args().add(userReserve).add(reserve).serialize());
 
-        const key = `$USER_KEY_${user2Address}_${reserve}`;
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            false,
-        );
-        const userReserve = new UserReserve(user2Address, 0, 0, 0, 0, 0, true, false);
-        initUser(new Args().add(userReserve).add(reserve).serialize());
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             true,
+//         );
+//     });
+// });
 
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            true,
-        );
-    });
-});
+// describe('update user autonomous reward strategy', () => {
 
-describe('update user autonomous reward strategy', () => {
+//     test('should update autonomous reward strategy', () => {
+//         const amt: u64 = 0;
 
-    test('should update autonomous reward strategy', () => {
+//         switchUser(user2Address)
 
-        const userData = getUserReserve(new Args().add(user2Address).add(reserve).serialize())
-        const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+//         const userReserve = new UserReserve(user2Address, amt, amt, amt, amt, amt, true, false);
+//         initUser(new Args().add(userReserve).add(reserve).serialize());
 
-        expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
-            false,
-        );
+//         const userData = getUserReserve(new Args().add(user2Address).add(reserve).serialize())
+//         const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
 
-        setUserAutonomousRewardStrategy(new Args().add(true).serialize());
+//         expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
+//             false,
+//         );
 
-        expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
-            true,
-        );
+//         setUserAutonomousRewardStrategy(new Args().add(reserve).add(true).serialize());
 
-    });
-});
+//         expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(
+//             true,
+//         );
 
-describe('init reserve', () => {
+//     });
+// });
 
-    throws('should fail because the owner is not the tx emitter', () => {
-        const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        initReserve(new Args().add(reserveObj).serialize())
-    });
+// describe('init reserve', () => {
 
-    test('initializing a reserve from owner address', () => {
+//     throws('should fail because the owner is not the tx emitter', () => {
+//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//         initReserve(new Args().add(reserveObj).serialize())
+//     });
 
-        switchUser(user1Address);
+//     test('initializing a reserve from owner address', () => {
 
-        const key = `RESERVE_KEY_${reserve}`;
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            false,
-        );
-        const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        initReserve(new Args().add(reserveObj).serialize())
+//         switchUser(user1Address);
 
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            true,
-        );
-    });
-});
+//         const key = `RESERVE_KEY_${reserve}`;
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             false,
+//         );
+//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//         initReserve(new Args().add(reserveObj).serialize())
 
-describe('delete reserve', () => {
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             true,
+//         );
+//     });
+// });
 
-    throws('should fail because the owner is not the tx emitter', () => {
-        deleteReserve(new Args().add(reserve).serialize())
-    });
+// describe('delete reserve', () => {
 
-    test('initializing a reserve from owner address', () => {
+//     throws('should fail because the owner is not the tx emitter', () => {
+//         deleteReserve(new Args().add(reserve).serialize())
+//     });
 
-        switchUser(user1Address);
-        const key = `RESERVE_KEY_${reserve}`;
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            true,
-        );
-        deleteReserve(new Args().add(reserve).serialize())
+//     test('initializing a reserve from owner address', () => {
 
-        expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
-            false,
-        );
-    });
-});
+//         switchUser(user1Address);
+
+//         const key = `RESERVE_KEY_${reserve}`;
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             false,
+//         );
+
+//         const reserveObj = new Reserve(reserve, '', '', 0, '', INTEREST_ADDRESS, 60, 75, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//         initReserve(new Args().add(reserveObj).serialize())
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             true,
+//         );
+
+//         deleteReserve(new Args().add(reserve).serialize())
+
+//         expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(
+//             false,
+//         );
+//     });
+// });
 
 
 

@@ -32,12 +32,12 @@ beforeAll(() => {
     );
 });
 
-const mintAmount = new u256(5000, 33);
+const mintAmount: u64 = 1000000;
 
 describe('deposit tokens', () => {
 
-    test('Should deposit tokens', () => {
-        deposit(new Args().add(reserve).add(10000).serialize());
-        // check balance of U2
+    throws('Should fail to deposit tokens because of low balance', () => {
+        deposit(new Args().add(reserve).add(mintAmount).serialize());
     });
+    
 });

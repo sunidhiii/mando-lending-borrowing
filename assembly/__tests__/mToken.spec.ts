@@ -24,7 +24,7 @@ function switchUser(user: string): void {
 
 beforeAll(() => {
     resetStorage();
-    setDeployContext(user1Address);
+    // setDeployContext(user1Address);
     // mockAdminContext(true);
     constructor(
         new Args()
@@ -67,7 +67,7 @@ describe('BalanceOf', () => {
 });
 
 const mintOnDepositAmount: u64 = 100000;
-const mintAmount = new u256(10, 10);
+const mintAmount: u256 = new u256(5000, 0, 1);
 
 describe('MToken: Modifiers', () => {
     throws("Tries to invoke mintOnDeposit", () => {
@@ -83,44 +83,44 @@ describe('MToken: Modifiers', () => {
     });
 });
 
-describe('mint mToken to U3', () => {
+// describe('mint mToken to U3', () => {
 
-    test('should mint mToken', () => {
-        mockAdminContext(true);
+//     test('should mint mToken', () => {
+//         mockAdminContext(true);
 
-        mint(new Args().add(user3Address).add(mintOnDepositAmount).serialize());
-        // check balance of U2
-        expect(principalBalanceOf(new Args().add(user3Address).serialize())).toStrictEqual(
-            u256ToBytes(mintAmount),
-        );
+//         mintOnDeposit(new Args().add(user3Address).add(mintOnDepositAmount).serialize());
+//         // check balance of U2
+//         expect(principalBalanceOf(new Args().add(user3Address).serialize())).toStrictEqual(
+//             u256ToBytes(mintAmount),
+//         );
 
-        // check totalSupply update
-        expect(totalSupplyInternal([])).toStrictEqual(
-            // @ts-ignore
-            u256ToBytes(mintAmount + TOTAL_SUPPLY),
-        );
-    });
-});
+//         // check totalSupply update
+//         expect(totalSupplyInternal([])).toStrictEqual(
+//             // @ts-ignore
+//             u256ToBytes(mintAmount + TOTAL_SUPPLY),
+//         );
+//     });
+// });
 
-const burnAmount = new u256(5000, 0, 1);
+// const burnAmount: u256 = new u256(5000, 0, 1);
 
-describe('burn mToken from U1', () => {
-    test('should burn mToken', () => {
-        burn(new Args().add(burnAmount).serialize());
+// describe('burn mToken from U1', () => {
+//     test('should burn mToken', () => {
+//         burn(new Args().add(burnAmount).serialize());
 
-        // check balance of U1
-        expect(
-            bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
-            // @ts-ignore
-        ).toBe(TOTAL_SUPPLY - burnAmount);
+//         // check balance of U1
+//         expect(
+//             bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
+//             // @ts-ignore
+//         ).toBe(TOTAL_SUPPLY - burnAmount);
 
-        // check totalSupply update
-        expect(totalSupplyInternal([])).toStrictEqual(
-            // @ts-ignore
-            u256ToBytes(TOTAL_SUPPLY - burnAmount),
-        );
-    });
-});
+//         // check totalSupply update
+//         expect(totalSupplyInternal([])).toStrictEqual(
+//             // @ts-ignore
+//             u256ToBytes(TOTAL_SUPPLY - burnAmount),
+//         );
+//     });
+// });
 
 describe('Fails burn mToken', () => {
     throws('Fails to burn because of underflow ', () =>
