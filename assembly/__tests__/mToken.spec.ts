@@ -1,10 +1,10 @@
-import { Address, changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
+import { Address, changeCallStack, mockAdminContext, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
 import { Args, stringToBytes, u8toByte, bytesToU256, u256ToBytes } from '@massalabs/as-types';
-import { principalBalanceOf, totalSupplyInternal, name, symbol, decimals, constructor, mintOnDeposit, setMyKey, mint, burn } from '../contracts/mToken';
+import { principalBalanceOf, totalSupplyInternal, name, symbol, decimals, constructor, mintOnDeposit, setMyKey, mint, burn, redeem } from '../contracts/mToken';
 import { u256 } from 'as-bignum/assembly';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
-const contractAddr = 'AS1HWEZPVWsutCRJ4ZggMYz1a4NsLZfUvcWGvAHY4oQz417NgGsG';
+const contractAddr = 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ';
 
 const user1Address = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9';
 const user2Address = 'AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY';
@@ -25,6 +25,7 @@ function switchUser(user: string): void {
 beforeAll(() => {
     resetStorage();
     setDeployContext(user1Address);
+    // mockAdminContext(true);
     constructor(
         new Args()
             .add(TOKEN_NAME)
@@ -66,7 +67,7 @@ describe('BalanceOf', () => {
 });
 
 const mintOnDepositAmount: u64 = 100000;
-const mintAmount: u256 = new u256(100000);
+const mintAmount = new u256(10, 10);
 
 describe('MToken: Modifiers', () => {
     throws("Tries to invoke mintOnDeposit", () => {
@@ -82,48 +83,59 @@ describe('MToken: Modifiers', () => {
     });
 });
 
-describe('Mint mToken to U2', () => {
+describe('mint mToken to U3', () => {
 
-    switchUser(user4Address);
+    test('should mint mToken', () => {
+        mockAdminContext(true);
 
-    test('Should mint mToken', () => {
-      mint(new Args().add(user2Address).add(mintAmount).serialize());
-      // check balance of U2
-      expect(principalBalanceOf(new Args().add(user2Address).serialize())).toStrictEqual(
-        u256ToBytes(mintAmount),
-      );
-  
-      // check totalSupply update
-      expect(totalSupplyInternal([])).toStrictEqual(
-        // @ts-ignore
-        u256ToBytes(mintAmount + TOTAL_SUPPLY),
-      );
+        mint(new Args().add(user3Address).add(mintOnDepositAmount).serialize());
+        // check balance of U2
+        expect(principalBalanceOf(new Args().add(user3Address).serialize())).toStrictEqual(
+            u256ToBytes(mintAmount),
+        );
+
+        // check totalSupply update
+        expect(totalSupplyInternal([])).toStrictEqual(
+            // @ts-ignore
+            u256ToBytes(mintAmount + TOTAL_SUPPLY),
+        );
     });
-  });
+});
 
 const burnAmount = new u256(5000, 0, 1);
 
-describe('Burn mToken to U1', () => {
-  test('Should burn mToken', () => {
-    burn(new Args().add(burnAmount).serialize());
+describe('burn mToken from U1', () => {
+    test('should burn mToken', () => {
+        burn(new Args().add(burnAmount).serialize());
 
-    // check balance of U1
-    expect(
-      bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
-      // @ts-ignore
-    ).toBe(TOTAL_SUPPLY - burnAmount);
+        // check balance of U1
+        expect(
+            bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
+            // @ts-ignore
+        ).toBe(TOTAL_SUPPLY - burnAmount);
 
-    // check totalSupply update
-    expect(totalSupplyInternal([])).toStrictEqual(
-      // @ts-ignore
-      u256ToBytes(TOTAL_SUPPLY - burnAmount),
+        // check totalSupply update
+        expect(totalSupplyInternal([])).toStrictEqual(
+            // @ts-ignore
+            u256ToBytes(TOTAL_SUPPLY - burnAmount),
+        );
+    });
+});
+
+describe('Fails burn mToken', () => {
+    throws('Fails to burn because of underflow ', () =>
+        burn(new Args().add(u256.Max).serialize()),
     );
-  });
 });
 
-describe('Fails burn ERC20', () => {
-  throws('Fails to burn because of underflow ', () =>
-    burn(new Args().add(u256.Max).serialize()),
-  );
-});
+describe('redeem tokens from pool', () => {
 
+    throws("tries to redeem 0 amount", () => {
+        redeem(new Args().add(0).serialize());
+    });
+
+    throws("tries to redeem more than available balance", () => {
+        redeem(new Args().add(u64.MAX_VALUE).serialize());
+    });
+
+});

@@ -1,11 +1,4 @@
-import {
-  callerHasWriteAccess,
-  generateEvent,
-  Context,
-  sendMessage,
-  Storage,
-  unsafeRandom,
-} from '@massalabs/massa-as-sdk';
+import { callerHasWriteAccess, generateEvent, Context, sendMessage, Storage, unsafeRandom } from '@massalabs/massa-as-sdk';
 import { Args, u64ToBytes } from '@massalabs/as-types';
 import { currentPeriod } from '@massalabs/massa-as-sdk/assembly/std/context';
 
@@ -20,7 +13,6 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
   generateEvent(`Price oracle constructor called.`);
 
   return [];
-
 }
 
 function sendFuturOperation(): void {
@@ -45,7 +37,7 @@ function sendFuturOperation(): void {
     maxGas,
     rawFee,
     coins,
-    [],
+    new Args().serialize(),
   );
 
   generateEvent(

@@ -29,7 +29,7 @@
         "@massalabs/massa-sc-deployer": "^0.6.0",
         "@massalabs/massa-web3": "^1.24.2",
         "@massalabs/prettier-config-as": "^0.0.2",
-        "@types/node": "^18.11.10",
+        "@types/node": "^18.19.3",
         "assemblyscript": "^0.25.2",
         "assemblyscript-prettier": "^1.0.7",
         "chai": "^4.3.10",
@@ -44,7 +44,9 @@
         "node": ">=16"
     },
     "dependencies": {
+        "fs": "^0.0.1-security",
         "nvm": "^0.0.4",
+        "path": "^0.12.7",
         "source-map-support": "^0.5.21"
     }
 }

@@ -1,7 +1,6 @@
 import { changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
 import { Args } from '@massalabs/as-types';
-import { setPriceOracle, setAddressProvider } from '../contracts/LendingDataProvider';
-import { constructor } from '../contracts/FeeProvider';
+import { constructor, setPriceOracle, setAddressProvider } from '../contracts/LendingDataProvider';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS1BQyhbAEJefm5ADSPF35ZeyNxWxvgpHZyFK7CBy1GfzQ1ACuYV';

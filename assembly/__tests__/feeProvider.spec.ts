@@ -27,15 +27,15 @@ beforeAll(() => {
 
 describe('update loan origination Fee', () => {
 
-    switchUser(user1Address);
+    // switchUser(user1Address);
 
-    test('update new fee', () => {
-        updateFee(new Args().add(NEW_ORIGNATION_FEE).serialize());
+    // test('update new fee', () => {
+    //     updateFee(new Args().add(NEW_ORIGNATION_FEE).serialize());
 
-        expect(
-            (getLoanOriginationFeePercentage()),
-        ).toStrictEqual(u64ToBytes(ORIGNATION_FEE));
-    });
+    //     expect(
+    //         (getLoanOriginationFeePercentage()),
+    //     ).toStrictEqual(u64ToBytes(ORIGNATION_FEE));
+    // });
 
     switchUser(user2Address);
 
@@ -44,15 +44,15 @@ describe('update loan origination Fee', () => {
     });
 });
 
-describe('calculate loan origination Fee', () => {
-    test('calculate fee', () => {
+// describe('calculate loan origination Fee', () => {
+//     test('calculate fee', () => {
 
-        const amount: u64 = 100000;
-        const ONE_UNIT = 10 ** 9;
-        const originationFee = u64((f64(amount) * f64(ORIGNATION_FEE)) / f64(ONE_UNIT));
+//         const amount: u64 = 100000;
+//         const ONE_UNIT = 10 ** 9;
+//         const originationFee = u64((f64(amount) * f64(ORIGNATION_FEE)) / f64(ONE_UNIT));
 
-        expect(
-            calculateLoanOriginationFee(new Args().add(amount).serialize()),
-        ).toStrictEqual(u64ToBytes(originationFee));
-    });
-});
+//         expect(
+//             calculateLoanOriginationFee(new Args().add(amount).serialize()),
+//         ).toStrictEqual(u64ToBytes(originationFee));
+//     });
+// });

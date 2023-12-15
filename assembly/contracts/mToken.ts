@@ -1,5 +1,5 @@
 import { Address, Context, generateEvent, Storage, createEvent, callerHasWriteAccess, sendMessage } from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, bytesToU256, bytesToU64, stringToBytes, u256ToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Args, bytesToString, u8toByte, bytesToU256, bytesToU64, stringToBytes, u256ToBytes, u64ToBytes } from '@massalabs/as-types';
 import { _balance, _setBalance, _approve, _allowance } from '../helpers/token-internals';
 import { u256 } from 'as-bignum/assembly';
 import { _mint } from '../helpers/mint-internals';

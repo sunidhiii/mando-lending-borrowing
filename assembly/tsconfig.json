@@ -1,8 +1,18 @@
 {
   "extends": "assemblyscript/std/assembly.json",
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "./**/*.ts",
+    "assembly/*/*.spec.ts"
   ],
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "es2020",
+    "moduleResolution": "Node",
+    "target": "es2022",
+    "strictBindCallApply": false
+  },
   "typedocOptions": {
     "exclude": "assembly/**/__tests__",
     "excludePrivate": true,
@@ -10,5 +20,5 @@
     "excludeExternals": true,
     "includeVersion": true,
     "skipErrorChecking": true
-  }
+  },
 }

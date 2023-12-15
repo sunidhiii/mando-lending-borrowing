@@ -76,7 +76,7 @@ const __dirname = path.dirname(path.dirname(__filename));
       args: new Args().addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp').addArray([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))], ArrayTypes.U8), // arguments for deployment
     };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [FeeProviderContract], BigInt(100), BigInt(3_980_167_295), true);
+    await deploySC(publicApi, deployerAccount, [], BigInt(100), BigInt(3_980_167_295), true);
   }
   process.exit(0); // terminate the process after deployment(s) (526.812910514
 })();

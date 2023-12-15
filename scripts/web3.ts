@@ -1833,7 +1833,7 @@ async function test1() {
                 .callSmartContract({
                     maxGas: 4_294_167_295n,
                     targetAddress: 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ',
-                    functionName: "burnOnLiquidation",
+                    functionName: "burn",
                     parameter: new Args().addString(baseAccount.address).addU64(1n).serialize(),
                     coins: fromMAS(0.01),
                     fee: BigInt(0),
@@ -1918,4 +1918,4 @@ async function test1() {
 // getStatus('O12iAg6UBDJEP58EwLkZuk4dyT5ZpPUPpR1vc8v83JHhDXKG48pz');
 
 // getMasBalance('AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8');
-// test1();
+test1();
