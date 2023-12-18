@@ -9,11 +9,6 @@ import {
 } from '@massalabs/massa-web3';
 
 // create a base account for signing transactions
-const baseAccount = {
-  address: 'AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8',
-  secretKey: 'S1a1rC1Aar9gEe8VwpWtN5MTaxaKXqrj6vGr9a3WDxbRMDC8spM',
-  publicKey: 'P1zir4oncNbkuQFkZyU4TjfNzR5BotZzf4hGVE4pCNwCb6Z2Kjn',
-};
 
 let CORE_ADDRESS = 'AS12mPMppiXh1RNWLLxpgexDZPhjGTukaeovjvrMzUPsexFXnbM2y';
 let RESERVE_ADDRESS = 'AS12ZMZHtmmXPjyujRk9BAoigish2F5TuSSrupYanxjq55YaDDLva';
@@ -90,7 +85,7 @@ class Reserve implements ISerializable<Reserve> {
 }
 
 async function createClient() {
-  const account = await WalletClient.getAccountFromSecretKey(baseAccount.secretKey);
+  const account = await WalletClient.getAccountFromSecretKey('baseAccount.secretKey');
 
   const client = await ClientFactory.createDefaultClient(DefaultProviderUrls.BUILDNET, false, account);
   return client;
