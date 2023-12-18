@@ -9,11 +9,9 @@ import { Args } from '@massalabs/as-types';
 import {
   constructor,
   deleteReserve,
-  getUserReserve,
   initReserve,
   initUser,
   setAddressProvider,
-  setUserAutonomousRewardStrategy,
   transferFeeToOwner,
   transferToUser,
   updateStateOnBorrow,
@@ -128,57 +126,51 @@ describe('init user', () => {
     const key = `USER_KEY_${user2Address}_${reserve}`;
     expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(false);
 
-//     const userReserve = new UserReserve(
-//       user2Address,
-//       amt,
-//       amt,
-//       amt,
-//       amt,
-//       amt,
-//       true,
-//       false,
-//     );
-//     initUser(new Args().add(userReserve).add(reserve).serialize());
+    //     const userReserve = new UserReserve(
+    //       user2Address,
+    //       amt,
+    //       amt,
+    //       amt,
+    //       amt,
+    //       amt,
+    //       true,
+    //       false,
+    //     );
+    //     initUser(new Args().add(userReserve).add(reserve).serialize());
 
-//     expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(true);
+    //     expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(true);
   });
 });
 
 describe('update user autonomous reward strategy', () => {
-//   test('should update autonomous reward strategy', () => {
-//     const amt: u64 = 10;
-
-//     // switchUser(user3Address)
-//     mockAdminContext(true);
-
-//     const userReserve = new UserReserve(
-//       user2Address,
-//       amt,
-//       amt,
-//       amt,
-//       amt,
-//       amt,
-//       true,
-//       false,
-//     );
-//     initUser(new Args().add(userReserve).add(reserve).serialize());
-
-//     const userData = getUserReserve(
-//       new Args().add(user2Address).add(reserve).serialize(),
-//     );
-//     const userArgs = new Args(userData)
-//       .nextSerializable<UserReserve>()
-//       .unwrap();
-
-//     expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(false);
-
-//     switchUser(user2Address);
-//     setUserAutonomousRewardStrategy(
-//       new Args().add(reserve).add(true).serialize(),
-//     );
-
-//     expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(true);
-//   });
+  //   test('should update autonomous reward strategy', () => {
+  //     const amt: u64 = 10;
+  //     // switchUser(user3Address)
+  //     mockAdminContext(true);
+  //     const userReserve = new UserReserve(
+  //       user2Address,
+  //       amt,
+  //       amt,
+  //       amt,
+  //       amt,
+  //       amt,
+  //       true,
+  //       false,
+  //     );
+  //     initUser(new Args().add(userReserve).add(reserve).serialize());
+  //     const userData = getUserReserve(
+  //       new Args().add(user2Address).add(reserve).serialize(),
+  //     );
+  //     const userArgs = new Args(userData)
+  //       .nextSerializable<UserReserve>()
+  //       .unwrap();
+  //     expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(false);
+  //     switchUser(user2Address);
+  //     setUserAutonomousRewardStrategy(
+  //       new Args().add(reserve).add(true).serialize(),
+  //     );
+  //     expect(userArgs.autonomousRewardStrategyEnabled).toStrictEqual(true);
+  //   });
 });
 
 describe('init reserve', () => {

@@ -3,12 +3,8 @@ import {
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
-import { Args, u64ToBytes } from '@massalabs/as-types';
-import {
-  calculateLoanOriginationFee,
-  constructor,
-  updateFee,
-} from '../contracts/FeeProvider';
+import { Args } from '@massalabs/as-types';
+import { constructor, updateFee } from '../contracts/FeeProvider';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS12B1DwnrebRVv3CcusrmGsSJKqpqQ372mYS4iS4jBm1LrqkxtT3';
@@ -48,15 +44,14 @@ describe('update loan origination Fee', () => {
 });
 
 describe('calculate loan origination Fee', () => {
-//   test('calculate fee', () => {
-//     const amount: u64 = 100000;
-//     const ONE_UNIT: u64 = 10 ** 9;
-//     const originationFee: u64 = u64(
-//       (f64(amount) * f64(ORIGNATION_FEE)) / f64(ONE_UNIT),
-//     );
-
-//     expect(
-//       calculateLoanOriginationFee(new Args().add(amount).serialize()),
-//     ).toStrictEqual(u64ToBytes(originationFee));
-//   });
+  //   test('calculate fee', () => {
+  //     const amount: u64 = 100000;
+  //     const ONE_UNIT: u64 = 10 ** 9;
+  //     const originationFee: u64 = u64(
+  //       (f64(amount) * f64(ORIGNATION_FEE)) / f64(ONE_UNIT),
+  //     );
+  //     expect(
+  //       calculateLoanOriginationFee(new Args().add(amount).serialize()),
+  //     ).toStrictEqual(u64ToBytes(originationFee));
+  //   });
 });
