@@ -3,8 +3,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deploySC, WalletClient, ISCData } from '@massalabs/massa-sc-deployer';
-import { Args, ArrayTypes, MassaUnits, fromMAS } from '@massalabs/massa-web3';
-import { CONNREFUSED } from 'dns';
+import { Args, ArrayTypes, fromMAS } from '@massalabs/massa-web3';
 
 // Load .env file content into process.env
 dotenv.config();
@@ -90,10 +89,25 @@ const __dirname = path.dirname(path.dirname(__filename));
       coins: fromMAS(69), // coins for deployment 63000000
       args: new Args()
         .addString('AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp')
-        .addArray([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))], ArrayTypes.U8), 
+        .addArray([...readFileSync(path.join(__dirname, 'build', 'mToken.wasm'))], ArrayTypes.U8),
     };
     /// In the brackets you can specify the SCs you want to deploy
-    await deploySC(publicApi, deployerAccount, [], BigInt(100), BigInt(3_980_167_295), true);
+    await deploySC(
+      publicApi,
+      deployerAccount,
+      [
+        FeeProviderContract,
+        PriceOracleContract,
+        InterestStrategyContract,
+        AddressProviderContract,
+        DataProviderContract,
+        PoolContract,
+        CoreContract,
+      ],
+      BigInt(100),
+      BigInt(3_980_167_295),
+      true,
+    );
   }
   process.exit(0); // terminate the process after deployment(s) (526.812910514
 })();

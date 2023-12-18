@@ -14,6 +14,7 @@ import {
   setVariableRateSlope1,
   setVariableRateSlope2,
 } from '../contracts/ReserveInterestRateStrategy';
+import { u256 } from 'as-bignum/assembly';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';
@@ -76,12 +77,12 @@ describe('interestRate modifiers', () => {
   });
 });
 
-// const amount = new u256(5000, 0, 1);
+const amount = new u256(5000, 0, 1);
 
 describe('calculate interest rate', () => {
   throws('sending wrong serialized arguments', () => {
     calculateInterestRates(
-      new Args().add(10).add(10).add(10).add(10).serialize(),
+      new Args().add(amount).add(amount).add(amount).add(amount).serialize(),
     );
   });
 });

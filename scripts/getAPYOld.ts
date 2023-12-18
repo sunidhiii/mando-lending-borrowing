@@ -7,16 +7,7 @@ import {
   DefaultProviderUrls,
   Args,
   ArrayTypes,
-  strToBytes,
-  bytesToStr,
   fromMAS,
-  IProvider,
-  ProviderType,
-  bytesToU256,
-  EOperationStatus,
-  Client,
-  bytesToArray,
-  byteToBool,
   bytesToU64,
 } from '@massalabs/massa-web3';
 
