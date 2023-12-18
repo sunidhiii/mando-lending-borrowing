@@ -109,5 +109,5 @@ const __dirname = path.dirname(path.dirname(__filename));
       true,
     );
   }
-  process.exit(0); // terminate the process after deployment(s) (526.812910514
+  process.exit(0); // terminate the process after deployment(s)
 })();
