@@ -3,6 +3,7 @@
   "include": [
     "**/*.ts",
     "./**/*.ts",
+    "./**/*.spec.ts",
     "assembly/*/*.spec.ts"
   ],
   "compilerOptions": {
