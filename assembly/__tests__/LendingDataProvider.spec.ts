@@ -1,6 +1,14 @@
-import { changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
+import {
+  changeCallStack,
+  resetStorage,
+  setDeployContext,
+} from '@massalabs/massa-as-sdk';
 import { Args } from '@massalabs/as-types';
-import { constructor, setPriceOracle, setAddressProvider } from '../contracts/LendingDataProvider';
+import {
+  constructor,
+  setPriceOracle,
+  setAddressProvider,
+} from '../contracts/LendingDataProvider';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS1BQyhbAEJefm5ADSPF35ZeyNxWxvgpHZyFK7CBy1GfzQ1ACuYV';
@@ -11,29 +19,23 @@ const provider = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
 const oracle = 'AS12dZz5n7F41dSAvBQvTMrtFmWbuCkEiWVYZJytdxXfvpswpwB69';
 
 function switchUser(user: string): void {
-    changeCallStack(user + ' , ' + contractAddr);
+  changeCallStack(user + ' , ' + contractAddr);
 }
 
 beforeAll(() => {
-    resetStorage();
-    setDeployContext(user1Address);
-    constructor(
-        new Args()
-            .add(provider)
-            .add(oracle)
-            .serialize(),
-    );
+  resetStorage();
+  setDeployContext(user1Address);
+  constructor(new Args().add(provider).add(oracle).serialize());
 });
 
 describe('update price oracle', () => {
-    switchUser(user2Address);
+  switchUser(user2Address);
 
-    throws('Should fail because the owner is not the tx emitter', () => {
-        setPriceOracle(new Args().add(oracle).serialize())
-    });
+  throws('Should fail because the owner is not the tx emitter', () => {
+    setPriceOracle(new Args().add(oracle).serialize());
+  });
 
-    throws('Should fail because the owner is not the tx emitter', () => {
-        setAddressProvider(new Args().add(provider).serialize())
-    });
+  throws('Should fail because the owner is not the tx emitter', () => {
+    setAddressProvider(new Args().add(provider).serialize());
+  });
 });
-

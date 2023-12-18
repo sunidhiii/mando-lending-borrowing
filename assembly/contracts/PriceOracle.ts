@@ -1,4 +1,11 @@
-import { callerHasWriteAccess, generateEvent, Context, sendMessage, Storage, unsafeRandom } from '@massalabs/massa-as-sdk';
+import {
+  callerHasWriteAccess,
+  generateEvent,
+  Context,
+  sendMessage,
+  Storage,
+  unsafeRandom,
+} from '@massalabs/massa-as-sdk';
 import { Args, u64ToBytes } from '@massalabs/as-types';
 import { currentPeriod } from '@massalabs/massa-as-sdk/assembly/std/context';
 
@@ -78,7 +85,9 @@ export function setPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const newPrice = generateRandomIncrease(currentPrice);
 
   Storage.set(key, newPrice.toString());
-  generateEvent(`🎉 Price updated for reserve ${reserve}: ${newPrice.toString()}`);
+  generateEvent(
+    `🎉 Price updated for reserve ${reserve}: ${newPrice.toString()}`,
+  );
 
   sendFuturOperation();
 
@@ -86,7 +95,6 @@ export function setPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 }
 
 export function getPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-
   const args = new Args(binaryArgs);
   const reserve = args
     .nextString()

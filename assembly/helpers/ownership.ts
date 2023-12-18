@@ -1,8 +1,8 @@
 import {
-    Context,
-    generateEvent,
-    Storage,
-    createEvent,
+  Context,
+  generateEvent,
+  Storage,
+  createEvent,
 } from '@massalabs/massa-as-sdk';
 import { Args, boolToByte, stringToBytes } from '@massalabs/as-types';
 
@@ -17,17 +17,17 @@ export const CHANGE_OWNER_EVENT_NAME = 'CHANGE_OWNER';
  * - the address of the new contract owner (address).
  */
 export function setOwner(binaryArgs: StaticArray<u8>): void {
-    const args = new Args(binaryArgs);
-    const newOwner = args
-        .nextString()
-        .expect('newOwnerAddress argument is missing or invalid');
+  const args = new Args(binaryArgs);
+  const newOwner = args
+    .nextString()
+    .expect('newOwnerAddress argument is missing or invalid');
 
-    if (Storage.has(OWNER_KEY)) {
-        onlyOwner();
-    }
-    Storage.set(OWNER_KEY, newOwner);
+  if (Storage.has(OWNER_KEY)) {
+    onlyOwner();
+  }
+  Storage.set(OWNER_KEY, newOwner);
 
-    generateEvent(createEvent(CHANGE_OWNER_EVENT_NAME, [newOwner]));
+  generateEvent(createEvent(CHANGE_OWNER_EVENT_NAME, [newOwner]));
 }
 
 /**
@@ -36,11 +36,11 @@ export function setOwner(binaryArgs: StaticArray<u8>): void {
  * @returns owner address in bytes
  */
 export function ownerAddress(_: StaticArray<u8>): StaticArray<u8> {
-    if (!Storage.has(OWNER_KEY)) {
-        return [];
-    }
+  if (!Storage.has(OWNER_KEY)) {
+    return [];
+  }
 
-    return stringToBytes(Storage.get(OWNER_KEY));
+  return stringToBytes(Storage.get(OWNER_KEY));
 }
 
 /**
@@ -49,20 +49,20 @@ export function ownerAddress(_: StaticArray<u8>): StaticArray<u8> {
  * @param address -
  */
 export function isOwner(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-    if (!Storage.has(OWNER_KEY)) {
-        return [0]; // false
-    }
-    const address = new Args(binaryArgs)
-        .nextString()
-        .expect('address argument is missing or invalid');
-    return boolToByte(_isOwner(address));
+  if (!Storage.has(OWNER_KEY)) {
+    return [0]; // false
+  }
+  const address = new Args(binaryArgs)
+    .nextString()
+    .expect('address argument is missing or invalid');
+  return boolToByte(_isOwner(address));
 }
 
 export function _isOwner(account: string): bool {
-    if (!Storage.has(OWNER_KEY)) {
-        return false;
-    }
-    return account === Storage.get(OWNER_KEY);
+  if (!Storage.has(OWNER_KEY)) {
+    return false;
+  }
+  return account === Storage.get(OWNER_KEY);
 }
 
 /**
@@ -71,7 +71,7 @@ export function _isOwner(account: string): bool {
  * @param address -
  */
 export function onlyOwner(): void {
-    assert(Storage.has(OWNER_KEY), 'Owner is not set');
-    const owner = Storage.get(OWNER_KEY);
-    assert(Context.caller().toString() === owner, 'Caller is not the owner');
+  assert(Storage.has(OWNER_KEY), 'Owner is not set');
+  const owner = Storage.get(OWNER_KEY);
+  assert(Context.caller().toString() === owner, 'Caller is not the owner');
 }
