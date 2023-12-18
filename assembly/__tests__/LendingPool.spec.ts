@@ -1,6 +1,6 @@
 import { Address, changeCallStack, resetStorage, setDeployContext } from '@massalabs/massa-as-sdk';
 import { Args, stringToBytes, u8toByte, bytesToU256, u256ToBytes } from '@massalabs/as-types';
-import { deposit, constructor, borrow } from '../contracts/LendingPool';
+import { deposit, constructor, borrow, repay } from '../contracts/LendingPool';
 import { u256 } from 'as-bignum/assembly';
 
 import Reserve from '../helpers/Reserve';
@@ -42,7 +42,6 @@ describe('deposit tokens', () => {
 
 });
 
-
 describe('borrow tokens', () => {
 
     throws('invaid interest rate mode selected', () => {
@@ -50,7 +49,15 @@ describe('borrow tokens', () => {
     });
 
     throws('not enough liquidity available in this reserve', () => {
-        borrow(new Args().add(reserve).add(amount).add(u64.MAX_VALUE).serialize());
+        borrow(new Args().add(reserve).add(u64.MAX_VALUE).add(1).serialize());
+    });
+
+});
+
+describe('repay tokens', () => {
+
+    throws('the user doesnt have any borrow pending', () => {
+        repay(new Args().add(reserve).add(amount).serialize());
     });
 
 });

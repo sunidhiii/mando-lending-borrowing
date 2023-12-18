@@ -88,7 +88,7 @@ describe('mint mToken to U3', () => {
     test('should mint mToken', () => {
         mockAdminContext(true);
 
-        mintOnDeposit(new Args().add(user3Address).add(mintOnDepositAmount).serialize());
+        mint(new Args().add(user3Address).add(mintAmount).serialize());
         // check balance of U2
         expect(principalBalanceOf(new Args().add(user3Address).serialize())).toStrictEqual(
             u256ToBytes(mintAmount),
