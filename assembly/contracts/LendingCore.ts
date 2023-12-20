@@ -656,7 +656,7 @@ function getUserUnderlyingAssetBalance(reserve: string, user: string): u64 {
     .unwrap();
 
   const mTokenAddr = new IERC20(new Address(reserveArgs.mTokenAddress));
-  return u64(mTokenAddr.balanceOf(new Address(user)));
+  return u64.parse(mTokenAddr.balanceOf(new Address(user)).toString());
 }
 
 /**
