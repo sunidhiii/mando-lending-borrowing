@@ -4,6 +4,7 @@ import {
   bytesToU64,
   Args,
   byteToU8,
+  bytesToU256,
 } from '@massalabs/as-types';
 import { Address, call } from '@massalabs/massa-as-sdk';
 import { u256 } from 'as-bignum/assembly';
@@ -79,8 +80,8 @@ export class TokenWrapper {
    *
    * @returns number of minted tokens.
    */
-  totalSupply(): u64 {
-    return bytesToU64(call(this._origin, 'totalSupply', NoArg, 0));
+  totalSupply(): u256 {
+    return bytesToU256(call(this._origin, 'totalSupply', NoArg, 0));
   }
 
   /**
@@ -88,8 +89,8 @@ export class TokenWrapper {
    *
    * @param account -
    */
-  balanceOf(account: Address): u64 {
-    return bytesToU64(
+  balanceOf(account: Address): u256 {
+    return bytesToU256(
       call(this._origin, 'balanceOf', new Args().add(account), 0),
     );
   }
@@ -100,7 +101,7 @@ export class TokenWrapper {
    * @param toAccount -
    * @param nbTokens -
    */
-  transfer(toAccount: Address, nbTokens: u64): void {
+  transfer(toAccount: Address, nbTokens: u256): void {
     call(this._origin, 'transfer', new Args().add(toAccount).add(nbTokens), 0);
   }
 
@@ -110,8 +111,8 @@ export class TokenWrapper {
    * @param ownerAccount -
    * @param spenderAccount -
    */
-  allowance(ownerAccount: Address, spenderAccount: Address): u64 {
-    return bytesToU64(
+  allowance(ownerAccount: Address, spenderAccount: Address): u256 {
+    return bytesToU256(
       call(
         this._origin,
         'allowance',
@@ -130,7 +131,7 @@ export class TokenWrapper {
    * @param spenderAccount -
    * @param nbTokens -
    */
-  increaseAllowance(spenderAccount: Address, nbTokens: u64): void {
+  increaseAllowance(spenderAccount: Address, nbTokens: u256): void {
     call(
       this._origin,
       'increaseAllowance',
@@ -148,7 +149,7 @@ export class TokenWrapper {
    * @param spenderAccount -
    * @param nbTokens -
    */
-  decreaseAllowance(spenderAccount: Address, nbTokens: u64): void {
+  decreaseAllowance(spenderAccount: Address, nbTokens: u256): void {
     call(
       this._origin,
       'decreaseAllowance',
@@ -173,7 +174,7 @@ export class TokenWrapper {
   transferFrom(
     ownerAccount: Address,
     recipientAccount: Address,
-    nbTokens: u64,
+    nbTokens: u256,
   ): void {
     call(
       this._origin,
@@ -193,7 +194,7 @@ export class TokenWrapper {
     call(this._origin, 'mint', new Args().add(toAccount).add(nbTokens), 0);
   }
 
-  mintOnDeposit(toAccount: Address, nbTokens: u64): void {
+  mintOnDeposit(toAccount: Address, nbTokens: u256): void {
     call(
       this._origin,
       'mintOnDeposit',
@@ -207,7 +208,7 @@ export class TokenWrapper {
    *
    * @param nbTokens -
    */
-  burn(nbTokens: u64): void {
+  burn(nbTokens: u256): void {
     call(this._origin, 'burn', new Args().add(nbTokens), 0);
   }
 }

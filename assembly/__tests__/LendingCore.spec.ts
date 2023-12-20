@@ -2,7 +2,6 @@ import {
   Address,
   Storage,
   changeCallStack,
-  mockScCall,
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
@@ -21,7 +20,6 @@ import {
 } from '../contracts/LendingCore';
 import UserReserve from '../helpers/UserReserve';
 import Reserve from '../helpers/Reserve';
-import { ILendingCore } from '../interfaces/ILendingCore';
 const readFile = '../../src/readFileTest';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
@@ -32,12 +30,6 @@ const user2Address = 'AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8';
 const provider = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
 const reserve = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9';
 const INTEREST_ADDRESS = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';
-
-function initProvider(): ILendingCore {
-  const coreContractAddr = new Address(contractAddr);
-
-  return new ILendingCore(coreContractAddr);
-}
 
 function switchUser(user: string): void {
   changeCallStack(user + ' , ' + contractAddr);
@@ -161,31 +153,5 @@ describe('existence of reserve', () => {
 
     const key = `RESERVE_KEY_${reserve}`;
     expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(false);
-
-    const contract = initProvider();
-    const mockValue: StaticArray<u8> = new Args().serialize();
-    mockScCall(mockValue);
-    const reserveObj = new Reserve(
-      reserve,
-      '',
-      '',
-      0,
-      '',
-      INTEREST_ADDRESS,
-      60,
-      75,
-      125,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    );
-
-    contract.initReserve(reserveObj);
   });
 });

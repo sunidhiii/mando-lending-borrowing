@@ -282,7 +282,7 @@ export function transferToReserve(binaryArgs: StaticArray<u8>): void {
     new IERC20(new Address(reserve)).transferFrom(
       new Address(user),
       Context.callee(),
-      amount,
+      u256.from(amount),
     );
   }
 }
@@ -309,7 +309,7 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
     new IERC20(new Address(reserve)).transferFrom(
       new Address(user),
       new Address(owner),
-      amount,
+      u256.from(amount),
     );
   }
 }
@@ -326,7 +326,10 @@ export function transferToUser(binaryArgs: StaticArray<u8>): void {
   if (reserve == MAS) {
     transferCoins(new Address(user), amount);
   } else {
-    new IERC20(new Address(reserve)).transfer(new Address(user), amount);
+    new IERC20(new Address(reserve)).transfer(
+      new Address(user),
+      u256.from(amount),
+    );
   }
 }
 
@@ -451,7 +454,7 @@ export function getReserveAvailableLiquidity(
     bal = balance();
   } else {
     const amount = new IERC20(new Address(reserve)).balanceOf(Context.callee());
-    bal = amount;
+    bal = u64.parse(amount.toString());
   }
 
   return u64ToBytes(bal);
@@ -653,7 +656,7 @@ function getUserUnderlyingAssetBalance(reserve: string, user: string): u64 {
     .unwrap();
 
   const mTokenAddr = new IERC20(new Address(reserveArgs.mTokenAddress));
-  return mTokenAddr.balanceOf(new Address(user));
+  return u64(mTokenAddr.balanceOf(new Address(user)));
 }
 
 /**

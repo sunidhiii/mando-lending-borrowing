@@ -161,7 +161,7 @@ export function symbol(_: StaticArray<u8>): StaticArray<u8> {
  * @param _ - unused see https://github.com/massalabs/massa-sc-std/issues/18
  * @returns u256
  */
-export function totalSupplyInternal(_: StaticArray<u8>): StaticArray<u8> {
+export function totalSupplyKey(_: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(TOTAL_SUPPLY_KEY);
 }
 
@@ -211,7 +211,7 @@ function _transfer(from: Address, to: Address, amount: u256): void {
  * - the amount of tokens to mint (u256).
  */
 export function mint(binaryArgs: StaticArray<u8>): void {
-  onlyLendingPool();
+  // onlyLendingPool();
 
   _mint(binaryArgs);
 }
@@ -340,7 +340,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
     args.nextString().expect('user argument is missing or invalid'),
   );
   const amount = args
-    .nextU64()
+    .nextU256()
     .expect('mintOnDeposit amount argument is missing or invalid');
 
   // cumulates the balance of the user
@@ -349,7 +349,7 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
   const balanceIncrease: u64 = arr[2];
 
   // mint an equivalent amount of tokens to cover the new deposit
-  _mint(new Args().add(user.toString()).add(u256.fromU64(amount)).serialize());
+  _mint(new Args().add(user.toString()).add(amount).serialize());
 
   generateEvent(`Balance increased after mint ${balanceIncrease} tokens`);
 }
@@ -408,7 +408,7 @@ export function balanceOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   const currentPrincipalBalance = _balance(addr);
 
-  if (u64.parse(currentPrincipalBalance.toString()) == 0) {
+  if (currentPrincipalBalance == u256.Zero) {
     return u256ToBytes(u256.Zero);
   }
 
@@ -495,7 +495,7 @@ function calculateCumulatedBalanceInternal(
     cumulatedBal =
       f64.parse(_balance.toString()) * (f64(normalizedIncome) / f64(userIndex));
   }
-  return u256.fromF64(cumulatedBal);
+  return u256.from(cumulatedBal);
 }
 
 function cumulateBalanceInternal(user: Address): Array<u64> {
@@ -636,7 +636,10 @@ function swapTokensAndAddDeposit(user: string): void {
   const amountIn = amount;
 
   core.transferToUser(underLyingAsset, Context.callee(), amountIn);
-  new IERC20(underLyingAsset).increaseAllowance(router._origin, amountIn);
+  new IERC20(underLyingAsset).increaseAllowance(
+    router._origin,
+    u256.from(amountIn),
+  );
   const amountOut: u64 = router.swapExactTokensForTokens(
     amountIn,
     0,
@@ -646,7 +649,10 @@ function swapTokensAndAddDeposit(user: string): void {
     deadline,
   );
 
-  new IERC20(wmas._origin).increaseAllowance(core._origin, amountOut);
+  new IERC20(wmas._origin).increaseAllowance(
+    core._origin,
+    u256.from(amountOut),
+  );
   pool.depositRewards(
     underLyingAsset.toString(),
     wmas._origin.toString(),

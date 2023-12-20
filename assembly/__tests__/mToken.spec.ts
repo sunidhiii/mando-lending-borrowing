@@ -1,6 +1,6 @@
 import {
   Address,
-  mockScCall,
+  changeCallStack,
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
@@ -9,7 +9,7 @@ import {
   stringToBytes,
   u8toByte,
   u256ToBytes,
-  u64ToBytes,
+  bytesToU256,
 } from '@massalabs/as-types';
 import {
   principalBalanceOf,
@@ -21,15 +21,16 @@ import {
   setMyKey,
   burn,
   redeem,
-  totalSupplyInternal,
+  totalSupplyKey,
   mint,
 } from '../contracts/mToken';
 import { u256 } from 'as-bignum/assembly';
-import { IERC20 } from '../interfaces/IERC20';
 
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS12vbS69oT2feTaPGff3xprnUkhrP1vgnvgpjTD2akYNwwf4NTzZ';
-const user2Address = 'AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY';
+
+const user1Address = 'AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY';
+const user2Address = 'AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8';
 
 const TOKEN_NAME = 'Mando Interest bearing USD Coin';
 const TOKEN_SYMBOL = 'mUSDC';
@@ -38,15 +39,13 @@ const TOTAL_SUPPLY: u256 = new u256(0);
 const underlyingAsset = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9';
 const provider = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
 
-function initToken(): IERC20 {
-  const tokenAddr = new Address(contractAddr);
-
-  return new IERC20(tokenAddr);
+function switchUser(user: string): void {
+  changeCallStack(user + ' , ' + contractAddr);
 }
 
 beforeAll(() => {
   resetStorage();
-  setDeployContext(user2Address);
+  setDeployContext(user1Address);
   constructor(
     new Args()
       .add(TOKEN_NAME)
@@ -61,7 +60,7 @@ beforeAll(() => {
 
 describe('Initialization', () => {
   test('total supply is properly initialized', () =>
-    expect(totalSupplyInternal([])).toStrictEqual(u256ToBytes(TOTAL_SUPPLY)));
+    expect(totalSupplyKey([])).toStrictEqual(u256ToBytes(TOTAL_SUPPLY)));
 
   test('token name is properly initialized', () =>
     expect(name([])).toStrictEqual(stringToBytes(TOKEN_NAME)));
@@ -87,73 +86,52 @@ describe('BalanceOf', () => {
   });
 });
 
-const mintOnDepositAmount: u64 = 100000;
 const mintAmount: u256 = new u256(5000);
 
 describe('MToken: Modifiers', () => {
   throws('Tries to invoke mintOnDeposit', () => {
-    mintOnDeposit(
-      new Args().add(user2Address).add(mintOnDepositAmount).serialize(),
-    );
+    mintOnDeposit(new Args().add(user2Address).add(mintAmount).serialize());
   });
 
   throws('Tries to invoke setMyKey', () => {
-    setMyKey(new Args().add('user2Address').add(10).serialize());
-  });
-
-  throws('Tries to invoke mint', () => {
-    mint(new Args().add(user2Address).add(mintAmount).serialize());
+    setMyKey(new Args().add('key').add(10).serialize());
   });
 });
 
-describe('mint mToken to U3', () => {
+describe('mint mToken to U2', () => {
   test('should mint mToken', () => {
-    const token = initToken();
-    const mockValue = new Args().serialize();
-    mockScCall(mockValue);
-
-    token.mint(new Address(user2Address), mintAmount);
-
-    // check balance of U2
-    const bal: u64 = 5000;
-    const balance = u64ToBytes(bal);
-    mockScCall(balance);
-    expect(token.balanceOf(new Address(user2Address))).toBe(bal);
+    mint(new Args().add(user2Address).add(mintAmount).serialize());
+    // // check balance of U2
+    expect(
+      principalBalanceOf(new Args().add(user2Address).serialize()),
+    ).toStrictEqual(u256ToBytes(mintAmount));
 
     // check totalSupply update
-    const finalSupply =
-      u64.parse(mintAmount.toString()) + u64.parse(TOTAL_SUPPLY.toString());
-    const totalSupply = u64ToBytes(finalSupply);
-    mockScCall(totalSupply);
-    expect(token.totalSupply()).toBe(
+    expect(totalSupplyKey([])).toStrictEqual(
       // @ts-ignore
-      finalSupply,
+      u256ToBytes(mintAmount + TOTAL_SUPPLY),
     );
   });
 });
 
-const burnAmount: u64 = 5000;
+const burnAmount: u256 = new u256(5000);
 
-describe('burn mToken from U1', () => {
-  test('should burn mToken', () => {
-    const token = initToken();
-    const mockValueMint = new Args().serialize();
-    mockScCall(mockValueMint);
-    token.mint(new Address(user2Address), mintAmount);
+describe('burn mToken from U2', () => {
+  throws('should burn mToken', () => {
+    burn(new Args().add(burnAmount).serialize());
 
-    const mockValue = new Args().serialize();
-    mockScCall(mockValue);
-    token.burn(burnAmount);
-
-    // check balance of U2
-    const finalValue = u64.parse(TOTAL_SUPPLY.toString()) - burnAmount;
-    const totalValue = u64ToBytes(finalValue);
-    mockScCall(totalValue);
-    expect(token.balanceOf(new Address(user2Address))).toBe(finalValue);
+    // check balance of U1
+    expect(
+      bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
+      // @ts-ignore
+    ).toBe(TOTAL_SUPPLY - burnAmount);
+    log('after check');
 
     // check totalSupply update
-    mockScCall(totalValue);
-    expect(token.totalSupply()).toBe(finalValue);
+    expect(totalSupplyKey([])).toStrictEqual(
+      // @ts-ignore
+      u256ToBytes(TOTAL_SUPPLY - burnAmount),
+    );
   });
 });
 

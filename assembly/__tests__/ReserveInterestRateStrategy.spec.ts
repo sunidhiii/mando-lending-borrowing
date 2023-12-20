@@ -1,5 +1,6 @@
 import {
   changeCallStack,
+  mockAdminContext,
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
@@ -19,8 +20,8 @@ import { u256 } from 'as-bignum/assembly';
 // address of the contract set in vm-mock. must match with contractAddr of @massalabs/massa-as-sdk/vm-mock/vm.js
 const contractAddr = 'AS1jZ41Rc4mNNZdjxgeNCS8vgG1jTLsu1n2J7cexLHZ88D9i4vzS';
 
-const user1Address = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9';
-const user2Address = 'AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY';
+const user1Address = 'AU1cdD4zohQR5ZBd6oprfwaqkeAJXCV9b8TcpevDif7RdmfKMbWY';
+const user2Address = 'AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8';
 
 const underlyingAsset = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9';
 
@@ -29,7 +30,7 @@ function switchUser(user: string): void {
 }
 
 beforeAll(() => {
-  const amount: u64 = 1000000;
+  const amount: u64 = 100;
 
   resetStorage();
   setDeployContext(user1Address);

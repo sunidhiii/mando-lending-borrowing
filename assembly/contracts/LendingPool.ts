@@ -62,7 +62,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   const mToken = new IERC20(
     new Address(core.getReserve(reserve).mTokenAddress),
   );
-  const isFirstDeposit: bool = mToken.balanceOf(Context.caller()) == 0;
+  const isFirstDeposit: bool = mToken.balanceOf(Context.caller()) == u256.Zero;
 
   // update states for deposit
   core.updateStateOnDeposit(
@@ -72,7 +72,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
     isFirstDeposit,
   );
 
-  mToken.mintOnDeposit(Context.caller(), amount);
+  mToken.mintOnDeposit(Context.caller(), u256.from(amount));
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
 
   generateEvent(
@@ -303,7 +303,7 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
 
   const rewardMToken = new Address(core.getReserve(reserve).mTokenAddress);
   const isFirstDeposit: bool =
-    new IERC20(rewardMToken).balanceOf(Context.caller()) == 0;
+    new IERC20(rewardMToken).balanceOf(Context.caller()) == u256.Zero;
 
   core.updateStateOnDeposit(reserve, user, amount, isFirstDeposit);
 

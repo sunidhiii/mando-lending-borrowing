@@ -1,14 +1,13 @@
-import { ILendingAddressProvider } from '../interfaces/ILendingAddressProvider';
 import {
   Address,
   changeCallStack,
-  mockScCall,
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
 import { Args } from '@massalabs/as-types';
 import {
   constructor,
+  setConfigurator,
   setCore,
   setDataProvider,
   setLendingPool,
@@ -21,12 +20,6 @@ const user2Address = 'AU12CB1BBEUkLQDZqKr1XdnxdtPECUJ6rTcCd17NGAM5qBvUmdun8';
 
 const core = 'AS12nG4GWCz4KoxqF8PaJ68TA9zXG91Cb7x4C8B7n7Wxvh3DRNAW9';
 
-function initProvider(): ILendingAddressProvider {
-  const providerContractAddr = new Address(contractAddr);
-
-  return new ILendingAddressProvider(providerContractAddr);
-}
-
 function switchUser(user: string): void {
   changeCallStack(user + ' , ' + contractAddr);
 }
@@ -34,21 +27,28 @@ function switchUser(user: string): void {
 beforeAll(() => {
   resetStorage();
   setDeployContext(user1Address);
+  constructor(new Args().serialize());
 });
 
 describe('update smart contract addresses ', () => {
   test('set configurator', () => {
-    const contract = initProvider();
-    const mockValue: StaticArray<u8> = new Args().serialize();
-    mockScCall(mockValue);
+    setConfigurator(new Args().add(core).serialize());
+  });
 
-    contract.setConfigurator(core);
+  test('set configurator', () => {
+    setCore(new Args().add(core).serialize());
+  });
+
+  test('set configurator', () => {
+    setLendingPool(new Args().add(core).serialize());
+  });
+
+  test('set configurator', () => {
+    setDataProvider(new Args().add(core).serialize());
   });
 });
 
 describe('update smart contract addresses fail', () => {
-  constructor(new Args().serialize());
-
   switchUser(user2Address);
 
   throws('Should fail because the owner is not the tx emitter', () => {
@@ -61,5 +61,9 @@ describe('update smart contract addresses fail', () => {
 
   throws('Should fail because the owner is not the tx emitter', () => {
     setDataProvider(new Args().add(core).serialize());
+  });
+
+  throws('Should fail because the owner is not the tx emitter', () => {
+    setConfigurator(new Args().add(core).serialize());
   });
 });
