@@ -1,6 +1,5 @@
 import {
   changeCallStack,
-  mockAdminContext,
   resetStorage,
   setDeployContext,
 } from '@massalabs/massa-as-sdk';
