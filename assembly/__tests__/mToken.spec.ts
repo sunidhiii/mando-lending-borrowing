@@ -9,7 +9,6 @@ import {
   stringToBytes,
   u8toByte,
   u256ToBytes,
-  bytesToU256,
 } from '@massalabs/as-types';
 import {
   principalBalanceOf,
@@ -38,10 +37,6 @@ const DECIMALS: u8 = 9;
 const TOTAL_SUPPLY: u256 = new u256(0);
 const underlyingAsset = 'AS1fznHuwLZSbADxaRY1HNfA7hgqHQrNkf2F12vZP2xrwNzAW7W9';
 const provider = 'AS1c9FRU4VZufLdaLSLJiDwA8izqPecyNKwHWCENGZPNh9ixd3jp';
-
-function switchUser(user: string): void {
-  changeCallStack(user + ' , ' + contractAddr);
-}
 
 beforeAll(() => {
   resetStorage();
@@ -116,22 +111,9 @@ describe('mint mToken to U2', () => {
 
 const burnAmount: u256 = new u256(5000);
 
-describe('burn mToken from U2', () => {
-  throws('should burn mToken', () => {
+describe('burn mToken from U1', () => {
+  throws('fails to burn because no balance', () => {
     burn(new Args().add(burnAmount).serialize());
-
-    // check balance of U1
-    expect(
-      bytesToU256(principalBalanceOf(new Args().add(user1Address).serialize())),
-      // @ts-ignore
-    ).toBe(TOTAL_SUPPLY - burnAmount);
-    log('after check');
-
-    // check totalSupply update
-    expect(totalSupplyKey([])).toStrictEqual(
-      // @ts-ignore
-      u256ToBytes(TOTAL_SUPPLY - burnAmount),
-    );
   });
 });
 
