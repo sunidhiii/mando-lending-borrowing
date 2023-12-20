@@ -211,7 +211,6 @@ function _transfer(from: Address, to: Address, amount: u256): void {
  * - the amount of tokens to mint (u256).
  */
 export function mint(binaryArgs: StaticArray<u8>): void {
-  // onlyLendingPool();
 
   _mint(binaryArgs);
 }
