@@ -1,5 +1,6 @@
 import {
   Args,
+  bytesToString,
   bytesToU64,
   stringToBytes,
   u64ToBytes,
@@ -26,7 +27,7 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     .nextString()
     .expect('Provider Address argument is missing or invalid');
 
-  Storage.set('ADDRESS_PROVIDER_ADDR', provider);
+  Storage.set(stringToBytes('ADDRESS_PROVIDER_ADDR'), stringToBytes(provider));
 
   Storage.set(stringToBytes('ORIGNATION_FEE'), u64ToBytes(ORIGNATION_FEE));
   generateEvent(`Fee Provider called with origination fee.`);
@@ -36,13 +37,10 @@ export function updateFee(binaryArgs: StaticArray<u8>): void {
   onlyOwner();
 
   const args = new Args(binaryArgs);
-  const fee = args.nextU64().unwrap();
+  const fee = args.nextU64().expect('fee argument is missing or invalid');
 
   // Then we create our key/value pair and store it.
   Storage.set(stringToBytes('ORIGNATION_FEE'), u64ToBytes(fee));
-
-  // Here we generate an event that indicates the changes that are made.
-  generateEvent(`Updated origination fee to ${fee}`);
 }
 
 export function getLoanOriginationFeePercentage(): StaticArray<u8> {
@@ -61,7 +59,9 @@ export function calculateLoanOriginationFee(
 }
 
 function onlyOwner(): void {
-  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const addressProvider = bytesToString(
+    Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR')),
+  );
   const owner = new ILendingAddressProvider(
     new Address(addressProvider),
   ).getOwner();

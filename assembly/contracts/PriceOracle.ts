@@ -46,10 +46,6 @@ function sendFuturOperation(): void {
     coins,
     new Args().serialize(),
   );
-
-  generateEvent(
-    `next update planned on period ${validityStartPeriod.toString()} thread: ${validityStartThread.toString()}`,
-  );
 }
 
 // Generate a random price change of +/- 5%.
@@ -75,7 +71,6 @@ export function setPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   let currentPrice: u64;
   if (!Storage.has(key)) {
     // Set initial autonomousprice price
-    generateEvent(`Set initial price to ${INIT_PRICE.toString()}`);
     Storage.set(key, INIT_PRICE.toString());
     currentPrice = INIT_PRICE;
   } else {
@@ -105,7 +100,7 @@ export function getPrice(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   assert(Storage.has(key), 'Price is not set');
 
   const price = u64.parse(Storage.get(key));
-  generateEvent(`current price for reserve ${reserve} is ${price.toString()}`);
+  generateEvent(`current price for reserve ${reserve} is ${price}`);
 
   return u64ToBytes(price);
 }

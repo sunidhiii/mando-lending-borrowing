@@ -52,61 +52,71 @@ export default class Reserve implements Serializable {
     if (addr.isErr()) {
       return new Result(0, "Can't deserialize the addr");
     }
-    this.addr = addr.unwrap();
+    this.addr = addr.expect('address argument is missing or invalid');
 
     const name = args.nextString();
     if (name.isErr()) {
       return new Result(0, "Can't deserialize the name");
     }
-    this.name = name.unwrap();
+    this.name = name.expect('name argument is missing or invalid');
 
     const symbol = args.nextString();
     if (symbol.isErr()) {
       return new Result(0, "Can't deserialize the symbol");
     }
-    this.symbol = symbol.unwrap();
+    this.symbol = symbol.expect('symbol argument is missing or invalid');
 
     const decimals = args.nextU8();
     if (decimals.isErr()) {
       return new Result(0, "Can't deserialize the decimals");
     }
-    this.decimals = decimals.unwrap();
+    this.decimals = decimals.expect('decimals argument is missing or invalid');
 
     const mTokenAddress = args.nextString();
     if (mTokenAddress.isErr()) {
       return new Result(0, "Can't deserialize the mTokenAddress");
     }
-    this.mTokenAddress = mTokenAddress.unwrap();
+    this.mTokenAddress = mTokenAddress.expect(
+      'mTokenAddress argument is missing or invalid',
+    );
 
     const interestCalcAddress = args.nextString();
     if (interestCalcAddress.isErr()) {
       return new Result(0, "Can't deserialize the interestCalcAddress");
     }
-    this.interestCalcAddress = interestCalcAddress.unwrap();
+    this.interestCalcAddress = interestCalcAddress.expect(
+      'interestCalcAddress argument is missing or invalid',
+    );
 
     const baseLTV = args.nextU8();
     if (baseLTV.isErr()) {
       return new Result(0, "Can't deserialize the baseLTV");
     }
-    this.baseLTV = baseLTV.unwrap();
+    this.baseLTV = baseLTV.expect('baseLTV argument is missing or invalid');
 
     const LiquidationThreshold = args.nextU8();
     if (LiquidationThreshold.isErr()) {
       return new Result(0, "Can't deserialize the LiquidationThreshold");
     }
-    this.LiquidationThreshold = LiquidationThreshold.unwrap();
+    this.LiquidationThreshold = LiquidationThreshold.expect(
+      'LiquidationThreshold argument is missing or invalid',
+    );
 
     const LiquidationBonus = args.nextU8();
     if (LiquidationBonus.isErr()) {
       return new Result(0, "Can't deserialize the LiquidationBonus");
     }
-    this.LiquidationBonus = LiquidationBonus.unwrap();
+    this.LiquidationBonus = LiquidationBonus.expect(
+      'LiquidationBonus argument is missing or invalid',
+    );
 
     const lastUpdateTimestamp = args.nextU64();
     if (lastUpdateTimestamp.isErr()) {
       return new Result(0, "Can't deserialize the lastUpdateTimestamp");
     }
-    this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
+    this.lastUpdateTimestamp = lastUpdateTimestamp.expect(
+      'lastUpdateTimestamp argument is missing or invalid',
+    );
 
     const lastLiquidityCumulativeIndex = args.nextU64();
     if (lastLiquidityCumulativeIndex.isErr()) {
@@ -115,37 +125,49 @@ export default class Reserve implements Serializable {
         "Can't deserialize the lastLiquidityCumulativeIndex",
       );
     }
-    this.lastLiquidityCumulativeIndex = lastLiquidityCumulativeIndex.unwrap();
+    this.lastLiquidityCumulativeIndex = lastLiquidityCumulativeIndex.expect(
+      'lastLiquidityCumulativeIndex argument is missing or invalid',
+    );
 
     const currentLiquidityRate = args.nextU64();
     if (currentLiquidityRate.isErr()) {
       return new Result(0, "Can't deserialize the currentLiquidityRate");
     }
-    this.currentLiquidityRate = currentLiquidityRate.unwrap();
+    this.currentLiquidityRate = currentLiquidityRate.expect(
+      'currentLiquidityRate argument is missing or invalid',
+    );
 
     const totalBorrowsStable = args.nextU64();
     if (totalBorrowsStable.isErr()) {
       return new Result(0, "Can't deserialize the totalBorrowsStable");
     }
-    this.totalBorrowsStable = totalBorrowsStable.unwrap();
+    this.totalBorrowsStable = totalBorrowsStable.expect(
+      'totalBorrowsStable argument is missing or invalid',
+    );
 
     const totalBorrowsVariable = args.nextU64();
     if (totalBorrowsVariable.isErr()) {
       return new Result(0, "Can't deserialize the totalBorrowsVariable");
     }
-    this.totalBorrowsVariable = totalBorrowsVariable.unwrap();
+    this.totalBorrowsVariable = totalBorrowsVariable.expect(
+      'totalBorrowsVariable argument is missing or invalid',
+    );
 
     const currentVariableBorrowRate = args.nextU64();
     if (currentVariableBorrowRate.isErr()) {
       return new Result(0, "Can't deserialize the currentVariableBorrowRate");
     }
-    this.currentVariableBorrowRate = currentVariableBorrowRate.unwrap();
+    this.currentVariableBorrowRate = currentVariableBorrowRate.expect(
+      'currentVariableBorrowRate argument is missing or invalid',
+    );
 
     const currentStableBorrowRate = args.nextU64();
     if (currentStableBorrowRate.isErr()) {
       return new Result(0, "Can't deserialize the currentStableBorrowRate");
     }
-    this.currentStableBorrowRate = currentStableBorrowRate.unwrap();
+    this.currentStableBorrowRate = currentStableBorrowRate.expect(
+      'currentStableBorrowRate argument is missing or invalid',
+    );
 
     const currentAverageStableBorrowRate = args.nextU64();
     if (currentAverageStableBorrowRate.isErr()) {
@@ -154,8 +176,9 @@ export default class Reserve implements Serializable {
         "Can't deserialize the currentAverageStableBorrowRate",
       );
     }
-    this.currentAverageStableBorrowRate =
-      currentAverageStableBorrowRate.unwrap();
+    this.currentAverageStableBorrowRate = currentAverageStableBorrowRate.expect(
+      'currentAverageStableBorrowRate argument is missing or invalid',
+    );
 
     const lastVariableBorrowCumulativeIndex = args.nextU64();
     if (lastVariableBorrowCumulativeIndex.isErr()) {
@@ -165,7 +188,9 @@ export default class Reserve implements Serializable {
       );
     }
     this.lastVariableBorrowCumulativeIndex =
-      lastVariableBorrowCumulativeIndex.unwrap();
+      lastVariableBorrowCumulativeIndex.expect(
+        'lastVariableBorrowCumulativeIndex argument is missing or invalid',
+      );
 
     return new Result(args.offset);
   }

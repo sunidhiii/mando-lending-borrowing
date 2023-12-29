@@ -10,6 +10,7 @@ import {
 } from '@massalabs/massa-as-sdk';
 import {
   Args,
+  bytesToString,
   bytesToU32,
   bytesToU64,
   stringToBytes,
@@ -55,9 +56,11 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     .nextString()
     .expect('Provider Address argument is missing or invalid');
 
-  Storage.set('ADDRESS_PROVIDER_ADDR', provider);
+  Storage.set(stringToBytes('ADDRESS_PROVIDER_ADDR'), stringToBytes(provider));
 
-  let mTokenContractCode = args.nextFixedSizeArray<u8>().unwrap();
+  let mTokenContractCode = args
+    .nextFixedSizeArray<u8>()
+    .expect('mTokenContractCode argument is missing or invalid');
   Storage.set(
     stringToBytes('mToken_contract_code'),
     StaticArray.fromArray(mTokenContractCode),
@@ -73,12 +76,16 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const args: Args = new Args(binaryArgs);
 
   // safely unwrap the request data
-  let reserve: Reserve = args.nextSerializable<Reserve>().unwrap();
+  let reserve: Reserve = args
+    .nextSerializable<Reserve>()
+    .expect('reserve argument is missing or invalid');
 
   let mTokenContractCode = Storage.get(stringToBytes('mToken_contract_code'));
   let mTokenAddr = createSC(mTokenContractCode);
 
-  const provider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const provider = bytesToString(
+    Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR')),
+  );
   const name = 'Mando Interest bearing '.concat(
     new IERC20(new Address(reserve.addr)).name(),
   );
@@ -113,53 +120,12 @@ export function initReserve(binaryArgs: StaticArray<u8>): void {
   const storageKey = `${RESERVE_KEY}_${reserve.addr}`;
 
   // check reserve does not already exist
-  const reserveExists = Storage.has(stringToBytes(storageKey));
-  assert(!reserveExists, 'Reserve already exists');
+  assert(!Storage.has(stringToBytes(storageKey)), 'Reserve already exists');
 
   // save reserve to storage
   Storage.set(stringToBytes(storageKey), reserve.serialize());
 
   addReserveToList(reserve.addr);
-
-  generateEvent(
-    'ReserveCreated: ' +
-      'addr: ' +
-      reserve.addr.toString() +
-      ', name: ' +
-      reserve.name.toString() +
-      ', symbol: ' +
-      reserve.symbol.toString() +
-      ', decimals: ' +
-      reserve.decimals.toString() +
-      ', mTokenAddress: ' +
-      reserve.mTokenAddress.toString() +
-      ', interestCalcAddress: ' +
-      reserve.interestCalcAddress.toString() +
-      ', baseLTV: ' +
-      reserve.baseLTV.toString() +
-      ', LiquidationThreshold: ' +
-      reserve.LiquidationThreshold.toString() +
-      ', LiquidationBonus: ' +
-      reserve.LiquidationBonus.toString() +
-      ', lastUpdateTimestamp: ' +
-      reserve.lastUpdateTimestamp.toString() +
-      ', lastLiquidityCumulativeIndex: ' +
-      reserve.lastLiquidityCumulativeIndex.toString() +
-      ', currentLiquidityRate: ' +
-      reserve.currentLiquidityRate.toString() +
-      ', totalBorrowsStable: ' +
-      reserve.totalBorrowsStable.toString() +
-      ', totalBorrowsVariable: ' +
-      reserve.totalBorrowsVariable.toString() +
-      ', currentVariableBorrowRate: ' +
-      reserve.currentVariableBorrowRate.toString() +
-      ', currentStableBorrowRate: ' +
-      reserve.currentStableBorrowRate.toString() +
-      ', currentAverageStableBorrowRate: ' +
-      reserve.currentAverageStableBorrowRate.toString() +
-      ', lastVariableBorrowCumulativeIndex: ' +
-      reserve.lastVariableBorrowCumulativeIndex.toString(),
-  );
 }
 
 export function getReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
@@ -167,14 +133,15 @@ export function getReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const args = new Args(binaryArgs);
 
   // safely unwrap the request data
-  const reserveAddr = args.nextString().unwrap();
+  const reserveAddr = args
+    .nextString()
+    .expect('reserveAddr argument is missing or invalid');
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserveAddr}`;
 
   // check reserve must already exist
-  const reserveExists = Storage.has(stringToBytes(storageKey));
-  assert(reserveExists, 'Reserve does not exist');
+  assert(Storage.has(stringToBytes(storageKey)), 'Reserve does not exist');
 
   // get the serialized reserve info
   return Storage.get(stringToBytes(storageKey));
@@ -187,14 +154,15 @@ export function deleteReserve(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
   // safely unwrap the request data
-  const reserveAddr = args.nextString().unwrap();
+  const reserveAddr = args
+    .nextString()
+    .expect('reserveAddr argument is missing or invalid');
 
   // assemble the storage key
   const storageKey = `${RESERVE_KEY}_${reserveAddr}`;
 
   // check reserve must already exist
-  const reserveExists = Storage.has(stringToBytes(storageKey));
-  assert(reserveExists, 'Reserve does not exist');
+  assert(Storage.has(stringToBytes(storageKey)), 'Reserve does not exist');
 
   // delete the serialized reserve info
   return Storage.del(stringToBytes(storageKey));
@@ -207,54 +175,37 @@ export function initUser(binaryArgs: StaticArray<u8>): void {
   const args: Args = new Args(binaryArgs);
 
   // safely unwrap the request data
-  let userReserve: UserReserve = args.nextSerializable<UserReserve>().unwrap();
-  const reserve = args.nextString().unwrap();
+  let userReserve: UserReserve = args
+    .nextSerializable<UserReserve>()
+    .expect('userReserve argument is missing or invalid');
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
 
   // assemble the storage key
   const storageKey = `${USER_KEY}_${userReserve.addr}_${reserve}`;
 
   // check reserve does not already exist
-  const userExists = Storage.has(stringToBytes(storageKey));
-  // assert(!userExists, 'User already exists');
-  if (!userExists) {
+  if (!Storage.has(stringToBytes(storageKey))) {
     // save reserve to storage
     Storage.set(stringToBytes(storageKey), userReserve.serialize());
-
-    generateEvent(
-      'UserReserveCreated: ' +
-        'addr: ' +
-        userReserve.addr.toString() +
-        ', reserve: ' +
-        reserve.toString() +
-        ', principalBorrowBalance: ' +
-        userReserve.principalBorrowBalance.toString() +
-        ', lastVariableBorrowCumulativeIndex: ' +
-        userReserve.lastVariableBorrowCumulativeIndex.toString() +
-        ', originationFee: ' +
-        userReserve.originationFee.toString() +
-        ', stableBorrowRate: ' +
-        userReserve.stableBorrowRate.toString() +
-        ', lastUpdateTimestamp: ' +
-        userReserve.lastUpdateTimestamp.toString() +
-        ', useAsCollateral: ' +
-        userReserve.useAsCollateral.toString() +
-        ', autonomousRewardStrategyEnabled: ' +
-        userReserve.autonomousRewardStrategyEnabled.toString(),
-    );
   }
 }
 
 export function getUserReserve(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const args = new Args(binaryArgs);
 
-  const userAddr = args.nextString().unwrap();
-  const reserveAddr = args.nextString().unwrap();
+  const userAddr = args
+    .nextString()
+    .expect('userAddr argument is missing or invalid');
+  const reserveAddr = args
+    .nextString()
+    .expect('reserveAddr argument is missing or invalid');
 
   const storageKey = `${USER_KEY}_${userAddr}_${reserveAddr}`;
 
   // check reserve must already exist
-  const userExists = Storage.has(stringToBytes(storageKey));
-  assert(userExists, 'User does not exist');
+  assert(Storage.has(stringToBytes(storageKey)), 'User does not exist');
 
   // get the serialized reserve info
   return Storage.get(stringToBytes(storageKey));
@@ -268,9 +219,11 @@ export function viewAllReserves(): StaticArray<u8> {
 export function transferToReserve(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
 
   // onlyLendingPoolOrOverlyingAsset(reserve);
 
@@ -292,11 +245,15 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
 
-  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const addressProvider = bytesToString(
+    Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR')),
+  );
   const owner = new ILendingAddressProvider(
     new Address(addressProvider),
   ).getOwner();
@@ -317,9 +274,11 @@ export function transferFeeToOwner(binaryArgs: StaticArray<u8>): void {
 export function transferToUser(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
 
   onlyLendingPoolOrOverlyingAsset(reserve);
 
@@ -337,11 +296,19 @@ export function updateStateOnBorrow(binaryArgs: StaticArray<u8>): void {
   onlyLendingPool();
 
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amountBorrowed = args.nextU64().unwrap();
-  const borrowFee = args.nextU64().unwrap();
-  const rateMode = args.nextU8().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amountBorrowed = args
+    .nextU64()
+    .expect('amountBorrowed argument is missing or invalid');
+  const borrowFee = args
+    .nextU64()
+    .expect('borrowFee argument is missing or invalid');
+  const rateMode = args
+    .nextU8()
+    .expect('rateMode argument is missing or invalid');
 
   const data = new Args(
     getUserBorrowBalances(new Args().add(reserve).add(user).serialize()),
@@ -377,12 +344,22 @@ export function updateStateOnRepay(binaryArgs: StaticArray<u8>): void {
   onlyLendingPool();
 
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const paybackAmountMinusFees = args.nextU64().unwrap();
-  const originationFeeRepaid = args.nextU64().unwrap();
-  const balanceIncrease = args.nextU64().unwrap();
-  const repaidWholeLoan = args.nextBool().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const paybackAmountMinusFees = args
+    .nextU64()
+    .expect('paybackAmountMinusFees argument is missing or invalid');
+  const originationFeeRepaid = args
+    .nextU64()
+    .expect('originationFeeRepaid argument is missing or invalid');
+  const balanceIncrease = args
+    .nextU64()
+    .expect('balanceIncrease argument is missing or invalid');
+  const repaidWholeLoan = args
+    .nextBool()
+    .expect('repaidWholeLoan argument is missing or invalid');
 
   updateReserveStateOnRepayInternal(
     reserve,
@@ -410,10 +387,16 @@ export function updateStateOnRedeem(binaryArgs: StaticArray<u8>): void {
   onlyLendingPool();
 
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amountRedeemed = args.nextU64().unwrap();
-  const userRedeemedEverything = args.nextBool().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amountRedeemed = args
+    .nextU64()
+    .expect('amountRedeemed argument is missing or invalid');
+  const userRedeemedEverything = args
+    .nextBool()
+    .expect('userRedeemedEverything argument is missing or invalid');
 
   updateCumulativeIndexes(reserve);
   updateReserveInterestRatesAndTimestampInternal(reserve, 0, amountRedeemed);
@@ -429,10 +412,14 @@ export function updateStateOnDeposit(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
-  const isFirstDeposit = args.nextBool().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
+  const isFirstDeposit = args
+    .nextBool()
+    .expect('isFirstDeposit argument is missing or invalid');
 
   updateCumulativeIndexes(reserve);
   updateReserveInterestRatesAndTimestampInternal(reserve, amount, 0);
@@ -446,7 +433,9 @@ export function getReserveAvailableLiquidity(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
 
   let bal: u64 = 0;
 
@@ -464,12 +453,14 @@ export function getReserveTotalLiquidity(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
 
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const reserveAvailableLiq = bytesToU64(
     getReserveAvailableLiquidity(new Args().add(reserve).serialize()),
@@ -487,13 +478,17 @@ export function getUserBasicReserveData(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   const underlyingBalance = getUserUnderlyingAssetBalance(reserve, user);
   let userReserveData: Array<u64> = new Array(3);
@@ -503,10 +498,6 @@ export function getUserBasicReserveData(
   userReserveData[1] = compoundedBal;
   userReserveData[2] = userArgs.originationFee;
 
-  generateEvent(
-    `User basic reserve data: ${underlyingBalance}, ${compoundedBal} and ${userArgs.originationFee}`,
-  );
-
   return new Args().add(userReserveData).serialize();
 }
 
@@ -515,13 +506,17 @@ export function getUserBorrowBalances(
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   let userBorrows: Array<u64> = new Array(3);
 
@@ -541,11 +536,13 @@ export function getNormalizedIncome(
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
 
-  const reserve = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const cumulated = u64(
     calculateLinearInterest(
@@ -561,13 +558,17 @@ export function getUserCurrentBorrowRateMode(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   if (userArgs.principalBorrowBalance == 0) {
     return u32ToBytes(InterestRateMode.NONE);
@@ -583,13 +584,19 @@ export function setUserAutonomousRewardStrategy(
 ): void {
   // onlyUser
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const autonomousRewardStrategy = args.nextBool().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const autonomousRewardStrategy = args
+    .nextBool()
+    .expect('autonomousRewardStrategy argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(Context.caller().toString()).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   const updatedAutonomousRewardStrategyEnabled = autonomousRewardStrategy;
 
@@ -616,7 +623,7 @@ export function setAddressProvider(binaryArgs: StaticArray<u8>): void {
     .nextString()
     .expect('Provider Address argument is missing or invalid');
 
-  Storage.set('ADDRESS_PROVIDER_ADDR', provider);
+  Storage.set(stringToBytes('ADDRESS_PROVIDER_ADDR'), stringToBytes(provider));
 }
 
 export function setMTokenContractCode(binaryArgs: StaticArray<u8>): void {
@@ -624,7 +631,9 @@ export function setMTokenContractCode(binaryArgs: StaticArray<u8>): void {
 
   const args = new Args(binaryArgs);
 
-  const mTokenContractCode = args.nextFixedSizeArray<u8>().unwrap();
+  const mTokenContractCode = args
+    .nextFixedSizeArray<u8>()
+    .expect('mTokenContractCode argument is missing or invalid');
   Storage.set(
     stringToBytes('mToken_contract_code'),
     StaticArray.fromArray(mTokenContractCode),
@@ -641,7 +650,7 @@ function addReserveToList(reserve: string): void {
 
   let reserveArr = new Args(Storage.get(stringToBytes('ALL_RESERVES')))
     .nextStringArray()
-    .unwrap();
+    .expect('reserveArr argument is missing or invalid');
   reserveArr.push(reserve);
   Storage.set(
     stringToBytes('ALL_RESERVES'),
@@ -653,7 +662,7 @@ function getUserUnderlyingAssetBalance(reserve: string, user: string): u64 {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const mTokenAddr = new IERC20(new Address(reserveArgs.mTokenAddress));
   return u64.parse(mTokenAddr.balanceOf(new Address(user)).toString());
@@ -669,7 +678,7 @@ function updateCumulativeIndexes(reserve: string): void {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const totalBorrows = getTotalBorrows(
     reserveArgs.totalBorrowsStable,
@@ -734,7 +743,9 @@ function updateReserveStateOnRepayInternal(
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   const borrowRateMode: InterestRateMode = bytesToU32(
     getUserCurrentBorrowRateMode(new Args().add(reserve).add(user).serialize()),
@@ -773,12 +784,14 @@ function updateUserStateOnRepayInternal(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   // update the user principal borrow balance, adding the cumulated interest and then subtracting the payback amount
   const updatedPrincipalBorrowBalance: u64 =
@@ -830,12 +843,14 @@ function updateUserStateOnBorrowInternal(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   let updatedStableBorrowRate = userArgs.stableBorrowRate;
   let updatedLastVariableBorrowCumulativeIndex =
@@ -892,7 +907,7 @@ function updateReserveTotalBorrowsByRateModeInternal(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   if (previousRateMode == InterestRateMode.STABLE) {
     const userData = getUserReserve(
@@ -900,7 +915,7 @@ function updateReserveTotalBorrowsByRateModeInternal(
     );
     const userArgs = new Args(userData)
       .nextSerializable<UserReserve>()
-      .unwrap();
+      .expect('userArgs argument is missing or invalid');
 
     decreaseTotalBorrowsStableAndUpdateAverageRate(
       reserve,
@@ -951,13 +966,14 @@ function getCompoundedBorrowBalance(reserve: string, user: string): u64 {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
-
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
   if (userArgs.principalBorrowBalance == 0) return 0;
 
   let principalBorrowBalanceRay = userArgs.principalBorrowBalance;
@@ -1003,7 +1019,7 @@ function increaseTotalBorrowsStableAndUpdateAverageRate(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const previousTotalBorrowStable = reserveArgs.totalBorrowsStable;
   // updating reserve borrows stable
@@ -1058,7 +1074,7 @@ function decreaseTotalBorrowsStableAndUpdateAverageRate(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   assert(
     reserveArgs.totalBorrowsStable >= amount,
@@ -1128,7 +1144,7 @@ function increaseTotalBorrowsVariable(reserve: string, amount: u64): void {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const updatedTotalBorrowsVariable = reserveArgs.totalBorrowsVariable + amount;
 
@@ -1160,7 +1176,7 @@ function decreaseTotalBorrowsVariable(reserve: string, amount: u64): void {
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   assert(
     reserveArgs.totalBorrowsVariable >= amount,
@@ -1241,7 +1257,7 @@ function updateReserveInterestRatesAndTimestampInternal(
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
 
   const interestRateStrategyAddress = new IReserveInterestRateStrategy(
     new Address(reserveArgs.interestCalcAddress),
@@ -1305,7 +1321,9 @@ function setUserUseReserveAsCollateral(
   const userData = getUserReserve(
     new Args().add(user).add(reserve).serialize(),
   );
-  const userArgs = new Args(userData).nextSerializable<UserReserve>().unwrap();
+  const userArgs = new Args(userData)
+    .nextSerializable<UserReserve>()
+    .expect('userArgs argument is missing or invalid');
 
   const updatedUseAsCollateral = useAsCollateral;
 
@@ -1325,7 +1343,9 @@ function setUserUseReserveAsCollateral(
 }
 
 function onlyOwner(): void {
-  const addressProvider = Storage.get('ADDRESS_PROVIDER_ADDR');
+  const addressProvider = bytesToString(
+    Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR')),
+  );
   const owner = new ILendingAddressProvider(
     new Address(addressProvider),
   ).getOwner();
@@ -1335,7 +1355,9 @@ function onlyOwner(): void {
 
 function onlyLendingPool(): void {
   const addressProvider = new ILendingAddressProvider(
-    new Address(Storage.get('ADDRESS_PROVIDER_ADDR')),
+    new Address(
+      bytesToString(Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR'))),
+    ),
   );
   const pool = new Address(addressProvider.getLendingPool());
 
@@ -1344,14 +1366,16 @@ function onlyLendingPool(): void {
 
 function onlyLendingPoolOrOverlyingAsset(reserve: string): void {
   const addressProvider = new ILendingAddressProvider(
-    new Address(Storage.get('ADDRESS_PROVIDER_ADDR')),
+    new Address(
+      bytesToString(Storage.get(stringToBytes('ADDRESS_PROVIDER_ADDR'))),
+    ),
   );
   const pool = new Address(addressProvider.getLendingPool());
 
   const reserveData = getReserve(new Args().add(reserve).serialize());
   const reserveArgs = new Args(reserveData)
     .nextSerializable<Reserve>()
-    .unwrap();
+    .expect('reserveArgs argument is missing or invalid');
   const mToken = new Address(reserveArgs.mTokenAddress);
 
   assert(

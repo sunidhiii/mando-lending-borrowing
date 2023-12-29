@@ -141,10 +141,18 @@ export function calculateInterestRates(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const availableLiquidity = args.nextU64().unwrap();
-  const totalBorrowsStable = args.nextU64().unwrap();
-  const totalBorrowsVariable = args.nextU64().unwrap();
-  const averageStableBorrowRate = args.nextU64().unwrap();
+  const availableLiquidity = args
+    .nextU64()
+    .expect('availableLiquidity argument is missing or invalid');
+  const totalBorrowsStable = args
+    .nextU64()
+    .expect('totalBorrowsStable argument is missing or invalid');
+  const totalBorrowsVariable = args
+    .nextU64()
+    .expect('totalBorrowsVariable argument is missing or invalid');
+  const averageStableBorrowRate = args
+    .nextU64()
+    .expect('averageStableBorrowRate argument is missing or invalid');
 
   const totalBorrows: u64 = totalBorrowsStable + totalBorrowsVariable;
 
@@ -205,11 +213,6 @@ export function calculateInterestRates(
 
   const currentLiquidityRate: u64 = u64(
     overAllBorrow * f64(utilizationRate / ONE_UNIT),
-  );
-
-  generateEvent(
-    `Interest Rate Data: ${utilizationRate}, ${currentLiquidityRate}, ${currentStableBorrowRate}, 
-            ${currentVariableBorrowRate}`,
   );
 
   return new Args()

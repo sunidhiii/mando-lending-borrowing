@@ -32,13 +32,15 @@ export default class UserReserve implements Serializable {
     if (addr.isErr()) {
       return new Result(0, "Can't deserialize the addr");
     }
-    this.addr = addr.unwrap();
+    this.addr = addr.expect('address argument is missing or invalid');
 
     const principalBorrowBalance = args.nextU64();
     if (principalBorrowBalance.isErr()) {
       return new Result(0, "Can't deserialize the principalBorrowBalance");
     }
-    this.principalBorrowBalance = principalBorrowBalance.unwrap();
+    this.principalBorrowBalance = principalBorrowBalance.expect(
+      'principalBorrowBalance argument is missing or invalid',
+    );
 
     const lastVariableBorrowCumulativeIndex = args.nextU64();
     if (lastVariableBorrowCumulativeIndex.isErr()) {
@@ -48,31 +50,41 @@ export default class UserReserve implements Serializable {
       );
     }
     this.lastVariableBorrowCumulativeIndex =
-      lastVariableBorrowCumulativeIndex.unwrap();
+      lastVariableBorrowCumulativeIndex.expect(
+        'lastVariableBorrowCumulativeIndex argument is missing or invalid',
+      );
 
     const originationFee = args.nextU64();
     if (originationFee.isErr()) {
       return new Result(0, "Can't deserialize the originationFee");
     }
-    this.originationFee = originationFee.unwrap();
+    this.originationFee = originationFee.expect(
+      'originationFee argument is missing or invalid',
+    );
 
     const stableBorrowRate = args.nextU64();
     if (stableBorrowRate.isErr()) {
       return new Result(0, "Can't deserialize the stableBorrowRate");
     }
-    this.stableBorrowRate = stableBorrowRate.unwrap();
+    this.stableBorrowRate = stableBorrowRate.expect(
+      'stableBorrowRate argument is missing or invalid',
+    );
 
     const lastUpdateTimestamp = args.nextU64();
     if (lastUpdateTimestamp.isErr()) {
       return new Result(0, "Can't deserialize the lastUpdateTimestamp");
     }
-    this.lastUpdateTimestamp = lastUpdateTimestamp.unwrap();
+    this.lastUpdateTimestamp = lastUpdateTimestamp.expect(
+      'lastUpdateTimestamp argument is missing or invalid',
+    );
 
     const useAsCollateral = args.nextBool();
     if (useAsCollateral.isErr()) {
       return new Result(0, "Can't deserialize the useAsCollateral");
     }
-    this.useAsCollateral = useAsCollateral.unwrap();
+    this.useAsCollateral = useAsCollateral.expect(
+      'useAsCollateral argument is missing or invalid',
+    );
 
     const autonomousRewardStrategyEnabled = args.nextBool();
     if (autonomousRewardStrategyEnabled.isErr()) {
@@ -82,7 +94,9 @@ export default class UserReserve implements Serializable {
       );
     }
     this.autonomousRewardStrategyEnabled =
-      autonomousRewardStrategyEnabled.unwrap();
+      autonomousRewardStrategyEnabled.expect(
+        'autonomousRewardStrategyEnabled argument is missing or invalid',
+      );
 
     return new Result(args.offset);
   }

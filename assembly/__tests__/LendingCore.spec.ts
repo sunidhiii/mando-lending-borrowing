@@ -12,6 +12,7 @@ import {
   initUser,
   setAddressProvider,
   transferFeeToOwner,
+  transferToReserve,
   transferToUser,
   updateStateOnBorrow,
   updateStateOnDeposit,
@@ -153,5 +154,16 @@ describe('existence of reserve', () => {
 
     const key = `RESERVE_KEY_${reserve}`;
     expect(Storage.hasOf(new Address(contractAddr), key)).toStrictEqual(false);
+  });
+});
+
+const MAS = 'EeeEeeEeeeeEeeeeeEeeeeeeEeeeeeeEEeeeeeeEeeeEeeeeeeEee';
+const amount: u64 = 100000;
+
+describe('transfer tokens to reserve', () => {
+  throws('should fail because not enough sent coins', () => {
+    transferToReserve(
+      new Args().add(MAS).add(user1Address).add(amount).serialize(),
+    );
   });
 });

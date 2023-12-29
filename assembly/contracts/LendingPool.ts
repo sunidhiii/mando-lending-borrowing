@@ -74,10 +74,6 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
 
   mToken.mintOnDeposit(Context.caller(), u256.from(amount));
   core.transferToReserve(new Address(reserve), Context.caller(), amount);
-
-  generateEvent(
-    `Deposited ${amount} tokens to the pool with first deposit ${isFirstDeposit}`,
-  );
 }
 
 export function borrow(binaryArgs: StaticArray<u8>): void {
@@ -176,8 +172,6 @@ export function borrow(binaryArgs: StaticArray<u8>): void {
   );
 
   core.transferToUser(new Address(reserve), Context.caller(), amount);
-
-  generateEvent(`Borrowed ${amount} tokens from the pool`);
 }
 
 export function repay(binaryArgs: StaticArray<u8>): void {
@@ -221,8 +215,6 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       false,
     );
     core.transferFeeToOwner(reserve, Context.caller(), paybackAmount);
-
-    generateEvent(`Repayed ${amount} tokens to the pool`);
     // return;
   } else {
     let paybackAmountMinusFees = paybackAmount - userOriginationFee;
@@ -245,8 +237,6 @@ export function repay(binaryArgs: StaticArray<u8>): void {
       Context.caller(),
       paybackAmountMinusFees,
     );
-
-    generateEvent(`Repayed ${amount} tokens to the pool`);
   }
 }
 
@@ -278,8 +268,6 @@ export function redeemUnderlying(binaryArgs: StaticArray<u8>): void {
     mTokenBalanceAfterRedeem == 0,
   );
   core.transferToUser(new Address(reserve), new Address(user), amount);
-
-  generateEvent(`Redeemed ${amount} tokens from the pool`);
 }
 
 export function depositRewards(binaryArgs: StaticArray<u8>): void {
@@ -321,8 +309,6 @@ export function depositRewards(binaryArgs: StaticArray<u8>): void {
     new Args().add(userIndexStorageKey).add(index),
     10,
   );
-
-  generateEvent(`Deposited ${amount} base tokens to the pool`);
 }
 
 export function setAddressProvider(binaryArgs: StaticArray<u8>): void {

@@ -99,7 +99,16 @@ const __dirname = path.dirname(path.dirname(__filename));
         FeeProviderContract,
         PriceOracleContract,
         InterestStrategyContract,
-        AddressProviderContract,
+        AddressProviderContract
+      ],
+      BigInt(100),
+      BigInt(3_980_167_295),
+      true,
+    );
+    await deploySC(
+      publicApi,
+      deployerAccount,
+      [
         DataProviderContract,
         PoolContract,
         CoreContract,

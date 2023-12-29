@@ -56,7 +56,7 @@ export function calculateUserGlobalData(
   // onlyOwner();
 
   const args = new Args(binaryArgs);
-  const user = args.nextString().unwrap();
+  const user = args.nextString().expect('user argument is missing or invalid');
 
   // Then we create our key/value pair and store it.
   const addressProvider = new ILendingAddressProvider(
@@ -161,8 +161,6 @@ export function calculateUserGlobalData(
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: Total reserves: ${reserves.length}`);
-
   return new Args().add(userGlobalData).serialize();
 }
 
@@ -170,10 +168,18 @@ export function calculateUserHealthFactorBelowThresh(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const totalCollateralBalanceUSD = args.nextU64().unwrap();
-  const totalBorrowBalanceUSD = args.nextU64().unwrap();
-  const totalFeesUSD = args.nextU64().unwrap();
-  const currentLiquidationThreshold = args.nextU8().unwrap();
+  const totalCollateralBalanceUSD = args
+    .nextU64()
+    .expect('totalCollateralBalanceUSD argument is missing or invalid');
+  const totalBorrowBalanceUSD = args
+    .nextU64()
+    .expect('totalBorrowBalanceUSD argument is missing or invalid');
+  const totalFeesUSD = args
+    .nextU64()
+    .expect('totalFeesUSD argument is missing or invalid');
+  const currentLiquidationThreshold = args
+    .nextU8()
+    .expect('currentLiquidationThreshold argument is missing or invalid');
 
   const healthFactor = calculateHealthFactorFromBalancesInternal(
     f64(totalCollateralBalanceUSD),
@@ -193,9 +199,11 @@ export function balanceDecreaseAllowed(
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
 
-  const underlyingAssetAddress = args.nextString().unwrap();
-  const user = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
+  const underlyingAssetAddress = args
+    .nextString()
+    .expect('underlyingAssetAddress argument is missing or invalid');
+  const user = args.nextString().expect('user argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
 
   const addressProvider = new ILendingAddressProvider(
     new Address(Storage.get('ADDRESS_PROVIDER_ADDR')),
@@ -268,12 +276,20 @@ export function calculateCollateralNeededInUSD(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const reserve = args.nextString().unwrap();
-  const amount = args.nextU64().unwrap();
-  const fee = args.nextU64().unwrap();
-  const userCurrentBorrowBalanceUSD = args.nextU64().unwrap();
-  const userCurrentFeesUSD = args.nextU64().unwrap();
-  const userCurrentLtv = args.nextU8().unwrap();
+  const reserve = args
+    .nextString()
+    .expect('reserve argument is missing or invalid');
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
+  const fee = args.nextU64().expect('fee argument is missing or invalid');
+  const userCurrentBorrowBalanceUSD = args
+    .nextU64()
+    .expect('userCurrentBorrowBalanceUSD argument is missing or invalid');
+  const userCurrentFeesUSD = args
+    .nextU64()
+    .expect('userCurrentFeesUSD argument is missing or invalid');
+  const userCurrentLtv = args
+    .nextU8()
+    .expect('userCurrentLtv argument is missing or invalid');
 
   const addressProvider = new ILendingAddressProvider(
     new Address(Storage.get('ADDRESS_PROVIDER_ADDR')),
@@ -307,10 +323,16 @@ export function calculateAvailableBorrowsUSD(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const collateralBalanceUSD = args.nextU64().unwrap();
-  const borrowBalanceUSD = args.nextU64().unwrap();
-  const totalFeesUSD = args.nextU64().unwrap();
-  const ltv = args.nextU8().unwrap();
+  const collateralBalanceUSD = args
+    .nextU64()
+    .expect('collateralBalanceUSD argument is missing or invalid');
+  const borrowBalanceUSD = args
+    .nextU64()
+    .expect('borrowBalanceUSD argument is missing or invalid');
+  const totalFeesUSD = args
+    .nextU64()
+    .expect('totalFeesUSD argument is missing or invalid');
+  const ltv = args.nextU8().expect('ltv argument is missing or invalid');
 
   var availableBorrowsUSD: u64 = u64(
     (f64(collateralBalanceUSD) * f64(ltv)) / 100.0,
@@ -346,7 +368,7 @@ export function calculateUserData(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const user = args.nextString().unwrap();
+  const user = args.nextString().expect('user argument is missing or invalid');
 
   // Then we create our key/value pair and store it.
   const addressProvider = new ILendingAddressProvider(
@@ -439,8 +461,6 @@ export function calculateUserData(
   userGlobalData[5] = u64(currentLiquidationThreshold);
   userGlobalData[6] = u64(healthFactor);
 
-  generateEvent(`User global data: Total reserves: ${reserves.length}`);
-
   return new Args().add(userGlobalData).serialize();
 }
 
@@ -448,10 +468,16 @@ export function calculateAvailableBorrows(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const collateralBalance = args.nextU64().unwrap();
-  const borrowBalance = args.nextU64().unwrap();
-  const totalFees = args.nextU64().unwrap();
-  const ltv = args.nextU8().unwrap();
+  const collateralBalance = args
+    .nextU64()
+    .expect('collateralBalance argument is missing or invalid');
+  const borrowBalance = args
+    .nextU64()
+    .expect('borrowBalance argument is missing or invalid');
+  const totalFees = args
+    .nextU64()
+    .expect('totalFees argument is missing or invalid');
+  const ltv = args.nextU8().expect('ltv argument is missing or invalid');
 
   var availableBorrows: u64 = u64((f64(collateralBalance) * f64(ltv)) / 100.0); // ltv is in
 
@@ -484,11 +510,17 @@ export function calculateCollateralNeeded(
   binaryArgs: StaticArray<u8>,
 ): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const amount = args.nextU64().unwrap();
-  const fee = args.nextU64().unwrap();
-  const userCurrentBorrowBalance = args.nextU64().unwrap();
-  const userCurrentFees = args.nextU64().unwrap();
-  const userCurrentLtv = args.nextU8().unwrap();
+  const amount = args.nextU64().expect('amount argument is missing or invalid');
+  const fee = args.nextU64().expect('fee argument is missing or invalid');
+  const userCurrentBorrowBalance = args
+    .nextU64()
+    .expect('userCurrentBorrowBalance argument is missing or invalid');
+  const userCurrentFees = args
+    .nextU64()
+    .expect('userCurrentFees argument is missing or invalid');
+  const userCurrentLtv = args
+    .nextU8()
+    .expect('userCurrentLtv argument is missing or invalid');
 
   // const oracle = new IPriceOracle(new Address(Storage.get('PRICE_ORACLE')));
 

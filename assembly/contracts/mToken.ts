@@ -323,10 +323,6 @@ export function redeem(binaryArgs: StaticArray<u8>): void {
     amountToRedeem,
     mTokenBalanceAfterRedeem,
   );
-
-  generateEvent(
-    `Balance redeem: ${amountToRedeem} tokens left to ${mTokenBalanceAfterRedeem} tokens`,
-  );
 }
 
 export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
@@ -348,8 +344,6 @@ export function mintOnDeposit(binaryArgs: StaticArray<u8>): void {
 
   // mint an equivalent amount of tokens to cover the new deposit
   _mint(new Args().add(user.toString()).add(amount).serialize());
-
-  generateEvent(`Balance increased after mint ${balanceIncrease} tokens`);
 }
 
 // to-do
@@ -373,10 +367,6 @@ export function burnOnLiquidation(binaryArgs: StaticArray<u8>): void {
 
   // burns the requested amount of tokens
   burnFrom(new Args().add(user).add(u256.fromU64(amount)).serialize());
-
-  generateEvent(
-    `Balance decreased after mint from ${currentBalance} tokens to ${balanceIncrease} tokens`,
-  );
 }
 
 // to-do
@@ -452,7 +442,7 @@ export function totalSupply(): StaticArray<u8> {
 
 export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const args = new Args(binaryArgs);
-  const user = args.nextString().unwrap();
+  const user = args.nextString().expect('user argument is missing or invalid');
   const storageKey = `USER_INDEX_${user}`;
 
   if (!Storage.has(stringToBytes(storageKey))) {
@@ -464,8 +454,8 @@ export function getUserIndex(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
 export function setMyKey(binaryArgs: StaticArray<u8>): void {
   const args = new Args(binaryArgs);
-  const key = args.nextString().unwrap();
-  const value = args.nextU64().unwrap();
+  const key = args.nextString().expect('key argument is missing or invalid');
+  const value = args.nextU64().expect('value argument is missing or invalid');
 
   onlyLendingPool();
 
@@ -542,12 +532,6 @@ function cumulateBalanceInternal(user: Address): Array<u64> {
   const storageKey = `USER_INDEX_${user.toString()}`;
   Storage.set(stringToBytes(storageKey), u64ToBytes(index));
 
-  generateEvent(
-    `Balance ${previousPrincipalBal} increased to ${
-      u64.parse(previousPrincipalBal.toString()) + balanceIncrease
-    } tokens`,
-  );
-
   return [
     u64.parse(previousPrincipalBal.toString()),
     u64.parse(previousPrincipalBal.toString()) + balanceIncrease,
@@ -590,10 +574,6 @@ function sendFuturOperation(user: string): void {
     msg,
     filterAddress,
     filterKey,
-  );
-
-  generateEvent(
-    `Next update planned on period ${validityStartPeriod.toString()} thread: ${validityStartThread.toString()}`,
   );
 }
 
@@ -660,9 +640,6 @@ function swapTokensAndAddDeposit(user: string): void {
   core.transferToReserve(wmas._origin, Context.callee(), amountOut);
 
   sendFuturOperation(user);
-  generateEvent(
-    `Received ${amountOut} ${wmas._origin.toString()} for ${amountIn} ${underLyingAsset} and deposited in the pool.`,
-  );
 }
 
 function onlyLendingPool(): void {
